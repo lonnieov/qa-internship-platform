@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireIntern } from "@/lib/auth";
+import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
 import { hashInviteCode } from "@/lib/security";
 import {
@@ -128,9 +128,9 @@ export async function startAttemptAction() {
   }
 
   if (existing) {
-    await createResultSession(existing.id);
+    const ticket = await createResultSession(existing.id);
     await clearInternSession();
-    redirect("/intern/result");
+    redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
   }
 
   const questions = await prisma.question.findMany({
@@ -240,7 +240,9 @@ export async function spendQuestionTimeAction(input: {
   timeSpentMs: number;
   countVisit?: boolean;
 }) {
-  const profile = await requireIntern();
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "INTERN" || !profile.internProfile) return;
+
   const attempt = await prisma.assessmentAttempt.findFirst({
     where: {
       id: input.attemptId,

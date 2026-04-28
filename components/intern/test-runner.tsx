@@ -213,7 +213,9 @@ export function TestRunner({
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
-      flushCurrentTime();
+      if (!submittedRef.current) {
+        flushCurrentTime();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion?.id]);
