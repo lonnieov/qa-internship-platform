@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  INTERN
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  REVOKED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  EXPIRED
+}
+
+enum TrackingEventType {
+  START
+  MOUSE_MOVE
+  CLICK
+  KEYDOWN
+  VISIBILITY_CHANGE
+  FOCUS
+  BLUR
+  ANSWER_SELECT
+  NAVIGATION
+  SUBMIT
+  TIMER_EXPIRED
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  email       String?  @unique
+  firstName   String?
+  lastName    String?
+  role        Role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  internProfile      InternProfile?
+  createdInvitations Invitation[]  @relation("InvitationCreator")
+  acceptedInvitation Invitation?   @relation("InvitationAccepted")
+  createdQuestions   Question[]    @relation("QuestionCreator")
+}
+
+model InternProfile {
+  id           String   @id @default(cuid())
+  profileId    String   @unique
+  fullName     String
+  phone        String?
+  source       String?
+  invitationId String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile    Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  invitation Invitation?          @relation(fields: [invitationId], references: [id])
+  attempts   AssessmentAttempt[]
+}
+
+model Invitation {
+  id                  String           @id @default(cuid())
+  candidateName       String
+  inviteCodeHash      String           @unique
+  status              InvitationStatus @default(PENDING)
+  expiresAt           DateTime?
+  acceptedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  createdById         String
+  acceptedByProfileId String?          @unique
+
+  createdBy         Profile        @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  acceptedByProfile Profile?       @relation("InvitationAccepted", fields: [acceptedByProfileId], references: [id])
+  internProfile     InternProfile?
+
+  @@index([status])
+}
+
+model AssessmentSettings {
+  id               String   @id @default("global")
+  totalTimeMinutes Int      @default(30)
+  passingScore     Int      @default(100)
+  updatedAt        DateTime @updatedAt
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  text        String
+  explanation String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+
+  createdBy Profile?           @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  options   QuestionOption[]
+  answers   AssessmentAnswer[]
+  events    TrackingEvent[]
+
+  @@index([isActive, order])
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  label      String
+  text       String
+  isCorrect  Boolean  @default(false)
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  AssessmentAnswer[]
+
+  @@unique([questionId, order])
+}
+
+model AssessmentAttempt {
+  id               String        @id @default(cuid())
+  internProfileId  String
+  status           AttemptStatus @default(IN_PROGRESS)
+  startedAt        DateTime      @default(now())
+  submittedAt      DateTime?
+  deadlineAt       DateTime
+  totalTimeSeconds Int?
+  scorePercent     Float?
+  correctCount     Int           @default(0)
+  questionCount    Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  internProfile InternProfile      @relation(fields: [internProfileId], references: [id], onDelete: Cascade)
+  answers       AssessmentAnswer[]
+  events        TrackingEvent[]
+
+  @@index([internProfileId, status])
+  @@index([startedAt])
+}
+
+model AssessmentAnswer {
+  id               String   @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  isCorrect        Boolean  @default(false)
+  answeredAt       DateTime?
+  timeSpentMs      Int      @default(0)
+  visits           Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption?   @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+model TrackingEvent {
+  id         String            @id @default(cuid())
+  attemptId  String
+  questionId String?
+  type       TrackingEventType
+  x          Int?
+  y          Int?
+  target     String?
+  metadata   Json?
+  elapsedMs  Int?
+  occurredAt DateTime          @default(now())
+
+  attempt  AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question?          @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@index([attemptId, occurredAt])
+  @@index([questionId])
+}
