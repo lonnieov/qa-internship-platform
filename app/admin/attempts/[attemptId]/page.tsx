@@ -5,6 +5,7 @@ import {
   Route,
   TimerReset,
 } from "lucide-react";
+import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
 import { ReportPrintButton } from "@/components/admin/report-print-button";
@@ -195,7 +196,27 @@ export default async function AttemptDetailsPage({
                         {index + 1}. {answer.question.text}
                       </strong>
                     </td>
-                    <td>{answer.selectedOption?.text ?? "не выбран"}</td>
+                    <td>
+                      {answer.question.type === "API_SANDBOX" ? (
+                        <div className="stack">
+                          <strong>
+                            {answer.apiResponse && typeof answer.apiResponse === "object"
+                              ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
+                              : "API request"}
+                          </strong>
+                          <span className="body-2 muted">
+                            отправок: {answer.submissionCount}
+                          </span>
+                          {answer.apiRequest ? (
+                            <pre className="body-2 m-0 whitespace-pre-wrap">
+                              {stringifyPrettyJson(answer.apiRequest)}
+                            </pre>
+                          ) : null}
+                        </div>
+                      ) : (
+                        answer.selectedOption?.text ?? "не выбран"
+                      )}
+                    </td>
                     <td>{formatDuration(answer.timeSpentMs)}</td>
                     <td>{answer.visits}</td>
                     <td>

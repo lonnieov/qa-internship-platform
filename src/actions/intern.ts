@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { evaluateApiSandboxRequest } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
@@ -312,4 +313,96 @@ export async function submitAttemptAction(input: {
   revalidatePath("/intern");
   revalidatePath("/admin");
   redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+}
+
+export async function submitApiSandboxAction(input: {
+  attemptId: string;
+  questionId: string;
+  method: string;
+  url: string;
+  headersText?: string;
+  bodyText?: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (!answer || answer.question.type !== "API_SANDBOX" || !answer.question.apiConfig) {
+    return { ok: false, expired: false };
+  }
+
+  const evaluation = evaluateApiSandboxRequest(answer.question.apiConfig, {
+    method: input.method,
+    url: input.url,
+    headersText: input.headersText,
+    bodyText: input.bodyText,
+  });
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: evaluation.normalizedRequest,
+      apiResponse: evaluation.response,
+      isCorrect: evaluation.ok,
+      answeredAt: new Date(),
+      submissionCount: {
+        increment: 1,
+      },
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  await prisma.trackingEvent.create({
+    data: {
+      attemptId: input.attemptId,
+      questionId: input.questionId,
+      type: "API_REQUEST",
+      elapsedMs: Date.now() - attempt.startedAt.getTime(),
+      metadata: {
+        request: evaluation.normalizedRequest,
+        response: evaluation.response,
+        ok: evaluation.ok,
+        errorCode: evaluation.errorCode ?? null,
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return {
+    ok: true,
+    expired: false,
+    correct: evaluation.ok,
+    response: evaluation.response,
+  };
 }

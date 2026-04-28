@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
 import { generateInviteCode, hashInviteCode } from "@/lib/security";
 
@@ -83,38 +84,81 @@ export async function updateSettingsAction(formData: FormData) {
 
 export async function createQuestionAction(formData: FormData) {
   const admin = await requireAdmin();
+  const questionType = String(formData.get("questionType") ?? "QUIZ");
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
-  const correctIndex = Number(formData.get("correctOption"));
-
-  const options = [0, 1, 2, 3].map((index) =>
-    String(formData.get(`option-${index}`) ?? "").trim(),
-  );
-
-  if (!text || options.some((option) => !option) || !Number.isInteger(correctIndex)) {
-    return;
-  }
 
   const lastQuestion = await prisma.question.findFirst({
     orderBy: { order: "desc" },
   });
 
-  await prisma.question.create({
-    data: {
-      text,
-      explanation: explanation || null,
-      order: (lastQuestion?.order ?? 0) + 1,
-      createdById: admin.id,
-      options: {
-        create: options.map((option, index) => ({
-          label: String.fromCharCode(65 + index),
-          text: option,
-          order: index,
-          isCorrect: index === correctIndex,
-        })),
+  if (questionType === "API_SANDBOX") {
+    const method = String(formData.get("apiMethod") ?? "GET").trim().toUpperCase();
+    const path = String(formData.get("apiPath") ?? "").trim();
+    const query = String(formData.get("apiQuery") ?? "").trim();
+    const headersText = String(formData.get("apiHeaders") ?? "").trim();
+    const bodyText = String(formData.get("apiBody") ?? "").trim();
+    const successStatus = Number(formData.get("apiSuccessStatus") ?? 200);
+    const successBodyText = String(formData.get("apiSuccessBody") ?? "").trim();
+
+    if (!text || !path) {
+      return;
+    }
+
+    let apiConfig;
+
+    try {
+      apiConfig = {
+        method,
+        path,
+        query: parseQueryString(query),
+        headers: parseHeaderLines(headersText),
+        body: bodyText ? JSON.parse(bodyText) : undefined,
+        successStatus: Number.isFinite(successStatus) ? successStatus : 200,
+        successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
+      };
+    } catch {
+      return;
+    }
+
+    await prisma.question.create({
+      data: {
+        type: "API_SANDBOX",
+        text,
+        explanation: explanation || null,
+        order: (lastQuestion?.order ?? 0) + 1,
+        createdById: admin.id,
+        apiConfig,
       },
-    },
-  });
+    });
+  } else {
+    const correctIndex = Number(formData.get("correctOption"));
+    const options = [0, 1, 2, 3].map((index) =>
+      String(formData.get(`option-${index}`) ?? "").trim(),
+    );
+
+    if (!text || options.some((option) => !option) || !Number.isInteger(correctIndex)) {
+      return;
+    }
+
+    await prisma.question.create({
+      data: {
+        type: "QUIZ",
+        text,
+        explanation: explanation || null,
+        order: (lastQuestion?.order ?? 0) + 1,
+        createdById: admin.id,
+        options: {
+          create: options.map((option, index) => ({
+            label: String.fromCharCode(65 + index),
+            text: option,
+            order: index,
+            isCorrect: index === correctIndex,
+          })),
+        },
+      },
+    });
+  }
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
