@@ -142,9 +142,8 @@ export async function deleteQuestionAction(formData: FormData) {
 
   if (!questionId) return;
 
-  await prisma.question.update({
+  await prisma.question.delete({
     where: { id: questionId },
-    data: { isActive: false },
   });
 
   revalidatePath("/admin/questions");

@@ -1,6 +1,7 @@
-import { deleteQuestionAction, toggleQuestionAction } from "@/actions/admin";
+import { toggleQuestionAction } from "@/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { AiQuestionGenerator } from "@/components/admin/ai-question-generator";
+import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,10 @@ export default async function AdminQuestionsPage() {
                   </div>
                 ))}
               </div>
-              <div className="nav-row">
+              <div
+                className="nav-row"
+                style={{ alignItems: "flex-end", justifyContent: "space-between" }}
+              >
                 <form action={toggleQuestionAction}>
                   <input type="hidden" name="questionId" value={question.id} />
                   <input
@@ -72,12 +76,7 @@ export default async function AdminQuestionsPage() {
                     {question.isActive ? "Скрыть" : "Активировать"}
                   </Button>
                 </form>
-                <form action={deleteQuestionAction}>
-                  <input type="hidden" name="questionId" value={question.id} />
-                  <Button type="submit" variant="outline" size="sm">
-                    Архивировать
-                  </Button>
-                </form>
+                <QuestionDeleteForm questionId={question.id} />
               </div>
             </CardContent>
           </Card>
