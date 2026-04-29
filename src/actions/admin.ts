@@ -92,7 +92,7 @@ export async function createQuestionAction(formData: FormData) {
     orderBy: { order: "desc" },
   });
 
-  if (questionType === "API_SANDBOX") {
+  if (questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX") {
     const method = String(formData.get("apiMethod") ?? "GET").trim().toUpperCase();
     const path = String(formData.get("apiPath") ?? "").trim();
     const query = String(formData.get("apiQuery") ?? "").trim();
@@ -100,30 +100,57 @@ export async function createQuestionAction(formData: FormData) {
     const bodyText = String(formData.get("apiBody") ?? "").trim();
     const successStatus = Number(formData.get("apiSuccessStatus") ?? 200);
     const successBodyText = String(formData.get("apiSuccessBody") ?? "").trim();
+    const answerPath = String(formData.get("apiAnswerPath") ?? "").trim();
+    const expectedAnswer = String(formData.get("apiExpectedAnswer") ?? "").trim();
 
     if (!text || !path) {
+      return;
+    }
+
+    if (
+      questionType === "DEVTOOLS_SANDBOX" &&
+      (!successBodyText || !answerPath || !expectedAnswer)
+    ) {
       return;
     }
 
     let apiConfig;
 
     try {
-      apiConfig = {
-        method,
-        path,
-        query: parseQueryString(query),
-        headers: parseHeaderLines(headersText),
-        body: bodyText ? JSON.parse(bodyText) : undefined,
-        successStatus: Number.isFinite(successStatus) ? successStatus : 200,
-        successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
-      };
+      if (questionType === "API_SANDBOX") {
+        apiConfig = {
+          mode: "MANUAL_REQUEST",
+          method,
+          path,
+          query: parseQueryString(query),
+          headers: parseHeaderLines(headersText),
+          body: bodyText ? JSON.parse(bodyText) : undefined,
+          successStatus: Number.isFinite(successStatus) ? successStatus : 200,
+          successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
+        };
+      } else {
+        apiConfig = {
+          mode: "DEVTOOLS_RESPONSE",
+          method,
+          path,
+          query: parseQueryString(query),
+          successHeaders: parseHeaderLines(headersText),
+          body: bodyText ? JSON.parse(bodyText) : undefined,
+          successStatus: Number.isFinite(successStatus) ? successStatus : 200,
+          successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
+          buttonLabel: String(formData.get("apiButtonLabel") ?? "Отправить запрос").trim(),
+          answerLabel: String(formData.get("apiAnswerLabel") ?? "").trim(),
+          answerPath,
+          expectedAnswer,
+        };
+      }
     } catch {
       return;
     }
 
     await prisma.question.create({
       data: {
-        type: "API_SANDBOX",
+        type: questionType,
         text,
         explanation: explanation || null,
         order: (lastQuestion?.order ?? 0) + 1,

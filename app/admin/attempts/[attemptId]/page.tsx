@@ -197,7 +197,8 @@ export default async function AttemptDetailsPage({
                       </strong>
                     </td>
                     <td>
-                      {answer.question.type === "API_SANDBOX" ? (
+                      {answer.question.type === "API_SANDBOX" ||
+                      answer.question.type === "DEVTOOLS_SANDBOX" ? (
                         <div className="stack">
                           <strong>
                             {answer.apiResponse && typeof answer.apiResponse === "object"

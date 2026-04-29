@@ -40,7 +40,12 @@ export default async function AdminQuestionsPage() {
                     {index + 1}. {question.text}
                   </CardTitle>
                   <p className="body-2 muted m-0">
-                    Тип: {question.type === "API_SANDBOX" ? "API Sandbox" : "Quiz"}
+                    Тип:{" "}
+                    {question.type === "DEVTOOLS_SANDBOX"
+                      ? "DevTools Sandbox"
+                      : question.type === "API_SANDBOX"
+                        ? "API Sandbox"
+                        : "Quiz"}
                   </p>
                   {question.explanation ? (
                     <p className="body-2 muted m-0">{question.explanation}</p>
@@ -52,7 +57,8 @@ export default async function AdminQuestionsPage() {
               </div>
             </CardHeader>
             <CardContent className="stack">
-              {question.type === "API_SANDBOX" ? (
+              {question.type === "API_SANDBOX" ||
+              question.type === "DEVTOOLS_SANDBOX" ? (
                 <div className="stack">
                   <div className="soft-panel">
                     <pre className="body-2 m-0 whitespace-pre-wrap">

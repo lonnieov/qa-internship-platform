@@ -1,10 +1,11 @@
 "use client";
 
-import type { ReactNode, SyntheticEvent } from "react";
+import type { ClipboardEvent, ReactNode, SyntheticEvent } from "react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Send } from "lucide-react";
 import {
   selectAnswerAction,
+  submitDevtoolsAnswerAction,
   spendQuestionTimeAction,
   submitApiSandboxAction,
   submitAttemptAction,
@@ -34,7 +35,7 @@ type ResponseSnapshot = {
 
 type Question = {
   id: string;
-  type: "QUIZ" | "API_SANDBOX";
+  type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
   text: string;
   explanation: string | null;
   options: Option[];
@@ -62,8 +63,21 @@ type ApiDraft = {
   headersText: string;
   bodyText: string;
   response: ResponseSnapshot | null;
+  devtoolsAnswer: string;
+  requestSent: boolean;
   submissionCount: number;
   isCorrect: boolean;
+};
+
+type DevtoolsConfig = {
+  mode?: string;
+  method?: string;
+  path?: string;
+  query?: Record<string, string>;
+  body?: JsonValue;
+  buttonLabel?: string;
+  answerLabel?: string;
+  answerPath?: string;
 };
 
 function stringifyJson(value: JsonValue | null | undefined) {
@@ -85,23 +99,47 @@ function buildUrl(path: string | undefined, query: Record<string, string> | unde
 }
 
 function createInitialApiDraft(question: Question): ApiDraft {
+  const config = getDevtoolsConfig(question);
   const request = (question.apiRequest ?? {}) as {
     method?: string;
     path?: string;
     query?: Record<string, string>;
     headers?: Record<string, string>;
     body?: JsonValue | null;
+    answerText?: string;
   };
 
   return {
-    method: request.method || "GET",
-    url: buildUrl(request.path, request.query) || "",
+    method: request.method || config?.method || "GET",
+    url: buildUrl(request.path, request.query) || buildUrl(config?.path, config?.query) || "",
     headersText: headersToText(request.headers),
-    bodyText: stringifyJson(request.body),
+    bodyText: stringifyJson(request.body ?? config?.body),
     response: (question.apiResponse as ResponseSnapshot | null) ?? null,
+    devtoolsAnswer: request.answerText || "",
+    requestSent: Boolean(question.apiResponse),
     submissionCount: question.submissionCount,
     isCorrect: question.isCorrect,
   };
+}
+
+function getDevtoolsConfig(question: Question) {
+  const config =
+    question.apiConfig && typeof question.apiConfig === "object" && !Array.isArray(question.apiConfig)
+      ? (question.apiConfig as DevtoolsConfig)
+      : null;
+
+  return config?.mode === "DEVTOOLS_RESPONSE" ? config : null;
+}
+
+function buildDevtoolsEndpoint(attemptId: string, question: Question, config: DevtoolsConfig) {
+  const path = (config.path || "/devtools_task").replace(/^\/+/, "");
+  const search = new URLSearchParams({ attempt: attemptId });
+
+  for (const [key, value] of Object.entries(config.query ?? {})) {
+    search.set(key, value);
+  }
+
+  return `/api/devtools-sandbox/${question.id}/${path}?${search.toString()}`;
 }
 
 export function TestRunner({
@@ -128,7 +166,11 @@ export function TestRunner({
     () =>
       new Map(
         questions
-          .filter((question) => question.type === "API_SANDBOX")
+          .filter(
+            (question) =>
+              question.type === "API_SANDBOX" ||
+              question.type === "DEVTOOLS_SANDBOX",
+          )
           .map((question) => [question.id, createInitialApiDraft(question)]),
       ),
   );
@@ -142,7 +184,7 @@ export function TestRunner({
   const startedAtMs = useMemo(() => new Date(startedAt).getTime(), [startedAt]);
   const currentQuestion = questions[currentIndex];
   const answeredCount = questions.filter((question) => {
-    if (question.type === "API_SANDBOX") {
+    if (question.type === "API_SANDBOX" || question.type === "DEVTOOLS_SANDBOX") {
       return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
     }
 
@@ -221,7 +263,12 @@ export function TestRunner({
   }
 
   function updateApiDraft(patch: Partial<ApiDraft>) {
-    if (currentQuestion.type !== "API_SANDBOX") return;
+    if (
+      currentQuestion.type !== "API_SANDBOX" &&
+      currentQuestion.type !== "DEVTOOLS_SANDBOX"
+    ) {
+      return;
+    }
 
     setApiDrafts((prev) => {
       const next = new Map(prev);
@@ -263,6 +310,90 @@ export function TestRunner({
         });
       });
     });
+  }
+
+  function sendDevtoolsRequest() {
+    if (currentQuestion.type !== "DEVTOOLS_SANDBOX") return;
+
+    const config = getDevtoolsConfig(currentQuestion);
+    if (!config) return;
+
+    const endpoint = buildDevtoolsEndpoint(attemptId, currentQuestion, config);
+    const method = (config.method || "GET").toUpperCase();
+
+    startTransition(() => {
+      void fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        ...(method === "GET" || method === "HEAD"
+          ? {}
+          : { body: JSON.stringify(config.body ?? { action: "submit" }) }),
+      }).then(async (response) => {
+        await response.text();
+        setApiDrafts((prev) => {
+          const next = new Map(prev);
+          const current =
+            next.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+          next.set(currentQuestion.id, {
+            ...current,
+            requestSent: true,
+          });
+          return next;
+        });
+      });
+    });
+  }
+
+  function submitDevtoolsAnswer() {
+    if (currentQuestion.type !== "DEVTOOLS_SANDBOX") return;
+
+    const draft = apiDrafts.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+    const timeSpentMs = Date.now() - enteredAtRef.current;
+    enteredAtRef.current = Date.now();
+
+    startTransition(() => {
+      void submitDevtoolsAnswerAction({
+        attemptId,
+        questionId: currentQuestion.id,
+        answerText: draft.devtoolsAnswer,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setApiDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(currentQuestion.id) ?? draft;
+          next.set(currentQuestion.id, {
+            ...current,
+            submissionCount: current.submissionCount + 1,
+            isCorrect: Boolean(result.correct),
+          });
+          return next;
+        });
+      });
+    });
+  }
+
+  function pasteDevtoolsAnswer(event: ClipboardEvent<HTMLInputElement>) {
+    if (currentQuestion.type !== "DEVTOOLS_SANDBOX") return;
+
+    const pastedText = event.clipboardData.getData("text");
+    if (!pastedText) return;
+
+    event.preventDefault();
+
+    const input = event.currentTarget;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const nextValue =
+      input.value.slice(0, start) + pastedText + input.value.slice(end);
+
+    updateApiDraft({ devtoolsAnswer: nextValue });
+
+    window.setTimeout(() => {
+      const cursor = start + pastedText.length;
+      input.setSelectionRange(cursor, cursor);
+    }, 0);
   }
 
   function submit(auto = false) {
@@ -354,9 +485,12 @@ export function TestRunner({
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
   const currentApiDraft =
-    currentQuestion.type === "API_SANDBOX"
+    currentQuestion.type === "API_SANDBOX" ||
+    currentQuestion.type === "DEVTOOLS_SANDBOX"
       ? apiDrafts.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion)
       : null;
+  const currentDevtoolsConfig =
+    currentQuestion.type === "DEVTOOLS_SANDBOX" ? getDevtoolsConfig(currentQuestion) : null;
 
   return (
     <main className="page stack-lg">
@@ -380,8 +514,12 @@ export function TestRunner({
               <CardTitle>
                 {currentIndex + 1}. {currentQuestion.text}
               </CardTitle>
-              <Badge variant={currentQuestion.type === "API_SANDBOX" ? "warning" : "default"}>
-                {currentQuestion.type === "API_SANDBOX" ? "API Sandbox" : "Quiz"}
+              <Badge variant={currentQuestion.type === "QUIZ" ? "default" : "warning"}>
+                {currentQuestion.type === "DEVTOOLS_SANDBOX"
+                  ? "DevTools Sandbox"
+                  : currentQuestion.type === "API_SANDBOX"
+                    ? "API Sandbox"
+                    : "Quiz"}
               </Badge>
             </div>
           </CardHeader>
@@ -415,6 +553,67 @@ export function TestRunner({
                   })}
                 </div>
               </>
+            ) : currentApiDraft && currentDevtoolsConfig ? (
+              <div className="stack">
+                <div className="soft-panel stack">
+                  <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                    <div>
+                      <p className="body-2 muted m-0">Запрос для проверки в DevTools</p>
+                      <strong>
+                        {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
+                        {buildDevtoolsEndpoint(
+                          attemptId,
+                          currentQuestion,
+                          currentDevtoolsConfig,
+                        ).split("?")[0]}
+                      </strong>
+                    </div>
+                    {currentApiDraft.requestSent ? (
+                      <Badge variant="success">запрос отправлен</Badge>
+                    ) : null}
+                  </div>
+                  <Button
+                    data-track="devtools-request-button"
+                    disabled={isPending}
+                    onClick={sendDevtoolsRequest}
+                    type="button"
+                  >
+                    <Send size={18} />
+                    {currentDevtoolsConfig.buttonLabel || "Отправить запрос"}
+                  </Button>
+                </div>
+
+                <div className="form-grid">
+                  <LabelLike>
+                    {currentDevtoolsConfig.answerLabel ||
+                      `Введите значение ${currentDevtoolsConfig.answerPath || "параметра"} из response`}
+                  </LabelLike>
+                  <Input
+                    data-track="devtools-answer"
+                    onChange={(event) =>
+                      updateApiDraft({ devtoolsAnswer: event.target.value })
+                    }
+                    onPaste={pasteDevtoolsAnswer}
+                    placeholder={currentDevtoolsConfig.answerPath || "message"}
+                    value={currentApiDraft.devtoolsAnswer}
+                  />
+                </div>
+
+                <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                  <Button
+                    disabled={isPending || !currentApiDraft.devtoolsAnswer.trim()}
+                    onClick={submitDevtoolsAnswer}
+                    type="button"
+                  >
+                    Проверить ответ
+                  </Button>
+                  {currentApiDraft.submissionCount > 0 ? (
+                    <Badge variant={currentApiDraft.isCorrect ? "success" : "warning"}>
+                      {currentApiDraft.isCorrect ? "зачтено" : "ответ не совпал"}
+                    </Badge>
+                  ) : null}
+                </div>
+              </div>
             ) : currentApiDraft ? (
               <div className="stack">
                 <div className="grid-2">
@@ -541,7 +740,8 @@ export function TestRunner({
               <div className="question-grid">
                 {questions.map((question, index) => {
                   const done =
-                    question.type === "API_SANDBOX"
+                    question.type === "API_SANDBOX" ||
+                    question.type === "DEVTOOLS_SANDBOX"
                       ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
                       : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
@@ -561,7 +761,7 @@ export function TestRunner({
               </div>
               <p className="body-2 muted m-0">
                 Отмечено {answeredCount} из {questions.length}. Для API sandbox вопроса
-                прогресс появляется после первой отправки запроса.
+                прогресс появляется после проверки ответа.
               </p>
             </CardContent>
           </Card>

@@ -29,6 +29,7 @@ enum AttemptStatus {
 enum QuestionType {
   QUIZ
   API_SANDBOX
+  DEVTOOLS_SANDBOX
 }
 
 enum TrackingEventType {

@@ -1,6 +1,7 @@
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export type ApiSandboxConfig = {
+  mode?: "MANUAL_REQUEST" | "DEVTOOLS_RESPONSE";
   method: string;
   path: string;
   query?: Record<string, string>;
@@ -9,6 +10,10 @@ export type ApiSandboxConfig = {
   successStatus?: number;
   successHeaders?: Record<string, string>;
   successBody?: JsonValue;
+  buttonLabel?: string;
+  answerLabel?: string;
+  answerPath?: string;
+  expectedAnswer?: string;
 };
 
 export type ApiSandboxRequest = {
@@ -139,6 +144,7 @@ export function normalizeApiSandboxConfig(input: unknown): ApiSandboxConfig {
       : {};
 
   return {
+    mode: raw.mode === "DEVTOOLS_RESPONSE" ? "DEVTOOLS_RESPONSE" : "MANUAL_REQUEST",
     method: String(raw.method ?? "GET"),
     path: String(raw.path ?? "/"),
     query: asStringRecord(raw.query),
@@ -149,7 +155,51 @@ export function normalizeApiSandboxConfig(input: unknown): ApiSandboxConfig {
     successHeaders: asStringRecord(raw.successHeaders),
     successBody:
       typeof raw.successBody === "undefined" ? ({ ok: true } as JsonValue) : (raw.successBody as JsonValue),
+    buttonLabel: String(raw.buttonLabel ?? "Отправить запрос"),
+    answerLabel: String(raw.answerLabel ?? "Введите значение из response"),
+    answerPath:
+      typeof raw.answerPath === "string" && raw.answerPath.trim()
+        ? raw.answerPath.trim()
+        : undefined,
+    expectedAnswer:
+      typeof raw.expectedAnswer === "undefined" ? undefined : String(raw.expectedAnswer),
   };
+}
+
+export function getJsonPathValue(input: JsonValue | undefined, path: string | undefined) {
+  if (!path) return undefined;
+
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (current === null || typeof current === "undefined") return undefined;
+
+    const arrayMatch = segment.match(/^(.+)\[(\d+)\]$/);
+    if (arrayMatch) {
+      const [, key, index] = arrayMatch;
+      const container =
+        typeof current === "object" && !Array.isArray(current)
+          ? (current as Record<string, unknown>)[key]
+          : undefined;
+      return Array.isArray(container) ? container[Number(index)] : undefined;
+    }
+
+    if (Array.isArray(current) && /^\d+$/.test(segment)) {
+      return current[Number(segment)];
+    }
+
+    if (typeof current === "object" && !Array.isArray(current)) {
+      return (current as Record<string, unknown>)[segment];
+    }
+
+    return undefined;
+  }, input);
+}
+
+export function normalizeAnswerValue(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value === null) return "null";
+  if (typeof value === "undefined") return "";
+  return JSON.stringify(value);
 }
 
 export function evaluateApiSandboxRequest(
