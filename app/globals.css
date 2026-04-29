@@ -323,20 +323,6 @@ button {
   align-items: center;
 }
 
-.test-action-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding-top: 8px;
-}
-
-.test-submit-zone {
-  margin-left: auto;
-  padding-left: 32px;
-  border-left: 1px solid var(--surface-border);
-}
-
 .copy-token {
   display: inline-flex;
   align-items: center;
@@ -432,6 +418,51 @@ button {
   font-weight: 700;
 }
 
+.test-header-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+  align-self: flex-start;
+}
+
+.test-submit-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.submit-info-bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  color: var(--muted-foreground);
+  box-shadow: var(--surface-shadow);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.submit-info-bubble::before {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 10px;
+  height: 10px;
+  border-bottom: 1px solid var(--surface-border);
+  border-left: 1px solid var(--surface-border);
+  background: var(--card);
+  content: "";
+  transform: translate(5px, -50%) rotate(45deg);
+}
+
 .test-warning {
   display: inline-flex;
   align-items: center;
@@ -443,6 +474,44 @@ button {
   border-radius: var(--radius-garden);
   background: color-mix(in srgb, var(--warning) 14%, transparent);
   color: var(--warning);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--background) 74%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-dialog {
+  width: min(460px, 100%);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-island);
+  background: var(--card);
+  color: var(--card-foreground);
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+}
+
+.confirm-dialog-icon {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap-reverse;
 }
 
 .event-list {
@@ -525,18 +594,22 @@ button {
     overflow-x: auto;
   }
 
-  .test-action-row {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 18px;
+  .test-header-actions,
+  .test-submit-control {
+    justify-items: start;
+    justify-content: flex-start;
   }
 
-  .test-submit-zone {
-    margin-left: 0;
-    padding-top: 18px;
-    padding-left: 0;
+  .submit-info-bubble::before {
+    top: auto;
+    right: auto;
+    bottom: 100%;
+    left: 24px;
+    border-right: 0;
+    border-bottom: 0;
     border-top: 1px solid var(--surface-border);
-    border-left: 0;
+    border-left: 1px solid var(--surface-border);
+    transform: translateY(5px) rotate(45deg);
   }
 
   .report-summary-grid {
