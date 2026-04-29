@@ -6,7 +6,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaSchemaVersion?: string;
 };
 
-const prismaSchemaVersion = "track-management-v1";
+const prismaSchemaVersion = "track-management-v2";
 
 function databaseUrl() {
   const url = process.env.DATABASE_URL;

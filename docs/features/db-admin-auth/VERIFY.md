@@ -26,6 +26,13 @@
 - Enter `admin@example.com` and `password123`.
 - Expected: user is redirected to `/admin`.
 
+## Seeded Admin Case
+
+- Run `npm run db:seed`.
+- Open `/sign-in/admin`.
+- Enter `admin@resting.chat` and `RESTingChat`.
+- Expected: user is redirected to `/admin`.
+
 ## Negative Cases
 
 - Open `/sign-in/admin`.

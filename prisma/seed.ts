@@ -1,5 +1,24 @@
+import "dotenv/config";
+import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma";
 import { defaultTracks } from "../src/lib/question-classification";
+
+const seedAdmin = {
+  email: "admin@resting.chat",
+  password: "RESTingChat",
+  firstName: "Test",
+  lastName: "Admin",
+};
+
+function hashPassword(password: string) {
+  const iterations = 310000;
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto
+    .pbkdf2Sync(password, salt, iterations, 32, "sha256")
+    .toString("hex");
+
+  return `pbkdf2_sha256:${iterations}:${salt}:${hash}`;
+}
 
 const sampleQuestions = [
   {
@@ -57,6 +76,23 @@ const sampleApiQuestion = {
 };
 
 async function main() {
+  await prisma.profile.upsert({
+    where: { email: seedAdmin.email },
+    update: {
+      passwordHash: hashPassword(seedAdmin.password),
+      firstName: seedAdmin.firstName,
+      lastName: seedAdmin.lastName,
+      role: "ADMIN",
+    },
+    create: {
+      email: seedAdmin.email,
+      passwordHash: hashPassword(seedAdmin.password),
+      firstName: seedAdmin.firstName,
+      lastName: seedAdmin.lastName,
+      role: "ADMIN",
+    },
+  });
+
   await prisma.assessmentSettings.upsert({
     where: { id: "global" },
     update: { totalTimeMinutes: 30 },

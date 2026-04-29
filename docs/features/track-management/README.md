@@ -8,6 +8,7 @@ Let admins manage question tracks inside the question bank sidebar.
 
 - `/admin/questions` shows tracks from the database.
 - Admins can create, rename, reorder, activate, hide, and delete empty tracks.
+- Track editing opens in a centered modal instead of expanding the sidebar.
 - Question create and edit forms use active database tracks.
 - Existing string question tracks remain as a fallback for old records.
 
@@ -22,7 +23,7 @@ Let admins manage question tracks inside the question bank sidebar.
 - Admin opens `/admin/questions`.
 - Sidebar lists all tracks with question counts.
 - Admin creates a new track from the sidebar input.
-- Admin opens a track menu to rename, reorder, hide, activate, or delete it.
+- Admin opens a track modal from the `...` button to rename, reorder, hide, activate, or delete it.
 - Admin creates or edits a question and selects an active track.
 
 ## Touched Files
@@ -37,6 +38,7 @@ Let admins manage question tracks inside the question bank sidebar.
 - `app/intern/test/page.tsx`
 - `components/admin/question-form.tsx`
 - `components/admin/question-create-modal.tsx`
+- `components/admin/track-manage-modal.tsx`
 - `app/globals.css`
 - `.gitignore`
 - `src/generated/prisma/*`

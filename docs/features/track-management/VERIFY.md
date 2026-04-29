@@ -10,7 +10,9 @@
 ## Smoke Check
 
 - Expected: the sidebar shows `Все треки` and database-backed tracks.
-- Expected: each track shows a question count and a `...` management menu.
+- Expected: each track shows a question count and a `...` management button.
+- Click a track `...` button.
+- Expected: a centered edit modal opens over the page and the sidebar layout does not shift.
 - Expected: the add-question modal shows active tracks in `Классификация`.
 
 ## Positive Case
@@ -19,7 +21,7 @@
 - Expected: `Backend` appears in the sidebar with `0` questions.
 - Open `Добавить`, create a Quiz question in `Backend`, and submit.
 - Expected: the new question appears when `Backend` is selected.
-- Open the `Backend` `...` menu, rename it to `Backend QA`, and submit.
+- Open the `Backend` `...` modal, rename it to `Backend QA`, and submit.
 - Expected: the sidebar label changes and the existing question remains in that track.
 
 ## Negative Cases
