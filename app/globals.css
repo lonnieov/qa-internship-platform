@@ -171,14 +171,20 @@ button {
 }
 
 .brand-mark {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background: var(--primary);
-  color: var(--primary-foreground);
+  border-radius: 8px;
+  background: transparent;
   flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .theme-icon-sun {

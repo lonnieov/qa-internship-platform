@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { ClipboardList } from "lucide-react";
 import { logoutDemoAdminAction } from "@/actions/demo-admin";
 import { requireAdmin } from "@/lib/auth";
 import { isDemoAdminProfile } from "@/lib/demo-admin-auth";
+import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -18,9 +18,7 @@ export default async function AdminLayout({
     <div className="app-shell">
       <header className="topbar">
         <Link className="brand" href="/admin">
-          <span className="brand-mark">
-            <ClipboardList size={17} />
-          </span>
+          <ServiceLogo />
           Admin
         </Link>
         <nav className="nav-row">

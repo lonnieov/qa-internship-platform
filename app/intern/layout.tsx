@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { CircleCheckBig } from "lucide-react";
 import { logoutInternAction } from "@/actions/intern";
+import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -13,9 +13,7 @@ export default function InternLayout({
     <div className="app-shell">
       <header className="topbar">
         <Link className="brand" href="/intern">
-          <span className="brand-mark">
-            <CircleCheckBig size={17} />
-          </span>
+          <ServiceLogo />
           QA Assessment
         </Link>
         <nav className="nav-row">
