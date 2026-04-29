@@ -68,12 +68,18 @@ export async function updateSettingsAction(formData: FormData) {
   await prisma.assessmentSettings.upsert({
     where: { id: "global" },
     update: {
-      totalTimeMinutes: Math.min(Math.max(Math.round(totalTimeMinutes), 1), 240),
+      totalTimeMinutes: Math.min(
+        Math.max(Math.round(totalTimeMinutes), 1),
+        240,
+      ),
       passingScore: 100,
     },
     create: {
       id: "global",
-      totalTimeMinutes: Math.min(Math.max(Math.round(totalTimeMinutes), 1), 240),
+      totalTimeMinutes: Math.min(
+        Math.max(Math.round(totalTimeMinutes), 1),
+        240,
+      ),
       passingScore: 100,
     },
   });
@@ -93,7 +99,9 @@ export async function createQuestionAction(formData: FormData) {
   });
 
   if (questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX") {
-    const method = String(formData.get("apiMethod") ?? "GET").trim().toUpperCase();
+    const method = String(formData.get("apiMethod") ?? "GET")
+      .trim()
+      .toUpperCase();
     const path = String(formData.get("apiPath") ?? "").trim();
     const query = String(formData.get("apiQuery") ?? "").trim();
     const headersText = String(formData.get("apiHeaders") ?? "").trim();
@@ -101,7 +109,9 @@ export async function createQuestionAction(formData: FormData) {
     const successStatus = Number(formData.get("apiSuccessStatus") ?? 200);
     const successBodyText = String(formData.get("apiSuccessBody") ?? "").trim();
     const answerPath = String(formData.get("apiAnswerPath") ?? "").trim();
-    const expectedAnswer = String(formData.get("apiExpectedAnswer") ?? "").trim();
+    const expectedAnswer = String(
+      formData.get("apiExpectedAnswer") ?? "",
+    ).trim();
 
     if (!text || !path) {
       return;
@@ -126,7 +136,9 @@ export async function createQuestionAction(formData: FormData) {
           headers: parseHeaderLines(headersText),
           body: bodyText ? JSON.parse(bodyText) : undefined,
           successStatus: Number.isFinite(successStatus) ? successStatus : 200,
-          successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
+          successBody: successBodyText
+            ? JSON.parse(successBodyText)
+            : { ok: true },
         };
       } else {
         apiConfig = {
@@ -137,8 +149,12 @@ export async function createQuestionAction(formData: FormData) {
           successHeaders: parseHeaderLines(headersText),
           body: bodyText ? JSON.parse(bodyText) : undefined,
           successStatus: Number.isFinite(successStatus) ? successStatus : 200,
-          successBody: successBodyText ? JSON.parse(successBodyText) : { ok: true },
-          buttonLabel: String(formData.get("apiButtonLabel") ?? "Отправить запрос").trim(),
+          successBody: successBodyText
+            ? JSON.parse(successBodyText)
+            : { ok: true },
+          buttonLabel: String(
+            formData.get("apiButtonLabel") ?? "Отправить запрос",
+          ).trim(),
           answerLabel: String(formData.get("apiAnswerLabel") ?? "").trim(),
           answerPath,
           expectedAnswer,
@@ -164,7 +180,11 @@ export async function createQuestionAction(formData: FormData) {
       String(formData.get(`option-${index}`) ?? "").trim(),
     );
 
-    if (!text || options.some((option) => !option) || !Number.isInteger(correctIndex)) {
+    if (
+      !text ||
+      options.some((option) => !option) ||
+      !Number.isInteger(correctIndex)
+    ) {
       return;
     }
 
@@ -185,6 +205,155 @@ export async function createQuestionAction(formData: FormData) {
         },
       },
     });
+  }
+
+  revalidatePath("/admin/questions");
+  revalidatePath("/admin");
+}
+
+export async function updateQuestionAction(formData: FormData) {
+  await requireAdmin();
+  const questionId = String(formData.get("questionId") ?? "");
+  const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const text = String(formData.get("text") ?? "").trim();
+  const explanation = String(formData.get("explanation") ?? "").trim();
+
+  if (!questionId || !text) {
+    return;
+  }
+
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    include: { options: { orderBy: { order: "asc" } } },
+  });
+
+  if (!question || question.type !== questionType) {
+    return;
+  }
+
+  if (questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX") {
+    const method = String(formData.get("apiMethod") ?? "GET")
+      .trim()
+      .toUpperCase();
+    const path = String(formData.get("apiPath") ?? "").trim();
+    const query = String(formData.get("apiQuery") ?? "").trim();
+    const headersText = String(formData.get("apiHeaders") ?? "").trim();
+    const bodyText = String(formData.get("apiBody") ?? "").trim();
+    const successStatus = Number(formData.get("apiSuccessStatus") ?? 200);
+    const successBodyText = String(formData.get("apiSuccessBody") ?? "").trim();
+    const answerPath = String(formData.get("apiAnswerPath") ?? "").trim();
+    const expectedAnswer = String(
+      formData.get("apiExpectedAnswer") ?? "",
+    ).trim();
+
+    if (!path) {
+      return;
+    }
+
+    if (
+      questionType === "DEVTOOLS_SANDBOX" &&
+      (!successBodyText || !answerPath || !expectedAnswer)
+    ) {
+      return;
+    }
+
+    let apiConfig;
+
+    try {
+      if (questionType === "API_SANDBOX") {
+        apiConfig = {
+          mode: "MANUAL_REQUEST",
+          method,
+          path,
+          query: parseQueryString(query),
+          headers: parseHeaderLines(headersText),
+          body: bodyText ? JSON.parse(bodyText) : undefined,
+          successStatus: Number.isFinite(successStatus) ? successStatus : 200,
+          successBody: successBodyText
+            ? JSON.parse(successBodyText)
+            : { ok: true },
+        };
+      } else {
+        apiConfig = {
+          mode: "DEVTOOLS_RESPONSE",
+          method,
+          path,
+          query: parseQueryString(query),
+          successHeaders: parseHeaderLines(headersText),
+          body: bodyText ? JSON.parse(bodyText) : undefined,
+          successStatus: Number.isFinite(successStatus) ? successStatus : 200,
+          successBody: successBodyText
+            ? JSON.parse(successBodyText)
+            : { ok: true },
+          buttonLabel: String(
+            formData.get("apiButtonLabel") ?? "Отправить запрос",
+          ).trim(),
+          answerLabel: String(formData.get("apiAnswerLabel") ?? "").trim(),
+          answerPath,
+          expectedAnswer,
+        };
+      }
+    } catch {
+      return;
+    }
+
+    await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        text,
+        explanation: explanation || null,
+        apiConfig,
+      },
+    });
+  } else {
+    const correctIndex = Number(formData.get("correctOption"));
+    const options = [0, 1, 2, 3].map((index) => ({
+      id: String(formData.get(`optionId-${index}`) ?? ""),
+      text: String(formData.get(`option-${index}`) ?? "").trim(),
+      order: index,
+      label: String.fromCharCode(65 + index),
+      isCorrect: index === correctIndex,
+    }));
+
+    if (
+      options.some((option) => !option.text) ||
+      !Number.isInteger(correctIndex) ||
+      correctIndex < 0 ||
+      correctIndex > 3
+    ) {
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.question.update({
+        where: { id: questionId },
+        data: {
+          text,
+          explanation: explanation || null,
+        },
+      }),
+      ...options.map((option) =>
+        option.id
+          ? prisma.questionOption.updateMany({
+              where: { id: option.id, questionId },
+              data: {
+                label: option.label,
+                text: option.text,
+                order: option.order,
+                isCorrect: option.isCorrect,
+              },
+            })
+          : prisma.questionOption.create({
+              data: {
+                questionId,
+                label: option.label,
+                text: option.text,
+                order: option.order,
+                isCorrect: option.isCorrect,
+              },
+            }),
+      ),
+    ]);
   }
 
   revalidatePath("/admin/questions");

@@ -316,6 +316,32 @@ button {
   gap: 12px;
 }
 
+.edit-question-panel {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--surface-border);
+  padding-top: 14px;
+}
+
+.edit-question-panel summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.edit-question-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-island);
+  background: var(--muted);
+}
+
 .nav-row {
   display: flex;
   gap: 8px;

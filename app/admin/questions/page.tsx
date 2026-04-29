@@ -60,7 +60,8 @@ function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
         </div>
       </CardHeader>
       <CardContent className="stack">
-        {question.type === "API_SANDBOX" || question.type === "DEVTOOLS_SANDBOX" ? (
+        {question.type === "API_SANDBOX" ||
+        question.type === "DEVTOOLS_SANDBOX" ? (
           <div className="stack">
             <div className="soft-panel">
               <pre className="body-2 m-0 whitespace-pre-wrap">
@@ -75,7 +76,9 @@ function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
                 className="soft-panel"
                 key={option.id}
                 style={{
-                  border: option.isCorrect ? "1px solid var(--accent)" : undefined,
+                  border: option.isCorrect
+                    ? "1px solid var(--accent)"
+                    : undefined,
                 }}
               >
                 <strong>{option.label}.</strong> {option.text}
@@ -87,15 +90,29 @@ function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
           className="nav-row"
           style={{ alignItems: "flex-end", justifyContent: "space-between" }}
         >
-          <form action={toggleQuestionAction}>
-            <input type="hidden" name="questionId" value={question.id} />
-            <input type="hidden" name="isActive" value={String(question.isActive)} />
-            <Button type="submit" variant="secondary" size="sm">
-              {question.isActive ? "Скрыть" : "Активировать"}
-            </Button>
-          </form>
-          <QuestionDeleteForm questionId={question.id} />
+          <div className="nav-row">
+            <form action={toggleQuestionAction}>
+              <input type="hidden" name="questionId" value={question.id} />
+              <input
+                type="hidden"
+                name="isActive"
+                value={String(question.isActive)}
+              />
+              <Button type="submit" variant="secondary" size="sm">
+                {question.isActive ? "Скрыть" : "Активировать"}
+              </Button>
+            </form>
+            <QuestionDeleteForm questionId={question.id} />
+          </div>
         </div>
+        <details className="edit-question-panel">
+          <summary>Редактировать</summary>
+          <QuestionForm
+            embedded
+            initialType={question.type}
+            question={question}
+          />
+        </details>
       </CardContent>
     </Card>
   );
@@ -114,8 +131,12 @@ export default async function AdminQuestionsPage({
     resolvedSearchParams.type === "QUIZ"
       ? resolvedSearchParams.type
       : "QUIZ";
-  const quizQuestions = questions.filter((question) => question.type === "QUIZ");
-  const apiSandboxQuestions = questions.filter((question) => question.type === "API_SANDBOX");
+  const quizQuestions = questions.filter(
+    (question) => question.type === "QUIZ",
+  );
+  const apiSandboxQuestions = questions.filter(
+    (question) => question.type === "API_SANDBOX",
+  );
   const devtoolsSandboxQuestions = questions.filter(
     (question) => question.type === "DEVTOOLS_SANDBOX",
   );
@@ -169,11 +190,16 @@ export default async function AdminQuestionsPage({
             <Badge variant="muted">{activeSection.items.length}</Badge>
           </div>
 
-          <QuestionForm key={activeSection.type} initialType={activeSection.type} />
+          <QuestionForm
+            key={activeSection.type}
+            initialType={activeSection.type}
+          />
 
           {activeSection.items.length === 0 ? (
             <Card>
-              <CardContent className="p-6 muted">Пока нет вопросов в этом разделе.</CardContent>
+              <CardContent className="p-6 muted">
+                Пока нет вопросов в этом разделе.
+              </CardContent>
             </Card>
           ) : (
             activeSection.items.map((question, index) =>
