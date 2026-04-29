@@ -6,6 +6,7 @@ node_modules
 prisma/dev.db
 prisma/dev.db-journal
 src/generated/prisma
+.idea
 
 # clerk configuration (can include secrets)
 /.clerk/

@@ -65,7 +65,7 @@ export default async function AdminInternsPage() {
                     <th>Стажёр</th>
                     <th>Зарегистрирован</th>
                     <th>Прошёл тест</th>
-                    <th>Последний результат</th>
+                    <th>Итоговый результат</th>
                     <th />
                   </tr>
                 </thead>
