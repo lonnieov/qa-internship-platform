@@ -1,27 +1,43 @@
 import Link from "next/link";
-import { toggleQuestionAction } from "@/actions/admin";
+import {
+  createTrackAction,
+  deleteTrackAction,
+  toggleQuestionAction,
+  toggleTrackAction,
+  updateTrackAction,
+} from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import {
   getQuestionTrackMeta,
-  normalizeQuestionTrack,
-  questionTracks,
-  type QuestionTrack,
+  getTrackSlug,
+  type TrackSummary,
 } from "@/lib/question-classification";
+import { ensureTracks } from "@/lib/tracks";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
 async function getQuestions() {
   return prisma.question.findMany({
-    orderBy: [{ track: "asc" }, { order: "asc" }, { createdAt: "asc" }],
-    include: { options: { orderBy: { order: "asc" } } },
+    orderBy: [
+      { trackRef: { order: "asc" } },
+      { track: "asc" },
+      { order: "asc" },
+      { createdAt: "asc" },
+    ],
+    include: {
+      trackRef: true,
+      options: { orderBy: { order: "asc" } },
+    },
   });
 }
 
@@ -73,14 +89,18 @@ function apiSummary(question: AdminQuestion) {
   };
 }
 
-function filterUrl(type: QuestionType, track: QuestionTrack | "all") {
+function filterUrl(type: QuestionType, track: string | "all") {
   const params = new URLSearchParams({ type });
   if (track !== "all") params.set("track", track);
   return `/admin/questions?${params.toString()}`;
 }
 
-function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
-  const track = getQuestionTrackMeta(question.track);
+function renderQuestionCard(
+  question: AdminQuestion,
+  indexLabel: string,
+  tracks: TrackSummary[],
+) {
+  const track = getQuestionTrackMeta(question.trackRef ?? question.track);
   const summary = apiSummary(question);
 
   return (
@@ -137,6 +157,7 @@ function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
             embedded
             initialType={question.type}
             question={question}
+            tracks={tracks}
           />
         </details>
       </div>
@@ -168,12 +189,76 @@ function renderQuestionCard(question: AdminQuestion, indexLabel: string) {
   );
 }
 
+function renderTrackControls(track: TrackSummary & { questionCount: number }) {
+  const meta = getQuestionTrackMeta(track);
+  const canDelete = track.questionCount === 0;
+
+  return (
+    <details className="track-manage-panel">
+      <summary aria-label={`Управлять треком ${track.name}`}>...</summary>
+      <div className="track-manage-body">
+        <form action={updateTrackAction} className="form-grid">
+          <input type="hidden" name="trackId" value={track.id ?? ""} />
+          <label className="body-2 muted" htmlFor={`track-name-${track.id}`}>
+            Название
+          </label>
+          <Input
+            id={`track-name-${track.id}`}
+            name="name"
+            defaultValue={track.name}
+            required
+          />
+          <label className="body-2 muted" htmlFor={`track-order-${track.id}`}>
+            Порядок
+          </label>
+          <Input
+            id={`track-order-${track.id}`}
+            name="order"
+            type="number"
+            min="0"
+            defaultValue={track.order ?? 0}
+            required
+          />
+          <Button type="submit" size="sm">
+            Сохранить
+          </Button>
+        </form>
+        <form action={toggleTrackAction}>
+          <input type="hidden" name="trackId" value={track.id ?? ""} />
+          <input type="hidden" name="isActive" value={String(track.isActive)} />
+          <Button type="submit" variant="secondary" size="sm">
+            {track.isActive ? "Скрыть" : "Активировать"}
+          </Button>
+        </form>
+        <form action={deleteTrackAction}>
+          <input type="hidden" name="trackId" value={track.id ?? ""} />
+          <Button
+            type="submit"
+            variant="destructive"
+            size="sm"
+            disabled={!canDelete}
+            title={
+              canDelete ? "Удалить трек" : "Сначала переместите или удалите вопросы"
+            }
+          >
+            Удалить
+          </Button>
+        </form>
+        <p className="body-2 muted m-0">
+          <span className={meta.dotClassName} /> {track.questionCount} вопросов
+        </p>
+      </div>
+    </details>
+  );
+}
+
 export default async function AdminQuestionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ type?: string; track?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const tracks = await ensureTracks();
   const questions = await getQuestions();
   const selectedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
@@ -184,11 +269,15 @@ export default async function AdminQuestionsPage({
   const selectedTrack =
     resolvedSearchParams.track === "all" || !resolvedSearchParams.track
       ? "all"
-      : normalizeQuestionTrack(resolvedSearchParams.track);
+      : resolvedSearchParams.track;
+  const selectedTrackRecord =
+    selectedTrack === "all"
+      ? null
+      : tracks.find((track) => track.slug === selectedTrack) ?? null;
   const filteredByTrack =
     selectedTrack === "all"
       ? questions
-      : questions.filter((question) => question.track === selectedTrack);
+      : questions.filter((question) => getTrackSlug(question) === selectedTrack);
   const quizQuestions = filteredByTrack.filter(
     (question) => question.type === "QUIZ",
   );
@@ -209,11 +298,18 @@ export default async function AdminQuestionsPage({
   const allTypeCount = (type: QuestionType) =>
     questions.filter((question) => question.type === type).length;
   const trackCounts = Object.fromEntries(
-    questionTracks.map((track) => [
-      track,
-      questions.filter((question) => question.track === track).length,
+    tracks.map((track) => [
+      track.id,
+      questions.filter((question) => getTrackSlug(question) === track.slug).length,
     ]),
-  ) as Record<QuestionTrack, number>;
+  ) as Record<string, number>;
+  const tracksForForms = tracks.map((track) => ({
+    id: track.id,
+    slug: track.slug,
+    name: track.name,
+    isActive: track.isActive,
+    order: track.order,
+  }));
 
   return (
     <main className="page stack-lg">
@@ -228,7 +324,20 @@ export default async function AdminQuestionsPage({
 
       <section className="surface question-bank-layout">
         <aside className="question-filter-rail">
-          <div className="question-filter-title">Треки</div>
+          <div className="question-filter-title-row">
+            <div className="question-filter-title">Треки</div>
+          </div>
+          <form action={createTrackAction} className="track-create-form">
+            <Input
+              aria-label="Название нового трека"
+              name="name"
+              placeholder="Новый трек"
+              required
+            />
+            <Button type="submit" size="sm">
+              <Plus size={16} />
+            </Button>
+          </form>
           <Link
             className={`question-filter-item ${selectedTrack === "all" ? "active" : ""}`}
             href={filterUrl(activeSection.type, "all")}
@@ -236,20 +345,24 @@ export default async function AdminQuestionsPage({
             <span>Все треки</span>
             <span>{questions.length}</span>
           </Link>
-          {questionTracks.map((track) => {
+          {tracks.map((track) => {
             const meta = getQuestionTrackMeta(track);
+            const questionCount = trackCounts[track.id] ?? 0;
+            const active = selectedTrackRecord?.id === track.id;
             return (
-              <Link
-                className={`question-filter-item ${selectedTrack === track ? "active" : ""}`}
-                href={filterUrl(activeSection.type, track)}
-                key={track}
-              >
-                <span className="nav-row">
-                  <span className={meta.dotClassName} />
-                  {meta.label}
-                </span>
-                <span>{trackCounts[track]}</span>
-              </Link>
+              <div className="track-filter-row" key={track.id}>
+                <Link
+                  className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
+                  href={filterUrl(activeSection.type, track.slug)}
+                >
+                  <span className="nav-row">
+                    <span className={meta.dotClassName} />
+                    {meta.label}
+                  </span>
+                  <span>{questionCount}</span>
+                </Link>
+                {renderTrackControls({ ...track, questionCount })}
+              </div>
             );
           })}
         </aside>
@@ -284,7 +397,8 @@ export default async function AdminQuestionsPage({
               <Badge variant="muted">{activeSection.items.length}</Badge>
               <QuestionCreateModal
                 initialType={activeSection.type}
-                initialTrack={selectedTrack === "all" ? "QA" : selectedTrack}
+                initialTrackId={selectedTrackRecord?.id}
+                tracks={tracksForForms}
               />
             </div>
           </div>
@@ -297,7 +411,7 @@ export default async function AdminQuestionsPage({
             </Card>
           ) : (
             activeSection.items.map((question, index) =>
-              renderQuestionCard(question, `${index + 1}`),
+              renderQuestionCard(question, `${index + 1}`, tracksForForms),
             )
           )}
         </div>

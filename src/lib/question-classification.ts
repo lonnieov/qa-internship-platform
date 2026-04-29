@@ -1,48 +1,83 @@
-export const questionTracks = ["QA", "API", "gRPC", "Mobile", "Web"] as const;
-
-export type QuestionTrack = (typeof questionTracks)[number];
-
-export const trackMeta: Record<
-  QuestionTrack,
-  { label: string; className: string; dotClassName: string }
-> = {
-  QA: {
-    label: "QA",
-    className: "track-chip track-chip-qa",
-    dotClassName: "track-dot track-dot-qa",
-  },
-  API: {
-    label: "API",
-    className: "track-chip track-chip-api",
-    dotClassName: "track-dot track-dot-api",
-  },
-  gRPC: {
-    label: "gRPC",
-    className: "track-chip track-chip-grpc",
-    dotClassName: "track-dot track-dot-grpc",
-  },
-  Mobile: {
-    label: "Mobile",
-    className: "track-chip track-chip-mobile",
-    dotClassName: "track-dot track-dot-mobile",
-  },
-  Web: {
-    label: "Web",
-    className: "track-chip track-chip-web",
-    dotClassName: "track-dot track-dot-web",
-  },
+export type TrackSummary = {
+  id?: string | null;
+  slug: string;
+  name: string;
+  isActive?: boolean;
+  order?: number;
 };
 
-export function normalizeQuestionTrack(
-  value: FormDataEntryValue | string | null | undefined,
-) {
-  const text = String(value ?? "").trim();
-  return questionTracks.includes(text as QuestionTrack)
-    ? (text as QuestionTrack)
-    : "QA";
+export const defaultTracks = [
+  { slug: "qa", name: "QA", order: 1 },
+  { slug: "api", name: "API", order: 2 },
+  { slug: "grpc", name: "gRPC", order: 3 },
+  { slug: "mobile", name: "Mobile", order: 4 },
+  { slug: "web", name: "Web", order: 5 },
+] as const;
+
+export const fallbackTrack = defaultTracks[0];
+
+const legacyTrackByName = new Map<string, (typeof defaultTracks)[number]>(
+  defaultTracks.map((track) => [track.name.toLowerCase(), track]),
+);
+
+const legacyTrackBySlug = new Map<string, (typeof defaultTracks)[number]>(
+  defaultTracks.map((track) => [track.slug, track]),
+);
+
+export function slugifyTrack(value: string) {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "track"
+  );
 }
 
-export function getQuestionTrackMeta(value: string | null | undefined) {
-  const track = normalizeQuestionTrack(value);
-  return trackMeta[track];
+export function normalizeLegacyTrack(value: string | null | undefined) {
+  const text = String(value ?? "").trim();
+  const known =
+    legacyTrackByName.get(text.toLowerCase()) ??
+    legacyTrackBySlug.get(slugifyTrack(text));
+
+  return known?.name ?? fallbackTrack.name;
+}
+
+export function getTrackDisplayName(track: {
+  track?: string | null;
+  trackRef?: { name: string } | null;
+}) {
+  return track.trackRef?.name ?? normalizeLegacyTrack(track.track);
+}
+
+export function getTrackSlug(track: {
+  track?: string | null;
+  trackRef?: { slug: string } | null;
+}) {
+  return track.trackRef?.slug ?? slugifyTrack(normalizeLegacyTrack(track.track));
+}
+
+export function getQuestionTrackMeta(
+  value:
+    | string
+    | null
+    | undefined
+    | { slug?: string | null; name?: string | null },
+) {
+  const slug =
+    typeof value === "object" && value
+      ? slugifyTrack(value.slug ?? value.name ?? fallbackTrack.slug)
+      : slugifyTrack(normalizeLegacyTrack(value));
+  const name =
+    typeof value === "object" && value
+      ? (value.name ?? value.slug ?? fallbackTrack.name)
+      : normalizeLegacyTrack(value);
+
+  const tone = ["api", "grpc", "mobile", "web"].includes(slug) ? slug : "qa";
+
+  return {
+    label: name,
+    className: `track-chip track-chip-${tone}`,
+    dotClassName: `track-dot track-dot-${tone}`,
+  };
 }

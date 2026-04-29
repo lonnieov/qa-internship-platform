@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
-import type { QuestionTrack } from "@/lib/question-classification";
+import type { TrackSummary } from "@/lib/question-classification";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
 
@@ -16,10 +16,12 @@ function typeLabel(type: QuestionType) {
 
 export function QuestionCreateModal({
   initialType,
-  initialTrack,
+  initialTrackId,
+  tracks,
 }: {
   initialType: QuestionType;
-  initialTrack: QuestionTrack;
+  initialTrackId?: string;
+  tracks: TrackSummary[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -62,9 +64,10 @@ export function QuestionCreateModal({
             <QuestionForm
               embedded
               initialType={initialType}
-              initialTrack={initialTrack}
+              initialTrackId={initialTrackId}
               lockType
               showTitle={false}
+              tracks={tracks}
             />
           </div>
         </div>

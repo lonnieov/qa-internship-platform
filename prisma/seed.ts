@@ -1,4 +1,5 @@
 import { prisma } from "../src/lib/prisma";
+import { defaultTracks } from "../src/lib/question-classification";
 
 const sampleQuestions = [
   {
@@ -65,11 +66,30 @@ async function main() {
   const count = await prisma.question.count();
   if (count > 0) return;
 
+  const tracks = new Map<string, { id: string }>(
+    await Promise.all(
+      defaultTracks.map(async (track) => {
+        const saved = await prisma.track.upsert({
+          where: { slug: track.slug },
+          update: {
+            name: track.name,
+            order: track.order,
+            isActive: true,
+          },
+          create: track,
+        });
+
+        return [track.name, saved] as const;
+      }),
+    ),
+  );
+
   for (const [index, question] of sampleQuestions.entries()) {
     await prisma.question.create({
       data: {
         text: question.text,
         track: question.track,
+        trackId: tracks.get(question.track)?.id,
         order: index + 1,
         options: {
           create: question.options.map((option, optionIndex) => ({
@@ -88,6 +108,7 @@ async function main() {
       type: "API_SANDBOX",
       text: sampleApiQuestion.text,
       track: sampleApiQuestion.track,
+      trackId: tracks.get(sampleApiQuestion.track)?.id,
       explanation: sampleApiQuestion.explanation,
       order: sampleQuestions.length + 1,
       apiConfig: sampleApiQuestion.apiConfig,
