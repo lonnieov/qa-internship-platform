@@ -637,29 +637,38 @@ export function TestRunner({
               </div>
             ) : null}
 
-            <div className="nav-row">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => goTo(currentIndex - 1)}
-                disabled={currentIndex === 0}
-              >
-                <ArrowLeft size={18} />
-                Назад
-              </Button>
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => goTo(currentIndex + 1)}
-                disabled={currentIndex === questions.length - 1}
-              >
-                Далее
-                <ArrowRight size={18} />
-              </Button>
-              <Button type="button" onClick={() => submit(false)} disabled={isPending}>
-                <Send size={18} />
-                Завершить
-              </Button>
+            <div className="test-action-row">
+              <div className="nav-row">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => goTo(currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                >
+                  <ArrowLeft size={18} />
+                  Назад
+                </Button>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => goTo(currentIndex + 1)}
+                  disabled={currentIndex === questions.length - 1}
+                >
+                  Далее
+                  <ArrowRight size={18} />
+                </Button>
+              </div>
+              <div className="test-submit-zone">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => submit(false)}
+                  disabled={isPending}
+                >
+                  <Send size={18} />
+                  Завершить
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

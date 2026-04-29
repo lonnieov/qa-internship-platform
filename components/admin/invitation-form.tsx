@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createInvitationAction, type InvitationState } from "@/actions/admin";
+import { CopyableToken } from "@/components/admin/copyable-token";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,9 +49,7 @@ export function InvitationForm() {
           <div className="soft-panel mt-4 stack">
             <p className="body-2 m-0">{state.message}</p>
             {state.inviteCode ? (
-              <strong className="head-2" style={{ color: "var(--primary)" }}>
-                {state.inviteCode}
-              </strong>
+              <CopyableToken token={state.inviteCode} />
             ) : null}
           </div>
         ) : null}

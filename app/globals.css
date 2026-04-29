@@ -323,6 +323,51 @@ button {
   align-items: center;
 }
 
+.test-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding-top: 8px;
+}
+
+.test-submit-zone {
+  margin-left: auto;
+  padding-left: 32px;
+  border-left: 1px solid var(--surface-border);
+}
+
+.copy-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  color: var(--primary);
+  text-align: left;
+}
+
+.copy-token:hover {
+  border-color: var(--primary);
+}
+
+.copy-token strong {
+  font-size: 22.5px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+.copy-token-status {
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -478,6 +523,20 @@ button {
 
   .table-wrap {
     overflow-x: auto;
+  }
+
+  .test-action-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .test-submit-zone {
+    margin-left: 0;
+    padding-top: 18px;
+    padding-left: 0;
+    border-top: 1px solid var(--surface-border);
+    border-left: 0;
   }
 
   .report-summary-grid {
