@@ -2,7 +2,7 @@
 
 import type { ClipboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Send } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Info, Send } from "lucide-react";
 import {
   selectAnswerAction,
   submitDevtoolsAnswerAction,
@@ -166,6 +166,7 @@ export function TestRunner({
   const [remainingMs, setRemainingMs] = useState(
     Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
   );
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
@@ -354,10 +355,16 @@ export function TestRunner({
   function submit(auto = false) {
     if (submittedRef.current) return;
     submittedRef.current = true;
+    setIsSubmitDialogOpen(false);
     flushCurrentTime();
     startTransition(() => {
       void submitAttemptAction({ attemptId, auto });
     });
+  }
+
+  function requestManualSubmit() {
+    if (submittedRef.current || isPending) return;
+    setIsSubmitDialogOpen(true);
   }
 
   useEffect(() => {
@@ -435,10 +442,27 @@ export function TestRunner({
             <strong>Не закрывайте вкладку до завершения теста.</strong>
           </div>
         </div>
-        <span className="timer-pill">
-          <Clock3 size={18} />
-          {minutes}:{seconds.toString().padStart(2, "0")}
-        </span>
+        <div className="test-header-actions">
+          <div className="test-submit-control">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={requestManualSubmit}
+              disabled={isPending}
+            >
+              <Send size={18} />
+              Завершить
+            </Button>
+            <div className="submit-info-bubble" role="note">
+              <Info size={16} />
+              <span>Неотвеченные вопросы будут засчитаны как fail.</span>
+            </div>
+          </div>
+          <span className="timer-pill">
+            <Clock3 size={18} />
+            {minutes}:{seconds.toString().padStart(2, "0")}
+          </span>
+        </div>
       </div>
 
       <section className="grid-2">
@@ -637,38 +661,25 @@ export function TestRunner({
               </div>
             ) : null}
 
-            <div className="test-action-row">
-              <div className="nav-row">
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => goTo(currentIndex - 1)}
-                  disabled={currentIndex === 0}
-                >
-                  <ArrowLeft size={18} />
-                  Назад
-                </Button>
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => goTo(currentIndex + 1)}
-                  disabled={currentIndex === questions.length - 1}
-                >
-                  Далее
-                  <ArrowRight size={18} />
-                </Button>
-              </div>
-              <div className="test-submit-zone">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => submit(false)}
-                  disabled={isPending}
-                >
-                  <Send size={18} />
-                  Завершить
-                </Button>
-              </div>
+            <div className="nav-row">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => goTo(currentIndex - 1)}
+                disabled={currentIndex === 0}
+              >
+                <ArrowLeft size={18} />
+                Назад
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => goTo(currentIndex + 1)}
+                disabled={currentIndex === questions.length - 1}
+              >
+                Далее
+                <ArrowRight size={18} />
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -717,6 +728,41 @@ export function TestRunner({
           ) : null}
         </div>
       </section>
+
+      {isSubmitDialogOpen ? (
+        <div
+          aria-labelledby="finish-test-title"
+          aria-modal="true"
+          className="modal-backdrop"
+          role="dialog"
+          onClick={() => setIsSubmitDialogOpen(false)}
+        >
+          <div className="confirm-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="stack">
+              <div className="nav-row">
+                <span className="confirm-dialog-icon">
+                  <AlertTriangle size={20} />
+                </span>
+                <h2 className="head-3 m-0" id="finish-test-title">
+                  Завершить тест?
+                </h2>
+              </div>
+              <p className="body-1 muted m-0">
+                После подтверждения тест будет отправлен на проверку. Все вопросы без
+                ответа будут засчитаны как fail.
+              </p>
+              <div className="confirm-dialog-actions">
+                <Button type="button" variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
+                  Отмена
+                </Button>
+                <Button type="button" onClick={() => submit(false)} disabled={isPending}>
+                  Продолжить
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
