@@ -8,6 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+function formatDateTime(value: Date | null | undefined) {
+  if (!value) return "--";
+
+  return value.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default async function AdminPage() {
   const [settings, internCount, activeQuestionCount, attempts] = await Promise.all([
     getSettings(),
@@ -83,6 +95,8 @@ export default async function AdminPage() {
               <thead>
                 <tr>
                   <th>Стажёр</th>
+                  <th>Начал тест</th>
+                  <th>Прошёл тест</th>
                   <th>Статус</th>
                   <th>Результат</th>
                   <th>Прогресс</th>
@@ -93,6 +107,8 @@ export default async function AdminPage() {
                 {attempts.map((attempt) => (
                   <tr key={attempt.id}>
                     <td>{attempt.internProfile.fullName}</td>
+                    <td>{formatDateTime(attempt.startedAt)}</td>
+                    <td>{formatDateTime(attempt.submittedAt)}</td>
                     <td>
                       <Badge variant={attempt.status === "SUBMITTED" ? "success" : "warning"}>
                         {attempt.status}
@@ -111,7 +127,7 @@ export default async function AdminPage() {
                 ))}
                 {attempts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="muted">
+                    <td colSpan={7} className="muted">
                       Пока нет попыток.
                     </td>
                   </tr>

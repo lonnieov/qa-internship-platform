@@ -41,9 +41,9 @@ type Question = {
   selectedOptionId: string | null;
   timeSpentMs: number;
   submissionCount: number;
-  apiConfig: Record<string, unknown> | null;
-  apiRequest: Record<string, unknown> | null;
-  apiResponse: Record<string, unknown> | null;
+  apiConfig: unknown;
+  apiRequest: unknown;
+  apiResponse: unknown;
   isCorrect: boolean;
 };
 
@@ -255,7 +255,7 @@ export function TestRunner({
           const current = next.get(currentQuestion.id) ?? draft;
           next.set(currentQuestion.id, {
             ...current,
-            response: result.response,
+            response: result.response ?? null,
             submissionCount: current.submissionCount + 1,
             isCorrect: Boolean(result.correct),
           });
