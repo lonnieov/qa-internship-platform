@@ -21,8 +21,8 @@ export default function InternSignInPage() {
           </p>
           <div className="auth-stats">
             <div>
-              <strong>100%</strong>
-              <span>проходной балл</span>
+              <strong>%</strong>
+              <span>итоговый результат</span>
             </div>
             <div>
               <strong>3</strong>

@@ -62,23 +62,24 @@ export default async function InternTestPage({
       ),
     )
     .map((answer) => ({
-    id: answer.question.id,
-    type: answer.question.type,
-    text: answer.question.text,
-    explanation: answer.question.explanation,
-    selectedOptionId: answer.selectedOptionId,
-    timeSpentMs: answer.timeSpentMs,
-    submissionCount: answer.submissionCount,
-    apiConfig: answer.question.apiConfig,
-    apiRequest: answer.apiRequest,
-    apiResponse: answer.apiResponse,
-    isCorrect: answer.isCorrect,
-    options: answer.question.options.map((option) => ({
-      id: option.id,
-      label: option.label,
-      text: option.text,
-      order: option.order,
-    })),
+      id: answer.question.id,
+      type: answer.question.type,
+      track: answer.question.track,
+      text: answer.question.text,
+      explanation: answer.question.explanation,
+      selectedOptionId: answer.selectedOptionId,
+      timeSpentMs: answer.timeSpentMs,
+      submissionCount: answer.submissionCount,
+      apiConfig: answer.question.apiConfig,
+      apiRequest: answer.apiRequest,
+      apiResponse: answer.apiResponse,
+      isCorrect: answer.isCorrect,
+      options: answer.question.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        text: option.text,
+        order: option.order,
+      })),
     }));
 
   return (

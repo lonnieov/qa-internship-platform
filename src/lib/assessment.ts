@@ -7,7 +7,6 @@ export async function getSettings() {
     create: {
       id: "global",
       totalTimeMinutes: 30,
-      passingScore: 100,
     },
   });
 }
@@ -19,7 +18,8 @@ export async function calculateAttemptScore(attemptId: string) {
 
   const questionCount = answers.length;
   const correctCount = answers.filter((answer) => answer.isCorrect).length;
-  const scorePercent = questionCount === 0 ? 0 : (correctCount / questionCount) * 100;
+  const scorePercent =
+    questionCount === 0 ? 0 : (correctCount / questionCount) * 100;
 
   return {
     questionCount,
@@ -70,7 +70,9 @@ export async function expireAttemptIfNeeded(attemptId: string) {
         submittedAt: new Date(),
         totalTimeSeconds: Math.max(
           0,
-          Math.round((attempt.deadlineAt.getTime() - attempt.startedAt.getTime()) / 1000),
+          Math.round(
+            (attempt.deadlineAt.getTime() - attempt.startedAt.getTime()) / 1000,
+          ),
         ),
         ...score,
       },

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeQuestionTrack } from "@/lib/question-classification";
 import { generateInviteCode, hashInviteCode } from "@/lib/security";
 
 export type InvitationState = {
@@ -72,7 +73,6 @@ export async function updateSettingsAction(formData: FormData) {
         Math.max(Math.round(totalTimeMinutes), 1),
         240,
       ),
-      passingScore: 100,
     },
     create: {
       id: "global",
@@ -80,7 +80,6 @@ export async function updateSettingsAction(formData: FormData) {
         Math.max(Math.round(totalTimeMinutes), 1),
         240,
       ),
-      passingScore: 100,
     },
   });
 
@@ -91,6 +90,7 @@ export async function updateSettingsAction(formData: FormData) {
 export async function createQuestionAction(formData: FormData) {
   const admin = await requireAdmin();
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const track = normalizeQuestionTrack(formData.get("track"));
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
@@ -168,6 +168,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: questionType,
         text,
+        track,
         explanation: explanation || null,
         order: (lastQuestion?.order ?? 0) + 1,
         createdById: admin.id,
@@ -192,6 +193,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "QUIZ",
         text,
+        track,
         explanation: explanation || null,
         order: (lastQuestion?.order ?? 0) + 1,
         createdById: admin.id,
@@ -215,6 +217,7 @@ export async function updateQuestionAction(formData: FormData) {
   await requireAdmin();
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const track = normalizeQuestionTrack(formData.get("track"));
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
@@ -301,6 +304,7 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        track,
         explanation: explanation || null,
         apiConfig,
       },
@@ -329,6 +333,7 @@ export async function updateQuestionAction(formData: FormData) {
         where: { id: questionId },
         data: {
           text,
+          track,
           explanation: explanation || null,
         },
       }),

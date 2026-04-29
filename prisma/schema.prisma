@@ -58,9 +58,9 @@ model Profile {
   updatedAt   DateTime @updatedAt
 
   internProfile      InternProfile?
-  createdInvitations Invitation[]  @relation("InvitationCreator")
-  acceptedInvitation Invitation?   @relation("InvitationAccepted")
-  createdQuestions   Question[]    @relation("QuestionCreator")
+  createdInvitations Invitation[]   @relation("InvitationCreator")
+  acceptedInvitation Invitation?    @relation("InvitationAccepted")
+  createdQuestions   Question[]     @relation("QuestionCreator")
 }
 
 model InternProfile {
@@ -74,7 +74,7 @@ model InternProfile {
   updatedAt    DateTime @updatedAt
 
   profile    Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  invitation Invitation?          @relation(fields: [invitationId], references: [id])
+  invitation Invitation?         @relation(fields: [invitationId], references: [id])
   attempts   AssessmentAttempt[]
 }
 
@@ -105,15 +105,16 @@ model AssessmentSettings {
 }
 
 model Question {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   type        QuestionType @default(QUIZ)
+  track       String       @default("QA")
   text        String
   explanation String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
+  isActive    Boolean      @default(true)
+  order       Int          @default(0)
   apiConfig   Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   createdById String?
 
   createdBy Profile?           @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
@@ -122,6 +123,7 @@ model Question {
   events    TrackingEvent[]
 
   @@index([isActive, order])
+  @@index([track])
 }
 
 model QuestionOption {
@@ -163,19 +165,19 @@ model AssessmentAttempt {
 }
 
 model AssessmentAnswer {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   attemptId        String
   questionId       String
   selectedOptionId String?
   apiRequest       Json?
   apiResponse      Json?
-  isCorrect        Boolean  @default(false)
+  isCorrect        Boolean   @default(false)
   answeredAt       DateTime?
-  timeSpentMs      Int      @default(0)
-  visits           Int      @default(0)
-  submissionCount  Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  timeSpentMs      Int       @default(0)
+  visits           Int       @default(0)
+  submissionCount  Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question       Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -198,7 +200,7 @@ model TrackingEvent {
   occurredAt DateTime          @default(now())
 
   attempt  AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question Question?          @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  question Question?         @relation(fields: [questionId], references: [id], onDelete: SetNull)
 
   @@index([attemptId, occurredAt])
   @@index([questionId])

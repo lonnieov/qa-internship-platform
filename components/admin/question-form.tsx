@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
 import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getQuestionTrackMeta,
+  normalizeQuestionTrack,
+  questionTracks,
+  type QuestionTrack,
+} from "@/lib/question-classification";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
 type JsonRecord = Record<string, unknown>;
 type EditableQuestion = {
   id: string;
   type: QuestionType;
+  track: string;
   text: string;
   explanation: string | null;
   apiConfig: unknown;
@@ -64,14 +72,26 @@ function getConfig(question: EditableQuestion | undefined) {
 
 export function QuestionForm({
   initialType,
+  initialTrack = "QA",
   embedded = false,
+  lockType = false,
+  showTitle = true,
   question,
 }: {
   initialType: QuestionType;
+  initialTrack?: QuestionTrack;
   embedded?: boolean;
+  lockType?: boolean;
+  showTitle?: boolean;
   question?: EditableQuestion;
 }) {
-  const questionType = question?.type ?? initialType;
+  const [draftType, setDraftType] = useState<QuestionType>(
+    question?.type ?? initialType,
+  );
+  const [draftTrack, setDraftTrack] = useState<QuestionTrack>(
+    question ? normalizeQuestionTrack(question.track) : initialTrack,
+  );
+  const questionType = question?.type ?? draftType;
   const config = getConfig(question);
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
@@ -87,6 +107,62 @@ export function QuestionForm({
         <input type="hidden" name="questionId" value={question.id} />
       ) : null}
       <input type="hidden" name="questionType" value={questionType} />
+      <input type="hidden" name="track" value={draftTrack} />
+
+      {!isEditing && !lockType ? (
+        <div className="form-grid">
+          <Label>Тип вопроса</Label>
+          <div className="question-form-choice-grid">
+            {[
+              ["QUIZ", "Quiz"],
+              ["API_SANDBOX", "API Sandbox"],
+              ["DEVTOOLS_SANDBOX", "DevTools"],
+            ].map(([value, label]) => (
+              <label className="question-form-choice" key={value}>
+                <input
+                  checked={questionType === value}
+                  name="questionTypeChoice"
+                  onChange={() => setDraftType(value as QuestionType)}
+                  type="radio"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="form-grid">
+          <Label>Тип вопроса</Label>
+          <span className="type-chip">
+            {questionType === "DEVTOOLS_SANDBOX"
+              ? "DevTools"
+              : questionType === "API_SANDBOX"
+                ? "API Sandbox"
+                : "Quiz"}
+          </span>
+        </div>
+      )}
+
+      <div className="form-grid">
+        <Label>Классификация</Label>
+        <div className="question-form-choice-grid">
+          {questionTracks.map((track) => {
+            const meta = getQuestionTrackMeta(track);
+            return (
+              <label className="question-form-choice" key={track}>
+                <input
+                  checked={draftTrack === track}
+                  name="trackChoice"
+                  onChange={() => setDraftTrack(track)}
+                  type="radio"
+                />
+                <span className={meta.dotClassName} />
+                {meta.label}
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="form-grid">
         <Label htmlFor="text">
@@ -94,6 +170,7 @@ export function QuestionForm({
         </Label>
         <Textarea
           id="text"
+          key={questionType}
           name="text"
           defaultValue={
             question?.text ??
@@ -401,7 +478,7 @@ export function QuestionForm({
   if (embedded) {
     return (
       <div className="edit-question-form">
-        <h3 className="head-3 m-0">{title}</h3>
+        {showTitle ? <h3 className="head-3 m-0">{title}</h3> : null}
         {form}
       </div>
     );

@@ -50,7 +50,7 @@ export default async function AdminInternsPage() {
         </div>
       </div>
 
-      <section className="grid-2">
+      <section className="grid-2 interns-layout">
         <InvitationForm />
 
         <Card>
@@ -59,7 +59,7 @@ export default async function AdminInternsPage() {
           </CardHeader>
           <CardContent>
             <div className="table-wrap">
-              <table className="table">
+              <table className="table interns-table">
                 <thead>
                   <tr>
                     <th>Стажёр</th>
@@ -77,11 +77,17 @@ export default async function AdminInternsPage() {
                         <td>{intern.fullName}</td>
                         <td>{formatDateTime(intern.createdAt)}</td>
                         <td>{formatDateTime(latest?.submittedAt)}</td>
-                        <td>{latest ? formatPercent(latest.scorePercent) : "нет попыток"}</td>
+                        <td>
+                          {latest
+                            ? formatPercent(latest.scorePercent)
+                            : "нет попыток"}
+                        </td>
                         <td>
                           {latest ? (
                             <Button size="sm" variant="outline" asChild>
-                              <Link href={`/admin/attempts/${latest.id}`}>Результат</Link>
+                              <Link href={`/admin/attempts/${latest.id}`}>
+                                Результат
+                              </Link>
                             </Button>
                           ) : null}
                         </td>
@@ -136,7 +142,11 @@ export default async function AdminInternsPage() {
                     <td>
                       {invitation.status === "PENDING" ? (
                         <form action={revokeInvitationAction}>
-                          <input type="hidden" name="invitationId" value={invitation.id} />
+                          <input
+                            type="hidden"
+                            name="invitationId"
+                            value={invitation.id}
+                          />
                           <Button size="sm" variant="outline" type="submit">
                             Отозвать
                           </Button>

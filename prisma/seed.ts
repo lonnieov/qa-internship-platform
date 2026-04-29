@@ -2,6 +2,7 @@ import { prisma } from "../src/lib/prisma";
 
 const sampleQuestions = [
   {
+    track: "QA",
     text: "Что такое smoke testing?",
     options: [
       "Быстрая проверка критичного функционала после сборки",
@@ -12,11 +13,13 @@ const sampleQuestions = [
     correctIndex: 0,
   },
   {
+    track: "QA",
     text: "Какой статус баг-репорта означает, что дефект исправлен разработчиком?",
     options: ["Open", "Fixed", "Rejected", "Duplicate"],
     correctIndex: 1,
   },
   {
+    track: "QA",
     text: "Что обязательно должно быть в хорошем баг-репорте?",
     options: [
       "Название, шаги, фактический и ожидаемый результат",
@@ -29,6 +32,7 @@ const sampleQuestions = [
 ];
 
 const sampleApiQuestion = {
+  track: "API",
   text: "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201 Created.",
   explanation:
     "Проверяется сборка POST-запроса, header авторизации и корректный JSON body.",
@@ -54,8 +58,8 @@ const sampleApiQuestion = {
 async function main() {
   await prisma.assessmentSettings.upsert({
     where: { id: "global" },
-    update: { totalTimeMinutes: 30, passingScore: 100 },
-    create: { id: "global", totalTimeMinutes: 30, passingScore: 100 },
+    update: { totalTimeMinutes: 30 },
+    create: { id: "global", totalTimeMinutes: 30 },
   });
 
   const count = await prisma.question.count();
@@ -65,6 +69,7 @@ async function main() {
     await prisma.question.create({
       data: {
         text: question.text,
+        track: question.track,
         order: index + 1,
         options: {
           create: question.options.map((option, optionIndex) => ({
@@ -82,6 +87,7 @@ async function main() {
     data: {
       type: "API_SANDBOX",
       text: sampleApiQuestion.text,
+      track: sampleApiQuestion.track,
       explanation: sampleApiQuestion.explanation,
       order: sampleQuestions.length + 1,
       apiConfig: sampleApiQuestion.apiConfig,

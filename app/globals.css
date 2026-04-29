@@ -502,6 +502,15 @@ button {
   gap: 16px;
 }
 
+.grid-2 > *,
+.grid-3 > * {
+  min-width: 0;
+}
+
+.interns-layout {
+  grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.05fr);
+}
+
 .metric {
   display: flex;
   align-items: center;
@@ -555,6 +564,7 @@ button {
 }
 
 .surface {
+  min-width: 0;
   border: 1px solid var(--surface-border);
   background: var(--surface-bg);
   border-radius: var(--radius-island);
@@ -686,6 +696,227 @@ button {
   color: var(--muted-foreground);
 }
 
+.track-chip,
+.type-chip {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.track-chip-qa {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.track-chip-api {
+  background: var(--coin-blue-12);
+  color: var(--primary);
+}
+
+.track-chip-grpc {
+  background: var(--coin-purple-12);
+  color: var(--business);
+}
+
+.track-chip-mobile {
+  background: var(--coin-green-12);
+  color: var(--accent);
+}
+
+.track-chip-web {
+  background: rgba(224, 165, 0, 0.14);
+  color: var(--gold);
+}
+
+.type-chip {
+  background: var(--coin-code-bg);
+  color: var(--muted-foreground);
+}
+
+.track-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--muted-foreground);
+}
+
+.track-dot-api {
+  background: var(--primary);
+}
+
+.track-dot-grpc {
+  background: var(--business);
+}
+
+.track-dot-mobile {
+  background: var(--accent);
+}
+
+.track-dot-web {
+  background: var(--gold);
+}
+
+.track-dot-qa {
+  background: var(--muted-foreground);
+}
+
+.question-bank-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+}
+
+.question-filter-rail {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 20px;
+  border-right: 1px solid var(--surface-border);
+  background: var(--card);
+}
+
+.question-filter-title {
+  margin-bottom: 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.question-filter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  border-radius: var(--radius-garden);
+  padding: 10px 12px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.question-filter-item:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.question-filter-item.active {
+  background: var(--coin-blue-08);
+  color: var(--primary);
+}
+
+.question-list-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 24px;
+  background: var(--background);
+}
+
+.question-bank-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 20px;
+  padding: 20px;
+}
+
+.question-index {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.question-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.question-option-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--coin-code-bg);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.question-option-preview.correct {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.question-option-marker {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1.5px solid var(--input);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  font-size: 11px;
+}
+
+.question-option-preview.correct .question-option-marker {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.question-form-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.question-form-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  cursor: pointer;
+  border: 1.5px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  padding: 8px 12px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.question-form-choice:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--coin-blue-08);
+  color: var(--primary);
+}
+
+.question-form-choice input {
+  accent-color: var(--primary);
+}
+
 .nav-row {
   display: flex;
   gap: 8px;
@@ -726,8 +957,16 @@ button {
 
 .table {
   width: 100%;
+  min-width: 680px;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table th,
@@ -738,6 +977,7 @@ button {
   vertical-align: top;
   font-size: 14px;
   line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
 .table th {
@@ -752,6 +992,17 @@ button {
 
 .table tbody tr:hover {
   background: var(--coin-code-bg);
+}
+
+.interns-table {
+  min-width: 760px;
+  table-layout: fixed;
+}
+
+.interns-table th:last-child,
+.interns-table td:last-child {
+  width: 128px;
+  white-space: nowrap;
 }
 
 .question-grid {
@@ -782,6 +1033,92 @@ button {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
+}
+
+.question-dot.flagged:not(.active):not(.done) {
+  border-color: transparent;
+  background: rgba(224, 165, 0, 0.16);
+  color: var(--gold);
+}
+
+.test-answer-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border: 1.5px solid var(--input);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 18px 20px;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.test-answer-option.selected {
+  border-color: var(--primary);
+  background: var(--coin-blue-08);
+}
+
+.test-answer-radio {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--input);
+  border-radius: 999px;
+}
+
+.test-answer-option.selected .test-answer-radio {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow:
+    inset 0 0 0 6px var(--primary),
+    inset 0 0 0 8px var(--primary-foreground);
+}
+
+.test-answer-option small {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.test-answer-option.selected small {
+  color: var(--primary);
+}
+
+.question-nav-legend {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--surface-border);
+  padding-top: 14px;
+}
+
+.question-nav-legend span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--muted);
+}
+
+.legend-dot.answered {
+  background: var(--primary);
+}
+
+.legend-dot.flagged {
+  background: rgba(224, 165, 0, 0.5);
 }
 
 .timer-pill {
@@ -865,6 +1202,20 @@ button {
   padding: 24px;
   background: color-mix(in srgb, var(--background) 74%, transparent);
   backdrop-filter: blur(8px);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.question-modal {
+  width: min(980px, calc(100vw - 48px));
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
 }
 
 .confirm-dialog {
@@ -970,6 +1321,17 @@ button {
 
   .admin-content > .page {
     width: min(100% - 32px, 1180px);
+  }
+
+  .question-bank-layout,
+  .question-bank-card,
+  .question-option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .question-filter-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--surface-border);
   }
 
   .auth-brand-panel {
