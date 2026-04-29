@@ -509,6 +509,10 @@ export function TestRunner({
           <p className="body-1 muted m-0">
             Можно возвращаться к вопросам до истечения общего времени.
           </p>
+          <div className="test-warning">
+            <AlertTriangle size={18} />
+            <strong>Не закрывайте вкладку до завершения теста.</strong>
+          </div>
         </div>
         <span className="timer-pill">
           <Clock3 size={18} />
