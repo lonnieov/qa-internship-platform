@@ -11,9 +11,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   getQuestionTrackMeta,
-  normalizeQuestionTrack,
-  questionTracks,
-  type QuestionTrack,
+  getTrackDisplayName,
+  type TrackSummary,
 } from "@/lib/question-classification";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
@@ -22,6 +21,8 @@ type EditableQuestion = {
   id: string;
   type: QuestionType;
   track: string;
+  trackId: string | null;
+  trackRef: { id: string; slug: string; name: string } | null;
   text: string;
   explanation: string | null;
   apiConfig: unknown;
@@ -72,14 +73,16 @@ function getConfig(question: EditableQuestion | undefined) {
 
 export function QuestionForm({
   initialType,
-  initialTrack = "QA",
+  initialTrackId,
+  tracks,
   embedded = false,
   lockType = false,
   showTitle = true,
   question,
 }: {
   initialType: QuestionType;
-  initialTrack?: QuestionTrack;
+  initialTrackId?: string;
+  tracks: TrackSummary[];
   embedded?: boolean;
   lockType?: boolean;
   showTitle?: boolean;
@@ -88,9 +91,19 @@ export function QuestionForm({
   const [draftType, setDraftType] = useState<QuestionType>(
     question?.type ?? initialType,
   );
-  const [draftTrack, setDraftTrack] = useState<QuestionTrack>(
-    question ? normalizeQuestionTrack(question.track) : initialTrack,
+  const activeTracks = tracks.filter((track) => track.isActive !== false);
+  const selectableTracks = question?.trackRef
+    ? [
+        question.trackRef,
+        ...activeTracks.filter((track) => track.id !== question.trackRef?.id),
+      ]
+    : activeTracks;
+  const fallbackTrack = selectableTracks[0] ?? tracks[0];
+  const [draftTrackId, setDraftTrackId] = useState(
+    question?.trackRef?.id ?? initialTrackId ?? fallbackTrack?.id ?? "",
   );
+  const draftTrack =
+    tracks.find((track) => track.id === draftTrackId) ?? fallbackTrack;
   const questionType = question?.type ?? draftType;
   const config = getConfig(question);
   const isEditing = Boolean(question);
@@ -107,7 +120,15 @@ export function QuestionForm({
         <input type="hidden" name="questionId" value={question.id} />
       ) : null}
       <input type="hidden" name="questionType" value={questionType} />
-      <input type="hidden" name="track" value={draftTrack} />
+      <input type="hidden" name="trackId" value={draftTrackId} />
+      <input
+        type="hidden"
+        name="track"
+        value={
+          draftTrack?.name ??
+          (question ? getTrackDisplayName(question) : "QA")
+        }
+      />
 
       {!isEditing && !lockType ? (
         <div className="form-grid">
@@ -146,15 +167,16 @@ export function QuestionForm({
       <div className="form-grid">
         <Label>Классификация</Label>
         <div className="question-form-choice-grid">
-          {questionTracks.map((track) => {
+          {selectableTracks.map((track) => {
             const meta = getQuestionTrackMeta(track);
             return (
-              <label className="question-form-choice" key={track}>
+              <label className="question-form-choice" key={track.id ?? track.slug}>
                 <input
-                  checked={draftTrack === track}
+                  checked={draftTrackId === track.id}
                   name="trackChoice"
-                  onChange={() => setDraftTrack(track)}
+                  onChange={() => setDraftTrackId(track.id ?? "")}
                   type="radio"
+                  disabled={!track.id}
                 />
                 <span className={meta.dotClassName} />
                 {meta.label}
@@ -162,6 +184,11 @@ export function QuestionForm({
             );
           })}
         </div>
+        {selectableTracks.length === 0 ? (
+          <p className="body-2 muted m-0">
+            Создайте активный трек перед добавлением вопроса.
+          </p>
+        ) : null}
       </div>
 
       <div className="form-grid">
@@ -471,7 +498,9 @@ export function QuestionForm({
           defaultValue={question?.explanation ?? ""}
         />
       </div>
-      <Button type="submit">{submitLabel}</Button>
+      <Button type="submit" disabled={!draftTrackId}>
+        {submitLabel}
+      </Button>
     </form>
   );
 

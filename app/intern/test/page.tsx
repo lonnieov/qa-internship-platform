@@ -22,7 +22,10 @@ export default async function InternTestPage({
       answers: {
         include: {
           question: {
-            include: { options: { orderBy: { order: "asc" } } },
+            include: {
+              trackRef: true,
+              options: { orderBy: { order: "asc" } },
+            },
           },
         },
         orderBy: { createdAt: "asc" },
@@ -64,7 +67,7 @@ export default async function InternTestPage({
     .map((answer) => ({
       id: answer.question.id,
       type: answer.question.type,
-      track: answer.question.track,
+      track: answer.question.trackRef?.name ?? answer.question.track,
       text: answer.question.text,
       explanation: answer.question.explanation,
       selectedOptionId: answer.selectedOptionId,
