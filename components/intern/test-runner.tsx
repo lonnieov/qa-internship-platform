@@ -451,6 +451,13 @@ export function TestRunner({
 
     function handleVisibility() {
       void postEvent("VISIBILITY_CHANGE");
+      if (document.visibilityState === "hidden") {
+        submit(true);
+      }
+    }
+
+    function handlePageHide() {
+      submit(true);
     }
 
     function handleFocus() {
@@ -465,6 +472,7 @@ export function TestRunner({
     window.addEventListener("click", handleClick);
     window.addEventListener("keydown", handleKeydown);
     document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("focus", handleFocus);
     window.addEventListener("blur", handleBlur);
 
@@ -473,6 +481,7 @@ export function TestRunner({
       window.removeEventListener("click", handleClick);
       window.removeEventListener("keydown", handleKeydown);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
       if (!submittedRef.current) {
