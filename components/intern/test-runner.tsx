@@ -389,22 +389,7 @@ export function TestRunner({
   }, [deadlineAt]);
 
   useEffect(() => {
-    function handleVisibility() {
-      if (document.visibilityState === "hidden") {
-        submit(true);
-      }
-    }
-
-    function handlePageHide() {
-      submit(true);
-    }
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", handlePageHide);
-
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", handlePageHide);
       if (!submittedRef.current) {
         flushCurrentTime();
       }
@@ -430,10 +415,6 @@ export function TestRunner({
           <p className="body-1 muted m-0">
             Можно возвращаться к вопросам до истечения общего времени.
           </p>
-          <div className="test-warning">
-            <AlertTriangle size={18} />
-            <strong>Не закрывайте вкладку до завершения теста.</strong>
-          </div>
         </div>
         <span className="timer-pill">
           <Clock3 size={18} />

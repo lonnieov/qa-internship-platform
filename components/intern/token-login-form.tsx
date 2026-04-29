@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const initialState: InternTokenLoginState = {
   ok: false,
@@ -28,10 +27,7 @@ export function TokenLoginForm() {
       </CardHeader>
       <CardContent>
         <form action={action} className="form-grid">
-          <div className="form-grid">
-            <Label htmlFor="token">Токен стажёра</Label>
-            <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
-          </div>
+          <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
           <Button disabled={isPending} type="submit">
             Войти
           </Button>

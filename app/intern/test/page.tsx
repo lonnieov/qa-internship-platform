@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { compareQuestionOrder } from "@/lib/question-order";
 import { TestRunner } from "@/components/intern/test-runner";
 
 export default async function InternTestPage({
@@ -45,7 +46,22 @@ export default async function InternTestPage({
     redirect(`/intern/finish?attempt=${attempt.id}`);
   }
 
-  const questions = attempt.answers.map((answer) => ({
+  const questions = [...attempt.answers]
+    .sort((left, right) =>
+      compareQuestionOrder(
+        {
+          type: left.question.type,
+          order: left.question.order,
+          createdAt: left.question.createdAt,
+        },
+        {
+          type: right.question.type,
+          order: right.question.order,
+          createdAt: right.question.createdAt,
+        },
+      ),
+    )
+    .map((answer) => ({
     id: answer.question.id,
     type: answer.question.type,
     text: answer.question.text,
@@ -63,7 +79,7 @@ export default async function InternTestPage({
       text: option.text,
       order: option.order,
     })),
-  }));
+    }));
 
   return (
     <TestRunner

@@ -15,10 +15,6 @@ export default function InternSignInPage() {
       </div>
       <div className="stack">
         <h1 className="head-1">Вход стажёра</h1>
-        <p className="body-1 muted">
-          Введите токен, который выдал администратор. Почта и регистрация для
-          стажёров больше не нужны.
-        </p>
       </div>
       <TokenLoginForm />
       <Link className="body-2 muted" href="/sign-in/admin">

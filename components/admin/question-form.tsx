@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { createQuestionAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-export function QuestionForm() {
-  const [questionType, setQuestionType] = useState("QUIZ");
+type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+
+export function QuestionForm({ initialType }: { initialType: QuestionType }) {
+  const questionType = initialType;
 
   return (
     <Card>
@@ -20,19 +21,6 @@ export function QuestionForm() {
       <CardContent>
         <form action={createQuestionAction} className="form-grid">
           <input type="hidden" name="questionType" value={questionType} />
-
-          <div className="form-grid">
-            <Label htmlFor="questionType">Тип вопроса</Label>
-            <Select
-              id="questionType"
-              value={questionType}
-              onChange={(event) => setQuestionType(event.target.value)}
-            >
-              <option value="QUIZ">Quiz</option>
-              <option value="API_SANDBOX">API Sandbox</option>
-              <option value="DEVTOOLS_SANDBOX">DevTools Sandbox</option>
-            </Select>
-          </div>
 
           <div className="form-grid">
             <Label htmlFor="text">
