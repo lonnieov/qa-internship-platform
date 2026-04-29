@@ -6,7 +6,15 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdmin();
+  const profile = await requireAdmin();
+  const adminName =
+    [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
+    profile.email ||
+    "Администратор";
 
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <AdminShell adminName={adminName} adminEmail={profile.email}>
+      {children}
+    </AdminShell>
+  );
 }

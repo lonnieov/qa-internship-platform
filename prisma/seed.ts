@@ -1,10 +1,11 @@
 import "dotenv/config";
 import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma";
+import { seedAdminEmail } from "../src/lib/admin-constants";
 import { defaultTracks } from "../src/lib/question-classification";
 
 const seedAdmin = {
-  email: "admin@resting.chat",
+  email: seedAdminEmail,
   password: "RESTingChat",
   firstName: "Test",
   lastName: "Admin",

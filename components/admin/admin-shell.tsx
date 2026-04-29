@@ -16,16 +16,22 @@ import { Button } from "@/components/ui/button";
 
 type AdminShellProps = {
   children: React.ReactNode;
+  adminName: string;
+  adminEmail: string | null;
 };
 
 const navItems = [
   { href: "/admin", label: "Обзор", icon: BarChart3, exact: true },
   { href: "/admin/interns", label: "Стажёры", icon: UsersRound },
   { href: "/admin/questions", label: "Вопросы", icon: ListChecks },
-  { href: "/admin/settings", label: "Настройки теста", icon: Settings },
+  { href: "/admin/settings", label: "Настройки", icon: Settings },
 ];
 
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({
+  children,
+  adminName,
+  adminEmail,
+}: AdminShellProps) {
   const pathname = usePathname();
 
   return (
@@ -61,6 +67,15 @@ export function AdminShell({ children }: AdminShellProps) {
         </nav>
 
         <div className="admin-sidebar-footer">
+          <div className="admin-user-card">
+            <div className="admin-user-avatar">
+              {adminName.slice(0, 1).toUpperCase()}
+            </div>
+            <div>
+              <strong>{adminName}</strong>
+              {adminEmail ? <small>{adminEmail}</small> : null}
+            </div>
+          </div>
           <ThemeToggle />
           <form action={logoutAdminAction}>
             <Button
