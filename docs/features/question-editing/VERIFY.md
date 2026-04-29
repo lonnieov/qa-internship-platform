@@ -12,6 +12,7 @@
 - Expected: every existing question has a `Редактировать` expandable panel.
 - Expand the panel.
 - Expected: fields are prefilled with the current question values.
+- Expected: JSON body fields highlight keys, strings, numbers, literals, and punctuation.
 
 ## Positive Case
 

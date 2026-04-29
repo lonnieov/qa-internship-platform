@@ -342,6 +342,83 @@ button {
   background: var(--muted);
 }
 
+.json-editor {
+  display: grid;
+  min-height: 180px;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  overflow: hidden;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.json-editor:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.json-editor-highlight,
+.json-editor-input {
+  grid-area: 1 / 1;
+  min-height: 180px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.json-editor-highlight {
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--foreground);
+}
+
+.json-editor-input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--foreground);
+  outline: none;
+  -webkit-text-fill-color: transparent;
+  text-decoration-color: transparent;
+}
+
+.json-editor-input::selection {
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: transparent;
+}
+
+.json-token-key {
+  color: var(--primary);
+}
+
+.json-token-string {
+  color: var(--accent);
+}
+
+.json-token-number {
+  color: var(--warning);
+}
+
+.json-token-literal {
+  color: var(--destructive);
+}
+
+.json-token-punctuation {
+  color: var(--muted-foreground);
+}
+
 .nav-row {
   display: flex;
   gap: 8px;

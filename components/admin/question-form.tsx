@@ -1,6 +1,7 @@
 "use client";
 
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
+import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -218,7 +219,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiBody">Ожидаемый JSON body</Label>
-            <Textarea
+            <JsonEditor
               id="apiBody"
               name="apiBody"
               defaultValue={stringifyJson(
@@ -230,7 +231,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiSuccessBody">Успешный response body</Label>
-            <Textarea
+            <JsonEditor
               id="apiSuccessBody"
               name="apiSuccessBody"
               defaultValue={stringifyJson(
@@ -320,7 +321,7 @@ export function QuestionForm({
             <Label htmlFor="apiBody">
               Request JSON body, который уйдёт при клике
             </Label>
-            <Textarea
+            <JsonEditor
               id="apiBody"
               name="apiBody"
               defaultValue={stringifyJson(
@@ -334,7 +335,7 @@ export function QuestionForm({
             <Label htmlFor="apiSuccessBody">
               JSON response body для DevTools
             </Label>
-            <Textarea
+            <JsonEditor
               id="apiSuccessBody"
               name="apiSuccessBody"
               defaultValue={stringifyJson(
