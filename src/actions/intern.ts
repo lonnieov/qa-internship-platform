@@ -18,6 +18,7 @@ import {
   createInternSession,
   internSyntheticUserId,
 } from "@/lib/intern-token-auth";
+import { compareQuestionOrder } from "@/lib/question-order";
 
 export type InternTokenLoginState = {
   ok: boolean;
@@ -144,6 +145,7 @@ export async function startAttemptAction() {
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: { options: true },
   });
+  questions.sort(compareQuestionOrder);
 
   if (questions.length === 0) {
     redirect("/intern");

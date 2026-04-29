@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
-import { Award, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { getResultAttemptId, verifyResultTicket } from "@/lib/intern-token-auth";
 import { prisma } from "@/lib/prisma";
-import { formatPercent } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 
 export default async function InternResultPage({
   searchParams,
@@ -30,34 +26,15 @@ export default async function InternResultPage({
     redirect("/sign-in/intern");
   }
 
-  const score = attempt.scorePercent ?? 0;
-
   return (
     <main className="page page-narrow stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Результат тестирования</h1>
-          <p className="body-1 muted m-0">{attempt.internProfile.fullName}</p>
-        </div>
-        <Badge variant={score >= 100 ? "success" : "danger"}>
-          {score >= 100 ? "пройдено" : "не пройдено"}
-        </Badge>
+      <div
+        className="stack"
+        style={{ justifyItems: "center", textAlign: "center", paddingTop: 48 }}
+      >
+        <h1 className="head-1">Спасибо за участие!</h1>
+        <p className="body-1 muted m-0">{attempt.internProfile.fullName}</p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <Award color="var(--primary)" />
-          <CardTitle>Итоговый процент</CardTitle>
-        </CardHeader>
-        <CardContent className="stack">
-          <span className="metric-value">{formatPercent(score)}</span>
-          <Progress value={score} />
-          <p className="body-1 muted m-0">
-            Верных ответов: {attempt.correctCount} из {attempt.questionCount}.
-            Проходной балл для этого ассессмента — 100%.
-          </p>
-        </CardContent>
-      </Card>
 
       <div className="soft-panel nav-row">
         <LockKeyhole size={18} color="var(--destructive)" />
@@ -66,6 +43,8 @@ export default async function InternResultPage({
           Повторный вход и повторная попытка недоступны.
         </span>
       </div>
+
+      <div style={{ height: 1 }} />
     </main>
   );
 }
