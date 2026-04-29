@@ -13,7 +13,7 @@ Apply the Coin Assessment visual reference from `qq.zip` to the existing platfor
 
 ## Main Flow
 
-- User opens the public entry page and chooses intern or admin sign-in.
+- User opens `/` and sees the intern sign-in screen immediately.
 - Sign-in pages show the Coin brand panel and role switch.
 - Admin pages keep existing routes and actions inside the new sidebar shell.
 - Intern pages keep existing top navigation and test flow with refreshed UI primitives.
@@ -21,7 +21,6 @@ Apply the Coin Assessment visual reference from `qq.zip` to the existing platfor
 ## Touched Files
 
 - `app/globals.css`
-- `app/page.tsx`
 - `app/admin/layout.tsx`
 - `app/sign-in/admin/[[...sign-in]]/page.tsx`
 - `app/sign-in/intern/[[...sign-in]]/page.tsx`
@@ -38,6 +37,6 @@ Apply the Coin Assessment visual reference from `qq.zip` to the existing platfor
 
 ## Constraints
 
-- Business logic, database schema, server actions, and auth checks are unchanged.
+- Assessment business logic is unchanged by the visual refresh.
 - Existing service logo and easter egg behavior are preserved.
 - Dark mode remains available even though the reference is light-first.

@@ -9,7 +9,7 @@
 ## Smoke Check
 
 - Open `/`.
-- Expected: the page uses Coin-style white cards, blue primary actions, compact typography, and grey app background.
+- Expected: the intern sign-in screen appears with the Coin-style split layout.
 - Open `/sign-in/intern`.
 - Expected: the page has a blue brand panel on the left and token form on the right.
 - Open `/sign-in/admin`.

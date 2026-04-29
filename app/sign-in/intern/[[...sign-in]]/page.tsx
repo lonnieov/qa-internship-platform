@@ -3,7 +3,6 @@ import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TokenLoginForm } from "@/components/intern/token-login-form";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 export default function InternSignInPage() {
   return (
@@ -54,9 +53,6 @@ export default function InternSignInPage() {
             <Link href="/sign-in/admin">Администратор</Link>
           </div>
           <TokenLoginForm />
-          <Button variant="ghost" asChild>
-            <Link href="/">На главную</Link>
-          </Button>
         </div>
       </section>
     </main>

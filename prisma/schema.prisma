@@ -49,8 +49,9 @@ enum TrackingEventType {
 
 model Profile {
   id          String   @id @default(cuid())
-  clerkUserId String   @unique
+  legacyAuthSubject String?  @unique
   email       String?  @unique
+  passwordHash String?
   firstName   String?
   lastName    String?
   role        Role
@@ -58,9 +59,23 @@ model Profile {
   updatedAt   DateTime @updatedAt
 
   internProfile      InternProfile?
+  adminSessions      AdminSession[]
   createdInvitations Invitation[]   @relation("InvitationCreator")
   acceptedInvitation Invitation?    @relation("InvitationAccepted")
   createdQuestions   Question[]     @relation("QuestionCreator")
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  profileId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([expiresAt])
 }
 
 model InternProfile {

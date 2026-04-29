@@ -5,7 +5,7 @@ Next.js App Router проект для ассессмента кандидато
 ## Стек
 
 - Next.js App Router, TypeScript, Vercel
-- Clerk Auth для админов, token-only вход для стажёров
+- DB auth для админов, token-only вход для стажёров
 - Prisma 7 style client + `@prisma/adapter-pg`
 - PostgreSQL через `DATABASE_URL`
 - shadcn/ui-style компоненты и Coin design tokens
@@ -20,7 +20,6 @@ npm install
 ```
 
 2. Создать `.env` из `.env.example` и указать PostgreSQL `DATABASE_URL`.
-   Для demo-админки Clerk keys не нужны.
 
 3. Подготовить БД:
 
@@ -36,25 +35,19 @@ npm run db:seed
 npm run dev
 ```
 
-Откройте `http://localhost:3000`. Для админки в локальном `.env` включён
-demo-вход:
-
-- логин: `admin`
-- пароль: `admin`
-
-Страница входа: `http://localhost:3000/sign-in/admin`.
+Откройте `http://localhost:3000`. Страница входа администратора:
+`http://localhost:3000/sign-in/admin`. Первый аккаунт администратора создаётся
+на `http://localhost:3000/sign-up/admin`.
 
 ## Роли и доступы
 
-Админ создаётся автоматически после входа через Clerk, если email есть в
-`ADMIN_EMAILS`, либо входит через локальный demo-доступ `admin/admin`.
+Админ регистрируется и входит по email и паролю. Пароль хранится в базе как
+PBKDF2-SHA256 hash, активные админ-сессии хранятся в таблице `AdminSession`.
+Если задан `ADMIN_REGISTRATION_CODE`, регистрация новых админов требует этот
+код.
 Стажёр не регистрируется по почте: админ вводит имя и фамилию, система выдаёт
 токен, а стажёр входит только по этому токену. Токен хранится только как
 SHA-256 hash.
-
-Для локального тестирования есть отдельный demo-admin вход `admin/admin`. Его
-пароль хранится в `.env` как PBKDF2-SHA256 hash, а сессия - в httpOnly cookie.
-В production установите `DEMO_ADMIN_ENABLED=false` или не задавайте эти переменные.
 
 ## PostgreSQL
 

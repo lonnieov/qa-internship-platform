@@ -16,7 +16,6 @@ import {
   clearInternSession,
   createResultSession,
   createInternSession,
-  internSyntheticUserId,
 } from "@/lib/intern-token-auth";
 import { compareQuestionOrder } from "@/lib/question-order";
 
@@ -86,7 +85,6 @@ export async function loginInternByTokenAction(
     const { firstName, lastName } = splitName(invitation.candidateName);
     profile = await prisma.profile.create({
       data: {
-        clerkUserId: internSyntheticUserId(invitation.id),
         email: null,
         firstName,
         lastName,

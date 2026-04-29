@@ -1,5 +1,4 @@
 import { requireAdmin } from "@/lib/auth";
-import { isDemoAdminProfile } from "@/lib/demo-admin-auth";
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export default async function AdminLayout({
@@ -7,11 +6,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await requireAdmin();
+  await requireAdmin();
 
-  return (
-    <AdminShell isDemoAdmin={isDemoAdminProfile(profile)}>
-      {children}
-    </AdminShell>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

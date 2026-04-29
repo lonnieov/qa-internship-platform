@@ -10,8 +10,7 @@ const resultSessionTtlMs = 1000 * 60 * 30;
 function sessionSecret() {
   return (
     process.env.INTERN_SESSION_SECRET ||
-    process.env.DEMO_ADMIN_SESSION_SECRET ||
-    process.env.CLERK_SECRET_KEY ||
+    process.env.ADMIN_SESSION_SECRET ||
     "local-intern-session-secret"
   );
 }
@@ -127,8 +126,4 @@ export async function getInternSessionProfile() {
   } catch {
     return null;
   }
-}
-
-export function internSyntheticUserId(invitationId: string) {
-  return `intern:${invitationId}`;
 }

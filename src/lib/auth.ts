@@ -1,62 +1,16 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import {
-  ensureDemoAdminProfile,
-  hasValidDemoAdminSession,
-} from "@/lib/demo-admin-auth";
+import { getAdminSessionProfile } from "@/lib/admin-auth";
 import { getInternSessionProfile } from "@/lib/intern-token-auth";
 
-function adminEmails() {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 export async function getCurrentProfile() {
-  if (await hasValidDemoAdminSession()) {
-    return ensureDemoAdminProfile();
+  const adminProfile = await getAdminSessionProfile();
+  if (adminProfile) {
+    return adminProfile;
   }
 
   const internProfile = await getInternSessionProfile();
   if (internProfile) {
     return internProfile;
-  }
-
-  const { isAuthenticated, userId } = await auth();
-
-  if (!isAuthenticated || !userId) {
-    return null;
-  }
-
-  const existing = await prisma.profile.findUnique({
-    where: { clerkUserId: userId },
-    include: { internProfile: true },
-  });
-
-  if (existing) {
-    return existing;
-  }
-
-  const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
-
-  if (!email) {
-    return null;
-  }
-
-  if (adminEmails().includes(email)) {
-    return prisma.profile.create({
-      data: {
-        clerkUserId: userId,
-        email,
-        firstName: user?.firstName,
-        lastName: user?.lastName,
-        role: "ADMIN",
-      },
-      include: { internProfile: true },
-    });
   }
 
   return null;
@@ -93,9 +47,6 @@ export async function requireIntern() {
 }
 
 export async function getSignedInEmail() {
-  const { isAuthenticated } = await auth();
-  if (!isAuthenticated) return null;
-
-  const user = await currentUser();
-  return user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? null;
+  const profile = await getCurrentProfile();
+  return profile?.email?.toLowerCase() ?? null;
 }

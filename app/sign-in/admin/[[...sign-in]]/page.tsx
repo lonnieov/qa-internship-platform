@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { DemoAdminLoginForm } from "@/components/admin/demo-admin-login-form";
+import { AdminLoginForm } from "@/components/admin/admin-login-form";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 export default function AdminSignInPage() {
   return (
@@ -46,7 +45,7 @@ export default function AdminSignInPage() {
           <div className="stack">
             <h2 className="head-1">Вход администратора</h2>
             <p className="body-1 muted m-0">
-              Локальный вход администратора не зависит от Clerk и не
+              Вход администратора хранит пароль и сессию в базе данных и не
               пересекается со входом стажёра по токену.
             </p>
           </div>
@@ -54,10 +53,10 @@ export default function AdminSignInPage() {
             <Link href="/sign-in/intern">Стажёр</Link>
             <span className="active">Администратор</span>
           </div>
-          <DemoAdminLoginForm />
-          <Button variant="ghost" asChild>
-            <Link href="/">На главную</Link>
-          </Button>
+          <AdminLoginForm />
+          <p className="body-2 muted m-0">
+            Нет аккаунта? <Link href="/sign-up/admin">Зарегистрироваться</Link>
+          </p>
         </div>
       </section>
     </main>

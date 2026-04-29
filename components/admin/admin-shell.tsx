@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import {
   BarChart3,
   ListChecks,
@@ -10,14 +9,13 @@ import {
   UsersRound,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { logoutDemoAdminAction } from "@/actions/demo-admin";
+import { logoutAdminAction } from "@/actions/admin-auth";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 type AdminShellProps = {
   children: React.ReactNode;
-  isDemoAdmin: boolean;
 };
 
 const navItems = [
@@ -27,7 +25,7 @@ const navItems = [
   { href: "/admin/settings", label: "Настройки теста", icon: Settings },
 ];
 
-export function AdminShell({ children, isDemoAdmin }: AdminShellProps) {
+export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
 
   return (
@@ -64,20 +62,16 @@ export function AdminShell({ children, isDemoAdmin }: AdminShellProps) {
 
         <div className="admin-sidebar-footer">
           <ThemeToggle />
-          {isDemoAdmin ? (
-            <form action={logoutDemoAdminAction}>
-              <Button
-                className="w-full justify-start"
-                variant="ghost"
-                type="submit"
-              >
-                <LogOut size={16} />
-                Выйти
-              </Button>
-            </form>
-          ) : (
-            <UserButton />
-          )}
+          <form action={logoutAdminAction}>
+            <Button
+              className="w-full justify-start"
+              variant="ghost"
+              type="submit"
+            >
+              <LogOut size={16} />
+              Выйти
+            </Button>
+          </form>
         </div>
       </aside>
       <div className="admin-content">{children}</div>
