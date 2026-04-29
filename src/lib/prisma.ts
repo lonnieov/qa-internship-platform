@@ -3,7 +3,10 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  prismaSchemaVersion?: string;
 };
+
+const prismaSchemaVersion = "track-management-v2";
 
 function databaseUrl() {
   const url = process.env.DATABASE_URL;
@@ -13,6 +16,15 @@ function databaseUrl() {
   }
 
   return url;
+}
+
+if (
+  process.env.NODE_ENV !== "production" &&
+  globalForPrisma.prisma &&
+  globalForPrisma.prismaSchemaVersion !== prismaSchemaVersion
+) {
+  void globalForPrisma.prisma.$disconnect();
+  globalForPrisma.prisma = undefined;
 }
 
 export const prisma =
@@ -25,4 +37,5 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaSchemaVersion = prismaSchemaVersion;
 }

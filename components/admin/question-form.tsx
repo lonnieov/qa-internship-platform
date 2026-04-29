@@ -1,18 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
+import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getQuestionTrackMeta,
+  getTrackDisplayName,
+  type TrackSummary,
+} from "@/lib/question-classification";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
 type JsonRecord = Record<string, unknown>;
 type EditableQuestion = {
   id: string;
   type: QuestionType;
+  track: string;
+  trackId: string | null;
+  trackRef: { id: string; slug: string; name: string } | null;
   text: string;
   explanation: string | null;
   apiConfig: unknown;
@@ -63,14 +73,38 @@ function getConfig(question: EditableQuestion | undefined) {
 
 export function QuestionForm({
   initialType,
+  initialTrackId,
+  tracks,
   embedded = false,
+  lockType = false,
+  showTitle = true,
   question,
 }: {
   initialType: QuestionType;
+  initialTrackId?: string;
+  tracks: TrackSummary[];
   embedded?: boolean;
+  lockType?: boolean;
+  showTitle?: boolean;
   question?: EditableQuestion;
 }) {
-  const questionType = question?.type ?? initialType;
+  const [draftType, setDraftType] = useState<QuestionType>(
+    question?.type ?? initialType,
+  );
+  const activeTracks = tracks.filter((track) => track.isActive !== false);
+  const selectableTracks = question?.trackRef
+    ? [
+        question.trackRef,
+        ...activeTracks.filter((track) => track.id !== question.trackRef?.id),
+      ]
+    : activeTracks;
+  const fallbackTrack = selectableTracks[0] ?? tracks[0];
+  const [draftTrackId, setDraftTrackId] = useState(
+    question?.trackRef?.id ?? initialTrackId ?? fallbackTrack?.id ?? "",
+  );
+  const draftTrack =
+    tracks.find((track) => track.id === draftTrackId) ?? fallbackTrack;
+  const questionType = question?.type ?? draftType;
   const config = getConfig(question);
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
@@ -86,6 +120,76 @@ export function QuestionForm({
         <input type="hidden" name="questionId" value={question.id} />
       ) : null}
       <input type="hidden" name="questionType" value={questionType} />
+      <input type="hidden" name="trackId" value={draftTrackId} />
+      <input
+        type="hidden"
+        name="track"
+        value={
+          draftTrack?.name ??
+          (question ? getTrackDisplayName(question) : "QA")
+        }
+      />
+
+      {!isEditing && !lockType ? (
+        <div className="form-grid">
+          <Label>Тип вопроса</Label>
+          <div className="question-form-choice-grid">
+            {[
+              ["QUIZ", "Quiz"],
+              ["API_SANDBOX", "API Sandbox"],
+              ["DEVTOOLS_SANDBOX", "DevTools"],
+            ].map(([value, label]) => (
+              <label className="question-form-choice" key={value}>
+                <input
+                  checked={questionType === value}
+                  name="questionTypeChoice"
+                  onChange={() => setDraftType(value as QuestionType)}
+                  type="radio"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="form-grid">
+          <Label>Тип вопроса</Label>
+          <span className="type-chip">
+            {questionType === "DEVTOOLS_SANDBOX"
+              ? "DevTools"
+              : questionType === "API_SANDBOX"
+                ? "API Sandbox"
+                : "Quiz"}
+          </span>
+        </div>
+      )}
+
+      <div className="form-grid">
+        <Label>Классификация</Label>
+        <div className="question-form-choice-grid">
+          {selectableTracks.map((track) => {
+            const meta = getQuestionTrackMeta(track);
+            return (
+              <label className="question-form-choice" key={track.id ?? track.slug}>
+                <input
+                  checked={draftTrackId === track.id}
+                  name="trackChoice"
+                  onChange={() => setDraftTrackId(track.id ?? "")}
+                  type="radio"
+                  disabled={!track.id}
+                />
+                <span className={meta.dotClassName} />
+                {meta.label}
+              </label>
+            );
+          })}
+        </div>
+        {selectableTracks.length === 0 ? (
+          <p className="body-2 muted m-0">
+            Создайте активный трек перед добавлением вопроса.
+          </p>
+        ) : null}
+      </div>
 
       <div className="form-grid">
         <Label htmlFor="text">
@@ -93,6 +197,7 @@ export function QuestionForm({
         </Label>
         <Textarea
           id="text"
+          key={questionType}
           name="text"
           defaultValue={
             question?.text ??
@@ -218,7 +323,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiBody">Ожидаемый JSON body</Label>
-            <Textarea
+            <JsonEditor
               id="apiBody"
               name="apiBody"
               defaultValue={stringifyJson(
@@ -230,7 +335,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiSuccessBody">Успешный response body</Label>
-            <Textarea
+            <JsonEditor
               id="apiSuccessBody"
               name="apiSuccessBody"
               defaultValue={stringifyJson(
@@ -320,7 +425,7 @@ export function QuestionForm({
             <Label htmlFor="apiBody">
               Request JSON body, который уйдёт при клике
             </Label>
-            <Textarea
+            <JsonEditor
               id="apiBody"
               name="apiBody"
               defaultValue={stringifyJson(
@@ -334,7 +439,7 @@ export function QuestionForm({
             <Label htmlFor="apiSuccessBody">
               JSON response body для DevTools
             </Label>
-            <Textarea
+            <JsonEditor
               id="apiSuccessBody"
               name="apiSuccessBody"
               defaultValue={stringifyJson(
@@ -393,14 +498,16 @@ export function QuestionForm({
           defaultValue={question?.explanation ?? ""}
         />
       </div>
-      <Button type="submit">{submitLabel}</Button>
+      <Button type="submit" disabled={!draftTrackId}>
+        {submitLabel}
+      </Button>
     </form>
   );
 
   if (embedded) {
     return (
       <div className="edit-question-form">
-        <h3 className="head-3 m-0">{title}</h3>
+        {showTitle ? <h3 className="head-3 m-0">{title}</h3> : null}
         {form}
       </div>
     );

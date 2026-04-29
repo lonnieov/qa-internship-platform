@@ -49,8 +49,9 @@ enum TrackingEventType {
 
 model Profile {
   id          String   @id @default(cuid())
-  clerkUserId String   @unique
+  legacyAuthSubject String?  @unique
   email       String?  @unique
+  passwordHash String?
   firstName   String?
   lastName    String?
   role        Role
@@ -58,9 +59,23 @@ model Profile {
   updatedAt   DateTime @updatedAt
 
   internProfile      InternProfile?
-  createdInvitations Invitation[]  @relation("InvitationCreator")
-  acceptedInvitation Invitation?   @relation("InvitationAccepted")
-  createdQuestions   Question[]    @relation("QuestionCreator")
+  adminSessions      AdminSession[]
+  createdInvitations Invitation[]   @relation("InvitationCreator")
+  acceptedInvitation Invitation?    @relation("InvitationAccepted")
+  createdQuestions   Question[]     @relation("QuestionCreator")
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  profileId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([expiresAt])
 }
 
 model InternProfile {
@@ -74,7 +89,7 @@ model InternProfile {
   updatedAt    DateTime @updatedAt
 
   profile    Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  invitation Invitation?          @relation(fields: [invitationId], references: [id])
+  invitation Invitation?         @relation(fields: [invitationId], references: [id])
   attempts   AssessmentAttempt[]
 }
 
@@ -104,24 +119,43 @@ model AssessmentSettings {
   updatedAt        DateTime @updatedAt
 }
 
+model Track {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+
+  @@index([isActive, order])
+}
+
 model Question {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   type        QuestionType @default(QUIZ)
+  track       String       @default("QA")
+  trackId     String?
   text        String
   explanation String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
+  isActive    Boolean      @default(true)
+  order       Int          @default(0)
   apiConfig   Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   createdById String?
 
   createdBy Profile?           @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  trackRef  Track?             @relation(fields: [trackId], references: [id], onDelete: SetNull)
   options   QuestionOption[]
   answers   AssessmentAnswer[]
   events    TrackingEvent[]
 
   @@index([isActive, order])
+  @@index([track])
+  @@index([trackId])
 }
 
 model QuestionOption {
@@ -163,19 +197,19 @@ model AssessmentAttempt {
 }
 
 model AssessmentAnswer {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   attemptId        String
   questionId       String
   selectedOptionId String?
   apiRequest       Json?
   apiResponse      Json?
-  isCorrect        Boolean  @default(false)
+  isCorrect        Boolean   @default(false)
   answeredAt       DateTime?
-  timeSpentMs      Int      @default(0)
-  visits           Int      @default(0)
-  submissionCount  Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  timeSpentMs      Int       @default(0)
+  visits           Int       @default(0)
+  submissionCount  Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question       Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -198,7 +232,7 @@ model TrackingEvent {
   occurredAt DateTime          @default(now())
 
   attempt  AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question Question?          @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  question Question?         @relation(fields: [questionId], references: [id], onDelete: SetNull)
 
   @@index([attemptId, occurredAt])
   @@index([questionId])

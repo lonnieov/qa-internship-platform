@@ -10,6 +10,7 @@ Allow admins to update existing assessment questions without deleting and recrea
 - Quiz questions can update text, explanation, four answer options, and the correct option.
 - API Sandbox questions can update request expectations and response payload.
 - DevTools Sandbox questions can update request settings, response payload, answer path, and expected answer.
+- JSON body fields use syntax highlighting and disable spellcheck noise.
 
 ## Data Model
 
@@ -27,6 +28,7 @@ Allow admins to update existing assessment questions without deleting and recrea
 ## Touched Files
 
 - `src/actions/admin.ts`
+- `components/admin/json-editor.tsx`
 - `components/admin/question-form.tsx`
 - `app/admin/questions/page.tsx`
 - `app/globals.css`

@@ -3,6 +3,7 @@
 .env*.local
 .next
 node_modules
+tsconfig.tsbuildinfo
 prisma/dev.db
 prisma/dev.db-journal
 src/generated/prisma
@@ -10,3 +11,4 @@ src/generated/prisma
 
 # clerk configuration (can include secrets)
 /.clerk/
+.codex

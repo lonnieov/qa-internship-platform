@@ -16,7 +16,6 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@clerk/nextjs": "latest",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "latest",
     "@radix-ui/react-slot": "latest",

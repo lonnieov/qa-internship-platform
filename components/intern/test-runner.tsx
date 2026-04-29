@@ -2,7 +2,14 @@
 
 import type { ClipboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Info, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Clock3,
+  Info,
+  Send,
+} from "lucide-react";
 import {
   selectAnswerAction,
   submitDevtoolsAnswerAction,
@@ -17,8 +24,15 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getQuestionTrackMeta } from "@/lib/question-classification";
 
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 type Option = {
   id: string;
@@ -36,6 +50,7 @@ type ResponseSnapshot = {
 type Question = {
   id: string;
   type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+  track: string;
   text: string;
   explanation: string | null;
   options: Option[];
@@ -83,7 +98,10 @@ function headersToText(headers: Record<string, string> | undefined) {
     .join("\n");
 }
 
-function buildUrl(path: string | undefined, query: Record<string, string> | undefined) {
+function buildUrl(
+  path: string | undefined,
+  query: Record<string, string> | undefined,
+) {
   const safePath = path || "";
   const search = new URLSearchParams(query ?? {}).toString();
   return search ? `${safePath}?${search}` : safePath;
@@ -102,7 +120,10 @@ function createInitialApiDraft(question: Question): ApiDraft {
 
   return {
     method: request.method || config?.method || "GET",
-    url: buildUrl(request.path, request.query) || buildUrl(config?.path, config?.query) || "",
+    url:
+      buildUrl(request.path, request.query) ||
+      buildUrl(config?.path, config?.query) ||
+      "",
     headersText: headersToText(request.headers),
     bodyText: stringifyJson(request.body ?? config?.body),
     response: (question.apiResponse as ResponseSnapshot | null) ?? null,
@@ -115,14 +136,20 @@ function createInitialApiDraft(question: Question): ApiDraft {
 
 function getDevtoolsConfig(question: Question) {
   const config =
-    question.apiConfig && typeof question.apiConfig === "object" && !Array.isArray(question.apiConfig)
+    question.apiConfig &&
+    typeof question.apiConfig === "object" &&
+    !Array.isArray(question.apiConfig)
       ? (question.apiConfig as DevtoolsConfig)
       : null;
 
   return config?.mode === "DEVTOOLS_RESPONSE" ? config : null;
 }
 
-function buildDevtoolsEndpoint(attemptId: string, question: Question, config: DevtoolsConfig) {
+function buildDevtoolsEndpoint(
+  attemptId: string,
+  question: Question,
+  config: DevtoolsConfig,
+) {
   const path = (config.path || "/devtools_task").replace(/^\/+/, "");
   const search = new URLSearchParams({ attempt: attemptId });
 
@@ -143,6 +170,9 @@ export function TestRunner({
   questions: Question[];
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [flaggedQuestions, setFlaggedQuestions] = useState(
+    () => new Set<string>(),
+  );
   const [answers, setAnswers] = useState(
     () =>
       new Map(
@@ -171,14 +201,22 @@ export function TestRunner({
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
   const currentQuestion = questions[currentIndex];
+  const currentTrack = getQuestionTrackMeta(currentQuestion?.track);
   const answeredCount = questions.filter((question) => {
-    if (question.type === "API_SANDBOX" || question.type === "DEVTOOLS_SANDBOX") {
+    if (
+      question.type === "API_SANDBOX" ||
+      question.type === "DEVTOOLS_SANDBOX"
+    ) {
       return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
     }
 
     return Boolean(answers.get(question.id));
   }).length;
-  const progress = questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
+  const progress =
+    questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
+  const flaggedCount = questions.filter((question) =>
+    flaggedQuestions.has(question.id),
+  ).length;
 
   function flushCurrentTime() {
     const questionId = currentQuestion?.id;
@@ -195,7 +233,8 @@ export function TestRunner({
   }
 
   function goTo(index: number) {
-    if (index < 0 || index >= questions.length || index === currentIndex) return;
+    if (index < 0 || index >= questions.length || index === currentIndex)
+      return;
     flushCurrentTime();
     setCurrentIndex(index);
   }
@@ -218,6 +257,19 @@ export function TestRunner({
     });
   }
 
+  function toggleFlag() {
+    if (!currentQuestion) return;
+    setFlaggedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(currentQuestion.id)) {
+        next.delete(currentQuestion.id);
+      } else {
+        next.add(currentQuestion.id);
+      }
+      return next;
+    });
+  }
+
   function updateApiDraft(patch: Partial<ApiDraft>) {
     if (
       currentQuestion.type !== "API_SANDBOX" &&
@@ -228,7 +280,8 @@ export function TestRunner({
 
     setApiDrafts((prev) => {
       const next = new Map(prev);
-      const current = next.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+      const current =
+        next.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
       next.set(currentQuestion.id, { ...current, ...patch });
       return next;
     });
@@ -237,7 +290,9 @@ export function TestRunner({
   function sendApiRequest() {
     if (currentQuestion.type !== "API_SANDBOX") return;
 
-    const draft = apiDrafts.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+    const draft =
+      apiDrafts.get(currentQuestion.id) ??
+      createInitialApiDraft(currentQuestion);
     const timeSpentMs = Date.now() - enteredAtRef.current;
     enteredAtRef.current = Date.now();
 
@@ -289,7 +344,8 @@ export function TestRunner({
         setApiDrafts((prev) => {
           const next = new Map(prev);
           const current =
-            next.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+            next.get(currentQuestion.id) ??
+            createInitialApiDraft(currentQuestion);
           next.set(currentQuestion.id, {
             ...current,
             requestSent: true,
@@ -303,7 +359,9 @@ export function TestRunner({
   function submitDevtoolsAnswer() {
     if (currentQuestion.type !== "DEVTOOLS_SANDBOX") return;
 
-    const draft = apiDrafts.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
+    const draft =
+      apiDrafts.get(currentQuestion.id) ??
+      createInitialApiDraft(currentQuestion);
     const timeSpentMs = Date.now() - enteredAtRef.current;
     enteredAtRef.current = Date.now();
 
@@ -409,10 +467,13 @@ export function TestRunner({
   const currentApiDraft =
     currentQuestion.type === "API_SANDBOX" ||
     currentQuestion.type === "DEVTOOLS_SANDBOX"
-      ? apiDrafts.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion)
+      ? (apiDrafts.get(currentQuestion.id) ??
+        createInitialApiDraft(currentQuestion))
       : null;
   const currentDevtoolsConfig =
-    currentQuestion.type === "DEVTOOLS_SANDBOX" ? getDevtoolsConfig(currentQuestion) : null;
+    currentQuestion.type === "DEVTOOLS_SANDBOX"
+      ? getDevtoolsConfig(currentQuestion)
+      : null;
 
   return (
     <main className="page stack-lg">
@@ -420,8 +481,10 @@ export function TestRunner({
         <div>
           <h1 className="head-1">Тестирование</h1>
           <p className="body-1 muted m-0">
-            Можно возвращаться к вопросам до истечения общего времени.
+            Вопрос {currentIndex + 1} из {questions.length}. Можно возвращаться
+            к вопросам до истечения общего времени.
           </p>
+          <Progress value={progress} className="mt-4 max-w-[280px]" />
         </div>
         <div className="test-header-actions">
           <div className="test-submit-control">
@@ -449,20 +512,43 @@ export function TestRunner({
       <section className="grid-2">
         <Card>
           <CardHeader>
-            <div className="nav-row" style={{ justifyContent: "space-between" }}>
-              <CardTitle>
-                {currentIndex + 1}. {currentQuestion.text}
-              </CardTitle>
-              <Badge variant={currentQuestion.type === "QUIZ" ? "default" : "warning"}>
-                {currentQuestion.type === "DEVTOOLS_SANDBOX"
-                  ? "DevTools Sandbox"
-                  : currentQuestion.type === "API_SANDBOX"
-                    ? "API Sandbox"
-                    : "Quiz"}
-              </Badge>
+            <div
+              className="nav-row"
+              style={{ justifyContent: "space-between" }}
+            >
+              <div className="nav-row">
+                <span className={currentTrack.className}>
+                  {currentTrack.label}
+                </span>
+                <span className="type-chip">
+                  {currentQuestion.type === "DEVTOOLS_SANDBOX"
+                    ? "DevTools"
+                    : currentQuestion.type === "API_SANDBOX"
+                      ? "API Sandbox"
+                      : "Quiz"}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={toggleFlag}
+                style={{
+                  color: flaggedQuestions.has(currentQuestion.id)
+                    ? "var(--gold)"
+                    : "var(--muted-foreground)",
+                }}
+              >
+                {flaggedQuestions.has(currentQuestion.id)
+                  ? "Отмечено"
+                  : "Отметить"}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="stack">
+            <CardTitle>
+              {currentIndex + 1}. {currentQuestion.text}
+            </CardTitle>
             {currentQuestion.explanation ? (
               <p className="body-2 muted m-0">{currentQuestion.explanation}</p>
             ) : null}
@@ -471,22 +557,21 @@ export function TestRunner({
               <>
                 <div className="stack">
                   {currentQuestion.options.map((option) => {
-                    const selected = answers.get(currentQuestion.id) === option.id;
+                    const selected =
+                      answers.get(currentQuestion.id) === option.id;
                     return (
                       <button
-                        className="soft-panel text-left transition"
+                        className={`test-answer-option ${selected ? "selected" : ""}`}
                         data-track={`answer-${option.label}`}
                         key={option.id}
                         onClick={() => selectOption(option.id)}
-                        style={{
-                          border: selected
-                            ? "2px solid var(--primary)"
-                            : "1px solid var(--surface-border)",
-                          background: selected ? "var(--muted)" : "var(--card)",
-                        }}
                         type="button"
                       >
-                        <strong>{option.label}.</strong> {option.text}
+                        <span className="test-answer-radio" />
+                        <span>
+                          <strong>{option.label}.</strong> {option.text}
+                        </span>
+                        <small>{option.label}</small>
                       </button>
                     );
                   })}
@@ -495,16 +580,23 @@ export function TestRunner({
             ) : currentApiDraft && currentDevtoolsConfig ? (
               <div className="stack">
                 <div className="soft-panel stack">
-                  <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
                     <div>
-                      <p className="body-2 muted m-0">Запрос для проверки в DevTools</p>
+                      <p className="body-2 muted m-0">
+                        Запрос для проверки в DevTools
+                      </p>
                       <strong>
                         {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
-                        {buildDevtoolsEndpoint(
-                          attemptId,
-                          currentQuestion,
-                          currentDevtoolsConfig,
-                        ).split("?")[0]}
+                        {
+                          buildDevtoolsEndpoint(
+                            attemptId,
+                            currentQuestion,
+                            currentDevtoolsConfig,
+                          ).split("?")[0]
+                        }
                       </strong>
                     </div>
                     {currentApiDraft.requestSent ? (
@@ -538,17 +630,28 @@ export function TestRunner({
                   />
                 </div>
 
-                <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                <div
+                  className="nav-row"
+                  style={{ justifyContent: "space-between" }}
+                >
                   <Button
-                    disabled={isPending || !currentApiDraft.devtoolsAnswer.trim()}
+                    disabled={
+                      isPending || !currentApiDraft.devtoolsAnswer.trim()
+                    }
                     onClick={submitDevtoolsAnswer}
                     type="button"
                   >
                     Проверить ответ
                   </Button>
                   {currentApiDraft.submissionCount > 0 ? (
-                    <Badge variant={currentApiDraft.isCorrect ? "success" : "warning"}>
-                      {currentApiDraft.isCorrect ? "зачтено" : "ответ не совпал"}
+                    <Badge
+                      variant={
+                        currentApiDraft.isCorrect ? "success" : "warning"
+                      }
+                    >
+                      {currentApiDraft.isCorrect
+                        ? "зачтено"
+                        : "ответ не совпал"}
                     </Badge>
                   ) : null}
                 </div>
@@ -560,7 +663,9 @@ export function TestRunner({
                     <LabelLike>Method</LabelLike>
                     <Select
                       value={currentApiDraft.method}
-                      onChange={(event) => updateApiDraft({ method: event.target.value })}
+                      onChange={(event) =>
+                        updateApiDraft({ method: event.target.value })
+                      }
                     >
                       <option value="GET">GET</option>
                       <option value="POST">POST</option>
@@ -573,7 +678,9 @@ export function TestRunner({
                     <LabelLike>Request URL</LabelLike>
                     <Input
                       data-track="api-url"
-                      onChange={(event) => updateApiDraft({ url: event.target.value })}
+                      onChange={(event) =>
+                        updateApiDraft({ url: event.target.value })
+                      }
                       placeholder="/users?status=active"
                       value={currentApiDraft.url}
                     />
@@ -584,8 +691,12 @@ export function TestRunner({
                   <LabelLike>Headers</LabelLike>
                   <Textarea
                     data-track="api-headers"
-                    onChange={(event) => updateApiDraft({ headersText: event.target.value })}
-                    placeholder={"Authorization: Bearer test-token\nContent-Type: application/json"}
+                    onChange={(event) =>
+                      updateApiDraft({ headersText: event.target.value })
+                    }
+                    placeholder={
+                      "Authorization: Bearer test-token\nContent-Type: application/json"
+                    }
                     value={currentApiDraft.headersText}
                   />
                 </div>
@@ -594,15 +705,24 @@ export function TestRunner({
                   <LabelLike>JSON Body</LabelLike>
                   <Textarea
                     data-track="api-body"
-                    onChange={(event) => updateApiDraft({ bodyText: event.target.value })}
+                    onChange={(event) =>
+                      updateApiDraft({ bodyText: event.target.value })
+                    }
                     placeholder={'{\n  "name": "Ali Valiyev"\n}'}
                     value={currentApiDraft.bodyText}
                   />
                 </div>
 
-                <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                <div
+                  className="nav-row"
+                  style={{ justifyContent: "space-between" }}
+                >
                   <div className="nav-row">
-                    <Button type="button" onClick={sendApiRequest} disabled={isPending}>
+                    <Button
+                      type="button"
+                      onClick={sendApiRequest}
+                      disabled={isPending}
+                    >
                       <Send size={18} />
                       Send
                     </Button>
@@ -611,24 +731,43 @@ export function TestRunner({
                     </span>
                   </div>
                   {currentApiDraft.submissionCount > 0 ? (
-                    <Badge variant={currentApiDraft.isCorrect ? "success" : "warning"}>
-                      {currentApiDraft.isCorrect ? "зачтено" : "нужно исправить"}
+                    <Badge
+                      variant={
+                        currentApiDraft.isCorrect ? "success" : "warning"
+                      }
+                    >
+                      {currentApiDraft.isCorrect
+                        ? "зачтено"
+                        : "нужно исправить"}
                     </Badge>
                   ) : null}
                 </div>
 
                 {currentApiDraft.response ? (
                   <div className="soft-panel stack">
-                    <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                    <div
+                      className="nav-row"
+                      style={{ justifyContent: "space-between" }}
+                    >
                       <strong>Response</strong>
-                      <Badge variant={currentApiDraft.response.status < 400 ? "success" : "danger"}>
+                      <Badge
+                        variant={
+                          currentApiDraft.response.status < 400
+                            ? "success"
+                            : "danger"
+                        }
+                      >
                         {currentApiDraft.response.status}
                       </Badge>
                     </div>
                     <div>
                       <p className="body-2 muted m-0">Headers</p>
                       <pre className="body-2 m-0 whitespace-pre-wrap">
-                        {JSON.stringify(currentApiDraft.response.headers, null, 2)}
+                        {JSON.stringify(
+                          currentApiDraft.response.headers,
+                          null,
+                          2,
+                        )}
                       </pre>
                     </div>
                     <div>
@@ -680,11 +819,12 @@ export function TestRunner({
                       ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
                       : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
+                  const flagged = flaggedQuestions.has(question.id);
                   return (
                     <button
                       className={`question-dot ${done ? "done" : ""} ${
-                        active ? "active" : ""
-                      }`}
+                        flagged ? "flagged" : ""
+                      } ${active ? "active" : ""}`}
                       key={question.id}
                       onClick={() => goTo(index)}
                       type="button"
@@ -695,14 +835,31 @@ export function TestRunner({
                 })}
               </div>
               <p className="body-2 muted m-0">
-                Отмечено {answeredCount} из {questions.length}. Для API sandbox вопроса
-                прогресс появляется после проверки ответа.
+                Отмечено {answeredCount} из {questions.length}. Для API sandbox
+                вопроса прогресс появляется после проверки ответа.
               </p>
+              <div className="question-nav-legend">
+                <span>
+                  <i className="legend-dot answered" />
+                  Отвечено · {answeredCount}
+                </span>
+                <span>
+                  <i className="legend-dot flagged" />
+                  Отмечено · {flaggedCount}
+                </span>
+                <span>
+                  <i className="legend-dot empty" />
+                  Без ответа · {questions.length - answeredCount}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
           {remainingMs < 60_000 ? (
-            <div className="soft-panel nav-row" style={{ color: "var(--destructive)" }}>
+            <div
+              className="soft-panel nav-row"
+              style={{ color: "var(--destructive)" }}
+            >
               <AlertTriangle size={18} />
               <strong>Осталось меньше минуты</strong>
             </div>
@@ -718,7 +875,10 @@ export function TestRunner({
           role="dialog"
           onClick={() => setIsSubmitDialogOpen(false)}
         >
-          <div className="confirm-dialog" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="confirm-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="stack">
               <div className="nav-row">
                 <span className="confirm-dialog-icon">
@@ -729,14 +889,22 @@ export function TestRunner({
                 </h2>
               </div>
               <p className="body-1 muted m-0">
-                После подтверждения тест будет отправлен на проверку. Все вопросы без
-                ответа будут засчитаны как fail.
+                После подтверждения тест будет отправлен на проверку. Все
+                вопросы без ответа будут засчитаны как fail.
               </p>
               <div className="confirm-dialog-actions">
-                <Button type="button" variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsSubmitDialogOpen(false)}
+                >
                   Отмена
                 </Button>
-                <Button type="button" onClick={() => submit(false)} disabled={isPending}>
+                <Button
+                  type="button"
+                  onClick={() => submit(false)}
+                  disabled={isPending}
+                >
                   Продолжить
                 </Button>
               </div>

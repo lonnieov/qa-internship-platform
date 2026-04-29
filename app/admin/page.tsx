@@ -21,22 +21,21 @@ function formatDateTime(value: Date | null | undefined) {
 }
 
 export default async function AdminPage() {
-  const [settings, internCount, activeQuestionCount, attempts] = await Promise.all([
-    getSettings(),
-    prisma.internProfile.count(),
-    prisma.question.count({ where: { isActive: true } }),
-    prisma.assessmentAttempt.findMany({
-      orderBy: { startedAt: "desc" },
-      take: 6,
-      include: {
-        internProfile: {
-          include: { profile: true },
+  const [settings, internCount, activeQuestionCount, attempts] =
+    await Promise.all([
+      getSettings(),
+      prisma.internProfile.count(),
+      prisma.question.count({ where: { isActive: true } }),
+      prisma.assessmentAttempt.findMany({
+        orderBy: { startedAt: "desc" },
+        take: 6,
+        include: {
+          internProfile: {
+            include: { profile: true },
+          },
         },
-      },
-    }),
-  ]);
-
-  const passed = attempts.filter((attempt) => (attempt.scorePercent ?? 0) >= 100).length;
+      }),
+    ]);
 
   return (
     <main className="page stack-lg">
@@ -70,7 +69,7 @@ export default async function AdminPage() {
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">{activeQuestionCount}</span>
-            <Badge variant="success">100% pass</Badge>
+            <Badge variant="success">активно</Badge>
           </CardContent>
         </Card>
         <Card>
@@ -110,7 +109,11 @@ export default async function AdminPage() {
                     <td>{formatDateTime(attempt.startedAt)}</td>
                     <td>{formatDateTime(attempt.submittedAt)}</td>
                     <td>
-                      <Badge variant={attempt.status === "SUBMITTED" ? "success" : "warning"}>
+                      <Badge
+                        variant={
+                          attempt.status === "SUBMITTED" ? "success" : "warning"
+                        }
+                      >
                         {attempt.status}
                       </Badge>
                     </td>
@@ -120,7 +123,9 @@ export default async function AdminPage() {
                     </td>
                     <td>
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/attempts/${attempt.id}`}>Открыть</Link>
+                        <Link href={`/admin/attempts/${attempt.id}`}>
+                          Открыть
+                        </Link>
                       </Button>
                     </td>
                   </tr>
@@ -135,11 +140,6 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
-          {attempts.length > 0 ? (
-            <p className="body-2 muted">
-              В выборке последних попыток прошли {passed} из {attempts.length}.
-            </p>
-          ) : null}
         </CardContent>
       </Card>
     </main>

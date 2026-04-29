@@ -4,13 +4,27 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeLegacyTrack } from "@/lib/question-classification";
 import { generateInviteCode, hashInviteCode } from "@/lib/security";
+import { nextTrackOrder, uniqueTrackSlug } from "@/lib/tracks";
 
 export type InvitationState = {
   ok: boolean;
   message: string;
   inviteCode?: string;
 };
+
+async function resolveQuestionTrack(formData: FormData) {
+  const trackId = String(formData.get("trackId") ?? "");
+  const track = trackId
+    ? await prisma.track.findUnique({ where: { id: trackId } })
+    : null;
+
+  return {
+    trackId: track?.id ?? null,
+    trackName: track?.name ?? normalizeLegacyTrack(String(formData.get("track") ?? "")),
+  };
+}
 
 export async function createInvitationAction(
   _prevState: InvitationState,
@@ -72,7 +86,6 @@ export async function updateSettingsAction(formData: FormData) {
         Math.max(Math.round(totalTimeMinutes), 1),
         240,
       ),
-      passingScore: 100,
     },
     create: {
       id: "global",
@@ -80,7 +93,6 @@ export async function updateSettingsAction(formData: FormData) {
         Math.max(Math.round(totalTimeMinutes), 1),
         240,
       ),
-      passingScore: 100,
     },
   });
 
@@ -91,6 +103,7 @@ export async function updateSettingsAction(formData: FormData) {
 export async function createQuestionAction(formData: FormData) {
   const admin = await requireAdmin();
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const track = await resolveQuestionTrack(formData);
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
@@ -168,6 +181,8 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: questionType,
         text,
+        track: track.trackName,
+        trackId: track.trackId,
         explanation: explanation || null,
         order: (lastQuestion?.order ?? 0) + 1,
         createdById: admin.id,
@@ -192,6 +207,8 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "QUIZ",
         text,
+        track: track.trackName,
+        trackId: track.trackId,
         explanation: explanation || null,
         order: (lastQuestion?.order ?? 0) + 1,
         createdById: admin.id,
@@ -215,6 +232,7 @@ export async function updateQuestionAction(formData: FormData) {
   await requireAdmin();
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const track = await resolveQuestionTrack(formData);
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
@@ -301,6 +319,8 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        track: track.trackName,
+        trackId: track.trackId,
         explanation: explanation || null,
         apiConfig,
       },
@@ -329,6 +349,8 @@ export async function updateQuestionAction(formData: FormData) {
         where: { id: questionId },
         data: {
           text,
+          track: track.trackName,
+          trackId: track.trackId,
           explanation: explanation || null,
         },
       }),
@@ -388,4 +410,71 @@ export async function deleteQuestionAction(formData: FormData) {
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
+}
+
+export async function createTrackAction(formData: FormData) {
+  await requireAdmin();
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!name) return;
+
+  await prisma.track.create({
+    data: {
+      name,
+      slug: await uniqueTrackSlug(name),
+      order: await nextTrackOrder(),
+    },
+  });
+
+  revalidatePath("/admin/questions");
+}
+
+export async function updateTrackAction(formData: FormData) {
+  await requireAdmin();
+  const trackId = String(formData.get("trackId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const order = Number(formData.get("order") ?? 0);
+
+  if (!trackId || !name) return;
+
+  await prisma.track.update({
+    where: { id: trackId },
+    data: {
+      name,
+      slug: await uniqueTrackSlug(name, trackId),
+      order: Number.isFinite(order) ? Math.max(0, Math.round(order)) : 0,
+    },
+  });
+
+  revalidatePath("/admin/questions");
+  revalidatePath("/admin");
+}
+
+export async function toggleTrackAction(formData: FormData) {
+  await requireAdmin();
+  const trackId = String(formData.get("trackId") ?? "");
+  const isActive = String(formData.get("isActive") ?? "") === "true";
+
+  if (!trackId) return;
+
+  await prisma.track.update({
+    where: { id: trackId },
+    data: { isActive: !isActive },
+  });
+
+  revalidatePath("/admin/questions");
+}
+
+export async function deleteTrackAction(formData: FormData) {
+  await requireAdmin();
+  const trackId = String(formData.get("trackId") ?? "");
+
+  if (!trackId) return;
+
+  const questionCount = await prisma.question.count({ where: { trackId } });
+  if (questionCount > 0) return;
+
+  await prisma.track.delete({ where: { id: trackId } });
+
+  revalidatePath("/admin/questions");
 }
