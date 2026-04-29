@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
+import { Clock3, Route, TimerReset } from "lucide-react";
+import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
+import { ReportPrintButton } from "@/components/admin/report-print-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -22,119 +25,139 @@ export default async function AttemptDetailsPage({
         },
         orderBy: { createdAt: "asc" },
       },
-      events: {
-        orderBy: { occurredAt: "desc" },
-        take: 250,
-        include: { question: true },
-      },
     },
   });
 
   if (!attempt) notFound();
 
+  const score = attempt.scorePercent ?? 0;
+  const answerTimeMs = attempt.answers.reduce(
+    (sum, answer) => sum + answer.timeSpentMs,
+    0,
+  );
+  const totalTimeMs =
+    typeof attempt.totalTimeSeconds === "number"
+      ? attempt.totalTimeSeconds * 1000
+      : Math.max(
+          0,
+          (attempt.submittedAt?.getTime() ?? Date.now()) - attempt.startedAt.getTime(),
+        );
+  const averageQuestionTimeMs =
+    attempt.questionCount > 0 ? Math.round(answerTimeMs / attempt.questionCount) : 0;
+
   return (
-    <main className="page stack-lg">
+    <main className="page stack-lg report-print-area">
       <div className="page-header">
         <div>
-          <h1 className="head-1">{attempt.internProfile.fullName}</h1>
-          <p className="body-1 muted m-0">Вход по токену без email</p>
+          <h1 className="head-1">Отчёт по ассессменту</h1>
+          <p className="body-1 muted m-0">
+            {attempt.internProfile.fullName} · вход по токену без email
+          </p>
         </div>
-        <Badge variant={(attempt.scorePercent ?? 0) >= 100 ? "success" : "danger"}>
-          {formatPercent(attempt.scorePercent)}
-        </Badge>
+        <div className="nav-row">
+          <Badge variant={score >= 100 ? "success" : "danger"}>
+            {formatPercent(score)}
+          </Badge>
+          <ReportPrintButton />
+        </div>
       </div>
 
-      <section className="grid-3">
+      <section className="grid-2">
         <Card>
           <CardHeader>
-            <CardTitle>Статус</CardTitle>
+            <Clock3 color="var(--primary)" />
+            <CardTitle>Общее время</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Badge variant={attempt.status === "SUBMITTED" ? "success" : "warning"}>
-              {attempt.status}
-            </Badge>
+          <CardContent className="metric">
+            <span className="metric-value">{formatDuration(totalTimeMs)}</span>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Верно</CardTitle>
+            <TimerReset color="var(--accent)" />
+            <CardTitle>Среднее на вопрос</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">
-              {attempt.correctCount}/{attempt.questionCount}
+              {formatDuration(averageQuestionTimeMs)}
             </span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Время</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{attempt.totalTimeSeconds ?? 0}</span>
-            <Badge variant="muted">сек</Badge>
           </CardContent>
         </Card>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Ответы</CardTitle>
+          <CardTitle>Итог</CardTitle>
         </CardHeader>
         <CardContent className="stack">
-          <Progress value={attempt.scorePercent ?? 0} />
-          {attempt.answers.map((answer, index) => {
-            const correctOption = answer.question.options.find((option) => option.isCorrect);
-            return (
-              <div className="soft-panel stack" key={answer.id}>
-                <div className="metric">
-                  <strong>
-                    {index + 1}. {answer.question.text}
-                  </strong>
-                  <Badge variant={answer.isCorrect ? "success" : "danger"}>
-                    {answer.isCorrect ? "верно" : "0 баллов"}
-                  </Badge>
-                </div>
-                <p className="body-2 m-0">
-                  Ответ: {answer.selectedOption?.text ?? "не выбран"}
-                </p>
-                <p className="body-2 muted m-0">
-                  Правильно: {correctOption?.text ?? "не задано"}; время на вопрос:{" "}
-                  {formatDuration(answer.timeSpentMs)}; визитов: {answer.visits}
-                </p>
-              </div>
-            );
-          })}
+          <Progress value={score} />
+          <div className="report-summary-grid">
+            <div>
+              <span className="body-2 muted">Статус</span>
+              <strong>{attempt.status}</strong>
+            </div>
+            <div>
+              <span className="body-2 muted">Верные ответы</span>
+              <strong>
+                {attempt.correctCount}/{attempt.questionCount}
+              </strong>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Лог поведения</CardTitle>
+          <Route color="var(--primary)" />
+          <CardTitle>Время по вопросам</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="event-list">
+          <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Время</th>
-                  <th>Событие</th>
                   <th>Вопрос</th>
-                  <th>Координаты</th>
-                  <th>Target</th>
+                  <th>Ответ</th>
+                  <th>Время</th>
+                  <th>Результат</th>
                 </tr>
               </thead>
               <tbody>
-                {attempt.events.map((event) => (
-                  <tr key={event.id}>
-                    <td>{event.occurredAt.toLocaleTimeString("ru-RU")}</td>
-                    <td>{event.type}</td>
-                    <td>{event.question?.text ?? "-"}</td>
+                {attempt.answers.map((answer, index) => (
+                  <tr key={answer.id}>
                     <td>
-                      {event.x === null || event.y === null
-                        ? "-"
-                        : `${event.x}, ${event.y}`}
+                      <strong>
+                        {index + 1}. {answer.question.text}
+                      </strong>
                     </td>
-                    <td>{event.target ?? "-"}</td>
+                    <td>
+                      {answer.question.type === "API_SANDBOX" ||
+                      answer.question.type === "DEVTOOLS_SANDBOX" ? (
+                        <div className="stack">
+                          <strong>
+                            {answer.apiResponse && typeof answer.apiResponse === "object"
+                              ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
+                              : "API request"}
+                          </strong>
+                          <span className="body-2 muted">
+                            отправок: {answer.submissionCount}
+                          </span>
+                          {answer.apiRequest ? (
+                            <pre className="body-2 m-0 whitespace-pre-wrap">
+                              {stringifyPrettyJson(answer.apiRequest)}
+                            </pre>
+                          ) : null}
+                        </div>
+                      ) : (
+                        answer.selectedOption?.text ?? "не выбран"
+                      )}
+                    </td>
+                    <td>{formatDuration(answer.timeSpentMs)}</td>
+                    <td>
+                      <Badge variant={answer.isCorrect ? "success" : "danger"}>
+                        {answer.isCorrect ? "верно" : "0 баллов"}
+                      </Badge>
+                    </td>
                   </tr>
                 ))}
               </tbody>

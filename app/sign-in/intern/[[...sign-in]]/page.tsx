@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TokenLoginForm } from "@/components/intern/token-login-form";
 
@@ -7,7 +8,7 @@ export default function InternSignInPage() {
     <main className="page page-narrow stack-lg">
       <div className="metric">
         <div className="brand">
-          <span className="brand-mark">Q</span>
+          <ServiceLogo />
           QA Internship Validator
         </div>
         <ThemeToggle />

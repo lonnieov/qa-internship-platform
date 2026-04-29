@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DemoAdminLoginForm } from "@/components/admin/demo-admin-login-form";
+import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -8,7 +9,7 @@ export default function AdminSignInPage() {
     <main className="page page-narrow stack-lg">
       <div className="metric">
         <div className="brand">
-          <span className="brand-mark">A</span>
+          <ServiceLogo />
           Admin access
         </div>
         <ThemeToggle />

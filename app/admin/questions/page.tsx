@@ -1,6 +1,8 @@
-import { deleteQuestionAction, toggleQuestionAction } from "@/actions/admin";
+import { toggleQuestionAction } from "@/actions/admin";
+import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { AiQuestionGenerator } from "@/components/admin/ai-question-generator";
+import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ export default async function AdminQuestionsPage() {
         <div>
           <h1 className="head-1">Банк вопросов</h1>
           <p className="body-1 muted m-0">
-            Каждый вопрос закрытого типа: четыре варианта и один правильный.
+            Поддерживаются quiz-вопросы и упрощённые API sandbox задачи.
           </p>
         </div>
       </div>
@@ -37,6 +39,14 @@ export default async function AdminQuestionsPage() {
                   <CardTitle>
                     {index + 1}. {question.text}
                   </CardTitle>
+                  <p className="body-2 muted m-0">
+                    Тип:{" "}
+                    {question.type === "DEVTOOLS_SANDBOX"
+                      ? "DevTools Sandbox"
+                      : question.type === "API_SANDBOX"
+                        ? "API Sandbox"
+                        : "Quiz"}
+                  </p>
                   {question.explanation ? (
                     <p className="body-2 muted m-0">{question.explanation}</p>
                   ) : null}
@@ -47,20 +57,34 @@ export default async function AdminQuestionsPage() {
               </div>
             </CardHeader>
             <CardContent className="stack">
-              <div className="grid-2">
-                {question.options.map((option) => (
-                  <div
-                    className="soft-panel"
-                    key={option.id}
-                    style={{
-                      border: option.isCorrect ? "1px solid var(--accent)" : undefined,
-                    }}
-                  >
-                    <strong>{option.label}.</strong> {option.text}
+              {question.type === "API_SANDBOX" ||
+              question.type === "DEVTOOLS_SANDBOX" ? (
+                <div className="stack">
+                  <div className="soft-panel">
+                    <pre className="body-2 m-0 whitespace-pre-wrap">
+                      {stringifyPrettyJson(question.apiConfig)}
+                    </pre>
                   </div>
-                ))}
-              </div>
-              <div className="nav-row">
+                </div>
+              ) : (
+                <div className="grid-2">
+                  {question.options.map((option) => (
+                    <div
+                      className="soft-panel"
+                      key={option.id}
+                      style={{
+                        border: option.isCorrect ? "1px solid var(--accent)" : undefined,
+                      }}
+                    >
+                      <strong>{option.label}.</strong> {option.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div
+                className="nav-row"
+                style={{ alignItems: "flex-end", justifyContent: "space-between" }}
+              >
                 <form action={toggleQuestionAction}>
                   <input type="hidden" name="questionId" value={question.id} />
                   <input
@@ -72,12 +96,7 @@ export default async function AdminQuestionsPage() {
                     {question.isActive ? "Скрыть" : "Активировать"}
                   </Button>
                 </form>
-                <form action={deleteQuestionAction}>
-                  <input type="hidden" name="questionId" value={question.id} />
-                  <Button type="submit" variant="outline" size="sm">
-                    Архивировать
-                  </Button>
-                </form>
+                <QuestionDeleteForm questionId={question.id} />
               </div>
             </CardContent>
           </Card>

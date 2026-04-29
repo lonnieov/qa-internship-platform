@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, TimerReset } from "lucide-react";
+import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ export default function HomePage() {
       <section className="stack-lg" style={{ paddingTop: 48 }}>
         <div className="metric">
           <div className="brand">
-            <span className="brand-mark">Q</span>
+            <ServiceLogo />
             QA Internship Validator
           </div>
           <ThemeToggle />

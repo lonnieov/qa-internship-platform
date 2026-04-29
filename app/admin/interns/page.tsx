@@ -7,6 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+function formatDateTime(value: Date | null | undefined) {
+  if (!value) return "—";
+
+  return value.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default async function AdminInternsPage() {
   const [invitations, interns] = await Promise.all([
     prisma.invitation.findMany({
@@ -19,7 +31,8 @@ export default async function AdminInternsPage() {
       include: {
         profile: true,
         attempts: {
-          orderBy: { startedAt: "desc" },
+          where: { status: { not: "IN_PROGRESS" } },
+          orderBy: { submittedAt: "desc" },
           take: 1,
         },
       },
@@ -50,6 +63,8 @@ export default async function AdminInternsPage() {
                 <thead>
                   <tr>
                     <th>Стажёр</th>
+                    <th>Зарегистрирован</th>
+                    <th>Прошёл тест</th>
                     <th>Последний результат</th>
                     <th />
                   </tr>
@@ -60,6 +75,8 @@ export default async function AdminInternsPage() {
                     return (
                       <tr key={intern.id}>
                         <td>{intern.fullName}</td>
+                        <td>{formatDateTime(intern.createdAt)}</td>
+                        <td>{formatDateTime(latest?.submittedAt)}</td>
                         <td>{latest ? formatPercent(latest.scorePercent) : "нет попыток"}</td>
                         <td>
                           {latest ? (

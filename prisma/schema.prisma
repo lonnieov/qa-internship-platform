@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum Role {
@@ -26,6 +26,12 @@ enum AttemptStatus {
   EXPIRED
 }
 
+enum QuestionType {
+  QUIZ
+  API_SANDBOX
+  DEVTOOLS_SANDBOX
+}
+
 enum TrackingEventType {
   START
   MOUSE_MOVE
@@ -35,6 +41,7 @@ enum TrackingEventType {
   FOCUS
   BLUR
   ANSWER_SELECT
+  API_REQUEST
   NAVIGATION
   SUBMIT
   TIMER_EXPIRED
@@ -99,10 +106,12 @@ model AssessmentSettings {
 
 model Question {
   id          String   @id @default(cuid())
+  type        QuestionType @default(QUIZ)
   text        String
   explanation String?
   isActive    Boolean  @default(true)
   order       Int      @default(0)
+  apiConfig   Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById String?
@@ -158,10 +167,13 @@ model AssessmentAnswer {
   attemptId        String
   questionId       String
   selectedOptionId String?
+  apiRequest       Json?
+  apiResponse      Json?
   isCorrect        Boolean  @default(false)
   answeredAt       DateTime?
   timeSpentMs      Int      @default(0)
   visits           Int      @default(0)
+  submissionCount  Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

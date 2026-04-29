@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:deploy": "prisma generate && prisma db push && next build",
     "start": "next start",
     "lint": "eslint .",
     "db:generate": "prisma generate",
@@ -16,7 +17,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "latest",
-    "@prisma/adapter-libsql": "latest",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "latest",
     "@radix-ui/react-slot": "latest",
     "class-variance-authority": "latest",
@@ -24,6 +25,7 @@
     "lucide-react": "latest",
     "next": "latest",
     "openai": "latest",
+    "pg": "^8.20.0",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest"
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
+    "@types/pg": "^8.20.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "dotenv": "latest",

@@ -1,24 +1,26 @@
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-
-const databaseUrl =
-  process.env.TURSO_DATABASE_URL ||
-  process.env.DATABASE_URL ||
-  "file:./prisma/dev.db";
-
-const adapter = new PrismaLibSql({
-  url: databaseUrl,
-  authToken: process.env.TURSO_AUTH_TOKEN || undefined,
-});
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
+function databaseUrl() {
+  const url = process.env.DATABASE_URL;
+
+  if (!url) {
+    throw new Error("DATABASE_URL is required for PostgreSQL connection.");
+  }
+
+  return url;
+}
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter,
+    adapter: new PrismaPg({
+      connectionString: databaseUrl(),
+    }),
   });
 
 if (process.env.NODE_ENV !== "production") {

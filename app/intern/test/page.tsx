@@ -47,9 +47,16 @@ export default async function InternTestPage({
 
   const questions = attempt.answers.map((answer) => ({
     id: answer.question.id,
+    type: answer.question.type,
     text: answer.question.text,
+    explanation: answer.question.explanation,
     selectedOptionId: answer.selectedOptionId,
     timeSpentMs: answer.timeSpentMs,
+    submissionCount: answer.submissionCount,
+    apiConfig: answer.question.apiConfig,
+    apiRequest: answer.apiRequest,
+    apiResponse: answer.apiResponse,
+    isCorrect: answer.isCorrect,
     options: answer.question.options.map((option) => ({
       id: option.id,
       label: option.label,
@@ -61,7 +68,6 @@ export default async function InternTestPage({
   return (
     <TestRunner
       attemptId={attempt.id}
-      startedAt={attempt.startedAt.toISOString()}
       deadlineAt={attempt.deadlineAt.toISOString()}
       questions={questions}
     />

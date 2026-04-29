@@ -6,8 +6,8 @@ Next.js App Router проект для ассессмента кандидато
 
 - Next.js App Router, TypeScript, Vercel
 - Clerk Auth для админов, token-only вход для стажёров
-- Prisma 7 style client + `@prisma/adapter-libsql`
-- Turso SQLite/libSQL, локально `file:./prisma/dev.db`
+- Prisma 7 style client + `@prisma/adapter-pg`
+- PostgreSQL через `DATABASE_URL`
 - shadcn/ui-style компоненты и Coin design tokens
 - OpenAI Responses API для опциональных подсказок вопросов
 
@@ -19,7 +19,8 @@ Next.js App Router проект для ассессмента кандидато
 npm install
 ```
 
-2. Создать `.env` из `.env.example`. Для demo-админки Clerk keys не нужны.
+2. Создать `.env` из `.env.example` и указать PostgreSQL `DATABASE_URL`.
+   Для demo-админки Clerk keys не нужны.
 
 3. Подготовить БД:
 
@@ -55,20 +56,26 @@ SHA-256 hash.
 пароль хранится в `.env` как PBKDF2-SHA256 hash, а сессия - в httpOnly cookie.
 В production установите `DEMO_ADMIN_ENABLED=false` или не задавайте эти переменные.
 
-## Turso
+## PostgreSQL
 
-Для локальной разработки используется `DATABASE_URL="file:./prisma/dev.db"`.
-Для Vercel/Turso задайте:
+Приложение использует PostgreSQL. В `.env` и на сервере задайте:
 
 ```bash
-TURSO_DATABASE_URL="libsql://..."
-TURSO_AUTH_TOKEN="..."
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
 ```
 
-`TURSO_DATABASE_URL` имеет приоритет в runtime-клиенте. Prisma CLI при миграциях
-использует `DATABASE_URL`; для remote Turso миграции удобнее применять через
-Turso CLI, если Prisma Migrate несовместим с HTTP-подключением в вашей версии.
+Для Render/другого хостинга используйте external PostgreSQL URL. После смены
+переменной окружения примените схему:
+
+```bash
+npm run db:push
+```
+
+Для деплоя можно использовать build command:
+
+```bash
+npm run build:deploy
+```
 
 ## Что реализовано
 
@@ -83,6 +90,6 @@ Turso CLI, если Prisma Migrate несовместим с HTTP-подключ
 - Финальный экран результата с процентом прохождения.
 - После завершения теста токен получает статус `COMPLETED`, сессия стажёра
   очищается, повторный вход по токену невозможен.
-- Логирование движений курсора, кликов, клавиш, visibility/focus/blur и навигации.
 - Сохранение времени на каждый вопрос и выбранного ответа.
+- Автозавершение теста при уходе со вкладки.
 - Детализация попытки для администратора.

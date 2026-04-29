@@ -2,8 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  evaluateApiSandboxRequest,
+  getJsonPathValue,
+  normalizeAnswerValue,
+  normalizeApiSandboxConfig,
+} from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
-import { requireIntern } from "@/lib/auth";
+import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
 import { hashInviteCode } from "@/lib/security";
 import {
@@ -128,9 +134,9 @@ export async function startAttemptAction() {
   }
 
   if (existing) {
-    await createResultSession(existing.id);
+    const ticket = await createResultSession(existing.id);
     await clearInternSession();
-    redirect("/intern/result");
+    redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
   }
 
   const questions = await prisma.question.findMany({
@@ -159,13 +165,6 @@ export async function startAttemptAction() {
         create: questions.map((question) => ({
           questionId: question.id,
         })),
-      },
-      events: {
-        create: {
-          type: "START",
-          occurredAt: now,
-          metadata: { questionCount: questions.length },
-        },
       },
     },
   });
@@ -220,16 +219,6 @@ export async function selectAnswerAction(input: {
     },
   });
 
-  await prisma.trackingEvent.create({
-    data: {
-      attemptId: input.attemptId,
-      questionId: input.questionId,
-      type: "ANSWER_SELECT",
-      elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      metadata: { optionId: option.id, isCorrect: option.isCorrect },
-    },
-  });
-
   revalidatePath("/intern/test");
   return { ok: true, expired: false };
 }
@@ -240,7 +229,9 @@ export async function spendQuestionTimeAction(input: {
   timeSpentMs: number;
   countVisit?: boolean;
 }) {
-  const profile = await requireIntern();
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "INTERN" || !profile.internProfile) return;
+
   const attempt = await prisma.assessmentAttempt.findFirst({
     where: {
       id: input.attemptId,
@@ -283,16 +274,6 @@ export async function submitAttemptAction(input: {
     redirect("/intern");
   }
 
-  if (attempt.status === "IN_PROGRESS") {
-    await prisma.trackingEvent.create({
-      data: {
-        attemptId: attempt.id,
-        type: input.auto ? "TIMER_EXPIRED" : "SUBMIT",
-        elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      },
-    });
-  }
-
   const expired = await expireAttemptIfNeeded(attempt.id);
   if (expired?.status === "IN_PROGRESS") {
     await finalizeAttempt(attempt.id, Boolean(input.auto));
@@ -310,4 +291,167 @@ export async function submitAttemptAction(input: {
   revalidatePath("/intern");
   revalidatePath("/admin");
   redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+}
+
+export async function submitApiSandboxAction(input: {
+  attemptId: string;
+  questionId: string;
+  method: string;
+  url: string;
+  headersText?: string;
+  bodyText?: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (!answer || answer.question.type !== "API_SANDBOX" || !answer.question.apiConfig) {
+    return { ok: false, expired: false };
+  }
+
+  const evaluation = evaluateApiSandboxRequest(answer.question.apiConfig, {
+    method: input.method,
+    url: input.url,
+    headersText: input.headersText,
+    bodyText: input.bodyText,
+  });
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: evaluation.normalizedRequest,
+      apiResponse: evaluation.response,
+      isCorrect: evaluation.ok,
+      answeredAt: new Date(),
+      submissionCount: {
+        increment: 1,
+      },
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return {
+    ok: true,
+    expired: false,
+    correct: evaluation.ok,
+    response: evaluation.response,
+  };
+}
+
+export async function submitDevtoolsAnswerAction(input: {
+  attemptId: string;
+  questionId: string;
+  answerText: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (
+    !answer ||
+    answer.question.type !== "DEVTOOLS_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
+    return { ok: false, expired: false };
+  }
+
+  const config = normalizeApiSandboxConfig(answer.question.apiConfig);
+  if (config.mode !== "DEVTOOLS_RESPONSE") {
+    return { ok: false, expired: false };
+  }
+
+  const expectedFromPath = normalizeAnswerValue(
+    getJsonPathValue(config.successBody, config.answerPath),
+  );
+  const expected = normalizeAnswerValue(config.expectedAnswer ?? expectedFromPath);
+  const actual = normalizeAnswerValue(input.answerText);
+  const isCorrect = actual.toLowerCase() === expected.toLowerCase();
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: {
+        mode: "DEVTOOLS_RESPONSE",
+        answerPath: config.answerPath,
+        answerText: input.answerText,
+      },
+      apiResponse: {
+        status: config.successStatus ?? 200,
+        headers: config.successHeaders ?? {},
+        body: config.successBody ?? { ok: true },
+      },
+      isCorrect,
+      answeredAt: new Date(),
+      submissionCount: {
+        increment: 1,
+      },
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return { ok: true, expired: false, correct: isCorrect };
 }

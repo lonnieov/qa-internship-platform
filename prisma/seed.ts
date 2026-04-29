@@ -28,6 +28,29 @@ const sampleQuestions = [
   },
 ];
 
+const sampleApiQuestion = {
+  text: "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201 Created.",
+  explanation:
+    "Проверяется сборка POST-запроса, header авторизации и корректный JSON body.",
+  apiConfig: {
+    method: "POST",
+    path: "/users",
+    headers: {
+      authorization: "Bearer test-token",
+      "content-type": "application/json",
+    },
+    body: {
+      name: "Ali Valiyev",
+    },
+    successStatus: 201,
+    successBody: {
+      id: 101,
+      name: "Ali Valiyev",
+      created: true,
+    },
+  },
+};
+
 async function main() {
   await prisma.assessmentSettings.upsert({
     where: { id: "global" },
@@ -54,6 +77,16 @@ async function main() {
       },
     });
   }
+
+  await prisma.question.create({
+    data: {
+      type: "API_SANDBOX",
+      text: sampleApiQuestion.text,
+      explanation: sampleApiQuestion.explanation,
+      order: sampleQuestions.length + 1,
+      apiConfig: sampleApiQuestion.apiConfig,
+    },
+  });
 }
 
 main()
