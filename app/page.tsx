@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, TimerReset } from "lucide-react";
+import { ArrowRight, ListChecks, ShieldCheck, TimerReset } from "lucide-react";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export default function HomePage() {
   return (
     <main className="page page-narrow stack-lg">
-      <section className="stack-lg" style={{ paddingTop: 48 }}>
+      <section
+        className="surface stack-lg"
+        style={{ padding: 32, marginTop: 48 }}
+      >
         <div className="metric">
           <div className="brand">
             <ServiceLogo />
-            QA Internship Validator
+            <span>
+              <strong>Coin</strong> Assessment
+            </span>
           </div>
           <ThemeToggle />
         </div>
         <div className="stack">
-          <h1 className="head-1">Платформа ассессмента для отбора стажёров</h1>
+          <h1 className="head-1">Платформа отбора стажёров</h1>
           <p className="body-1 muted">
-            Два независимых входа, контроль вопросов из админки, стопроцентный
-            проходной балл, таймер и запись поведения кандидата во время теста.
+            Два независимых входа, токены для стажёров, контроль вопросов из
+            админки, стопроцентный проходной балл и таймер на попытку.
           </p>
         </div>
         <div className="nav-row">
@@ -35,25 +40,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="grid-2">
+      <section className="grid-3">
         <Card>
           <CardHeader>
             <ShieldCheck color="var(--primary)" />
-          <CardTitle>Доступ по токену</CardTitle>
-        </CardHeader>
-        <CardContent className="muted">
-            Админ создаёт кандидата по имени и фамилии, затем выдаёт токен.
-            В базе хранится только SHA-256 хэш токена.
-        </CardContent>
-      </Card>
+            <CardTitle>Доступ по токену</CardTitle>
+          </CardHeader>
+          <CardContent className="muted">
+            Админ создаёт кандидата по имени и фамилии, затем выдаёт токен. В
+            базе хранится только SHA-256 хэш токена.
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <TimerReset color="var(--primary)" />
-            <CardTitle>Тайминг и трекинг</CardTitle>
+            <CardTitle>Одна попытка</CardTitle>
           </CardHeader>
           <CardContent className="muted">
-            После старта фиксируются ответы, переходы, клики, движения курсора и
-            время на каждый вопрос. При истечении лимита тест закрывается сам.
+            После старта фиксируется время на каждый вопрос. При истечении
+            лимита тест закрывается сам.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <ListChecks color="var(--primary)" />
+            <CardTitle>Три типа вопросов</CardTitle>
+          </CardHeader>
+          <CardContent className="muted">
+            Quiz, API Sandbox и DevTools Sandbox управляются из единого банка
+            вопросов.
           </CardContent>
         </Card>
       </section>

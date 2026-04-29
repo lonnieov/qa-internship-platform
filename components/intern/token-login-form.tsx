@@ -6,7 +6,6 @@ import {
   type InternTokenLoginState,
 } from "@/actions/intern";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const initialState: InternTokenLoginState = {
@@ -21,21 +20,14 @@ export function TokenLoginForm() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Войти по токену</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={action} className="form-grid">
-          <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
-          <Button disabled={isPending} type="submit">
-            Войти
-          </Button>
-        </form>
-        {state.message ? (
-          <p className="body-2 muted mt-4 mb-0">{state.message}</p>
-        ) : null}
-      </CardContent>
-    </Card>
+    <form action={action} className="form-grid">
+      <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
+      <Button disabled={isPending} type="submit">
+        Войти
+      </Button>
+      {state.message ? (
+        <p className="body-2 muted m-0">{state.message}</p>
+      ) : null}
+    </form>
   );
 }
