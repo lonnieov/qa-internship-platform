@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<title>Coin Assessment — дизайн</title>
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin: 0; height: 100%; background: #F4F6FA; }
+  body { font-family: 'Inter', -apple-system, sans-serif; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="screens/login.jsx"></script>
+<script type="text/babel" src="screens/admin-dashboard.jsx"></script>
+<script type="text/babel" src="screens/admin-create.jsx"></script>
+<script type="text/babel" src="screens/admin-questions.jsx"></script>
+<script type="text/babel" src="screens/admin-settings.jsx"></script>
+<script type="text/babel" src="screens/admin-results.jsx"></script>
+<script type="text/babel" src="screens/intern.jsx"></script>
+<script type="text/babel" src="screens/bug-detection.jsx"></script>
+<script type="text/babel" src="screens/api-testing.jsx"></script>
+<script type="text/babel" src="screens/doc-review.jsx"></script>
+
+<script type="text/babel">
+const { DesignCanvas, DCSection, DCArtboard } = window;
+
+const App = () => (
+  <DesignCanvas
+    title="Coin · Платформа отбора стажёров"
+    subtitle="Hi-fi дизайн · Light · 9 экранов · дизайн-токены Coin"
+  >
+    <DCSection id="auth" title="Авторизация">
+      <DCArtboard id="login" label="01 · Вход (общий)" width={1440} height={900}>
+        <LoginScreen/>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="admin" title="Администратор">
+      <DCArtboard id="admin-dashboard" label="02 · Дашборд стажёров" width={1440} height={900}>
+        <AdminDashboard/>
+      </DCArtboard>
+      <DCArtboard id="admin-create" label="03 · Создание стажёра" width={1440} height={900}>
+        <AdminCreateIntern/>
+      </DCArtboard>
+      <DCArtboard id="admin-questions" label="04 · Управление вопросами" width={1440} height={900}>
+        <AdminQuestions/>
+      </DCArtboard>
+      <DCArtboard id="admin-settings" label="05 · Настройки теста" width={1440} height={900}>
+        <AdminSettings/>
+      </DCArtboard>
+      <DCArtboard id="admin-results" label="06 · Результаты + heatmap" width={1440} height={900}>
+        <AdminResults/>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="intern" title="Стажёр — MCQ">
+      <DCArtboard id="intern-start" label="07 · Старт ассессмента" width={1440} height={900}>
+        <InternStart/>
+      </DCArtboard>
+      <DCArtboard id="intern-test" label="08 · Прохождение теста" width={1440} height={900}>
+        <InternTest/>
+      </DCArtboard>
+      <DCArtboard id="intern-result" label="09 · Экран результата" width={1440} height={900}>
+        <InternResult/>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="bug" title="Сценарий 1 · UI Bug Detection">
+      <DCArtboard id="intern-bug" label="10 · Стажёр — поиск багов" width={1440} height={900}>
+        <InternBugDetection/>
+      </DCArtboard>
+      <DCArtboard id="admin-bug" label="11 · Админ — оценка багов" width={1440} height={900}>
+        <AdminBugReview/>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="api" title="Сценарий 2 · API Testing">
+      <DCArtboard id="intern-api" label="12 · Стажёр — Postman-like" width={1440} height={900}>
+        <InternApiTesting/>
+      </DCArtboard>
+      <DCArtboard id="admin-api" label="13 · Админ — настройка API задания" width={1440} height={900}>
+        <AdminApiTask/>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="doc" title="Сценарий 3 · Documentation Review">
+      <DCArtboard id="intern-doc" label="14 · Стажёр — анализ документа" width={1440} height={900}>
+        <InternDocReview/>
+      </DCArtboard>
+      <DCArtboard id="admin-doc" label="15 · Админ — оценка анализа" width={1440} height={900}>
+        <AdminDocReview/>
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

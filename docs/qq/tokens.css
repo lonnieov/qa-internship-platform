@@ -1,0 +1,170 @@
+/* Coin Design System — Light Theme */
+:root {
+  /* Primary */
+  --c-blue: #0077FF;
+  --c-blue-12: rgba(0,119,255,0.12);
+  --c-blue-08: rgba(0,119,255,0.08);
+  --c-white: #FFFFFF;
+  --c-black: #141414;
+  --c-gold: #E0A500;
+  --c-purple: #AA43C4;
+
+  /* Grey for Light */
+  --c-g48:  #76787A;
+  --c-g72:  #B0B4B8;
+  --c-g80:  #C4C8CC;
+  --c-g1288:#C5D2E0;
+  --c-g96:  #EBF0F5;
+
+  /* Alerts */
+  --c-green: #00CC52;
+  --c-g56:   #898C8F;
+  --c-orange:#FF8800;
+  --c-red:   #FF4400;
+
+  /* Surfaces (light) */
+  --bg-app: #F4F6FA;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #EBF0F5;
+  --bg-divider: #EBF0F5;
+
+  /* Radii */
+  --r-garden: 8px;
+  --r-island: 16px;
+  --r-continent: 32px;
+  --r-pill: 9999px;
+
+  /* Spacing */
+  --s-s: 8px;
+  --s-m: 12px;
+  --s-l: 16px;
+  --s-xl: 24px;
+  --s-xxl: 32px;
+  --s-xxxl: 48px;
+
+  /* Font */
+  --font: "Euclid Circular A", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Euclid fallback approximation via Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+.coin {
+  font-family: var(--font);
+  color: var(--c-black);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* Type scale (Coin) */
+.t-balance { font-size: 24px; line-height: 34px; font-weight: 600; letter-spacing: -0.02em; }
+.t-h1 { font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em; }
+.t-h2 { font-size: 16px; line-height: 22.5px; font-weight: 600; letter-spacing: -0.01em; }
+.t-body1 { font-size: 14px; line-height: 20px; font-weight: 400; }
+.t-body1-m { font-size: 14px; line-height: 20px; font-weight: 500; }
+.t-body2 { font-size: 12px; line-height: 16px; font-weight: 400; }
+.t-body2-m { font-size: 12px; line-height: 16px; font-weight: 500; }
+.t-menu { font-size: 11px; line-height: 14px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+.t-footer { font-size: 10px; line-height: 14px; font-weight: 400; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; cursor: pointer; font-family: var(--font); font-weight: 500;
+  border-radius: var(--r-garden); padding: 10px 16px; font-size: 14px; line-height: 20px;
+  transition: background .15s ease, transform .05s ease;
+}
+.btn-primary { background: var(--c-blue); color: #fff; }
+.btn-primary:hover { background: #0066DD; }
+.btn-ghost { background: transparent; color: var(--c-black); }
+.btn-ghost:hover { background: var(--c-g96); }
+.btn-secondary { background: var(--c-g96); color: var(--c-black); }
+.btn-secondary:hover { background: #DFE5EC; }
+.btn-danger { background: var(--c-red); color: #fff; }
+.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: var(--r-garden); background: var(--c-g96); color: var(--c-black); }
+.btn-icon:hover { background: #DFE5EC; }
+.btn-lg { padding: 14px 20px; font-size: 16px; line-height: 22.5px; }
+
+/* Inputs */
+.input-label { font-size: 12px; line-height: 16px; color: var(--c-g48); font-weight: 500; margin-bottom: 6px; display: block; }
+.input {
+  width: 100%; height: 44px; padding: 10px 14px;
+  border: 1.5px solid var(--c-g96); border-radius: var(--r-garden);
+  font-family: var(--font); font-size: 14px; line-height: 20px; color: var(--c-black);
+  background: #fff; outline: none; transition: border-color .15s;
+}
+.input:focus { border-color: var(--c-blue); }
+.input.error { border-color: var(--c-red); }
+.help-text { font-size: 12px; line-height: 16px; color: var(--c-g48); margin-top: 6px; }
+.help-text.error { color: var(--c-red); }
+
+/* Cards */
+.card { background: var(--bg-card); border-radius: var(--r-island); padding: var(--s-xl); border: 1px solid var(--bg-divider); }
+.card-flat { background: var(--bg-card); border-radius: var(--r-island); border: 1px solid var(--bg-divider); }
+
+/* Badges / Chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-pill); font-size: 12px; line-height: 16px; font-weight: 500; }
+.chip-blue { background: var(--c-blue-12); color: var(--c-blue); }
+.chip-green { background: rgba(0,204,82,0.12); color: var(--c-green); }
+.chip-orange { background: rgba(255,136,0,0.12); color: var(--c-orange); }
+.chip-red { background: rgba(255,68,0,0.12); color: var(--c-red); }
+.chip-purple { background: rgba(170,67,196,0.12); color: var(--c-purple); }
+.chip-gold { background: rgba(224,165,0,0.14); color: var(--c-gold); }
+.chip-grey { background: var(--c-g96); color: var(--c-g48); }
+
+/* Divider */
+.divider { height: 1px; background: var(--bg-divider); border: none; }
+
+/* Sidebar */
+.sidebar {
+  width: 240px; background: #fff; border-right: 1px solid var(--bg-divider);
+  display: flex; flex-direction: column; padding: 24px 16px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: var(--r-garden); color: var(--c-g48); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.nav-item:hover { background: var(--c-g96); }
+.nav-item.active { background: var(--c-blue-08); color: var(--c-blue); }
+
+/* Topbar */
+.topbar {
+  height: 64px; background: #fff; border-bottom: 1px solid var(--bg-divider);
+  padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
+}
+
+/* Table */
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
+.tbl thead th {
+  text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--c-g48); padding: 10px 16px; background: #fff;
+  border-bottom: 1px solid var(--bg-divider);
+}
+.tbl tbody td { padding: 14px 16px; border-bottom: 1px solid var(--bg-divider); font-size: 14px; }
+.tbl tbody tr:hover { background: #FAFBFD; }
+
+/* Avatar */
+.avatar {
+  width: 36px; height: 36px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px; color: #fff;
+}
+
+/* Logo mark */
+.logo-mark {
+  width: 32px; height: 32px; border-radius: 10px; background: var(--c-blue);
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+  font-weight: 700; font-size: 16px; letter-spacing: -0.02em;
+}
+
+/* Progress */
+.progress-track { height: 6px; background: var(--c-g96); border-radius: var(--r-pill); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--c-blue); border-radius: var(--r-pill); transition: width .3s; }
+
+/* Misc */
+.muted { color: var(--c-g48); }
+.subtle { color: var(--c-g56); }

@@ -1,11 +1,11 @@
-import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { logoutDemoAdminAction } from "@/actions/demo-admin";
 import { requireAdmin } from "@/lib/auth";
 import { isDemoAdminProfile } from "@/lib/demo-admin-auth";
-import { ServiceLogo } from "@/components/service-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import {
+  CoinAdminSidebar,
+  CoinSidebarLogoutButton,
+} from "@/components/layout/coin-shell";
 
 export default async function AdminLayout({
   children,
@@ -13,37 +13,27 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireAdmin();
+  const adminName =
+    [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Администратор";
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <Link className="brand" href="/admin">
-          <ServiceLogo />
-          Admin
-        </Link>
-        <nav className="nav-row">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/interns">Стажёры</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/questions">Вопросы</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/settings">Настройки</Link>
-          </Button>
-          <ThemeToggle />
-          {isDemoAdminProfile(profile) ? (
+    <div className="coin-admin-shell">
+      <CoinAdminSidebar
+        active="dashboard"
+        adminName={adminName}
+        onLogout={
+          isDemoAdminProfile(profile) ? (
             <form action={logoutDemoAdminAction}>
-              <Button variant="outline" size="sm" type="submit">
-                Выйти
-              </Button>
+              <button className="coin-sidebar-logout-button" type="submit">
+                <CoinSidebarLogoutButton />
+              </button>
             </form>
           ) : (
             <UserButton />
-          )}
-        </nav>
-      </header>
-      {children}
+          )
+        }
+      />
+      <div className="coin-admin-shell__content">{children}</div>
     </div>
   );
 }

@@ -5,9 +5,6 @@ import {
   loginDemoAdminAction,
   type DemoAdminLoginState,
 } from "@/actions/demo-admin";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const initialState: DemoAdminLoginState = {
   ok: false,
@@ -21,19 +18,36 @@ export function DemoAdminLoginForm() {
   );
 
   return (
-    <form action={action} className="form-grid">
-      <div className="form-grid">
-        <Label htmlFor="username">Логин</Label>
-        <Input id="username" name="username" defaultValue="admin" />
+    <form action={action} className="coin-form">
+      <div>
+        <label className="input-label" htmlFor="username">
+          Логин
+        </label>
+        <div className="coin-field">
+          <span className="coin-field__icon">@</span>
+          <input className="coin-input" id="username" name="username" defaultValue="admin" />
+        </div>
       </div>
-      <div className="form-grid">
-        <Label htmlFor="password">Пароль</Label>
-        <Input id="password" name="password" type="password" defaultValue="admin" />
+      <div>
+        <label className="input-label" htmlFor="password">
+          Пароль
+        </label>
+        <div className="coin-field">
+          <span className="coin-field__icon">•</span>
+          <input
+            className="coin-input"
+            id="password"
+            name="password"
+            type="password"
+            defaultValue="admin"
+          />
+        </div>
+        <div className="help-text">Креденшелы выдаёт администратор</div>
       </div>
-      <Button type="submit" disabled={isPending}>
-        Войти как admin
-      </Button>
-      {state.message ? <p className="body-2 muted m-0">{state.message}</p> : null}
+      <button className="coin-btn coin-btn--primary coin-btn--lg coin-btn--full" type="submit" disabled={isPending}>
+        {isPending ? "Входим..." : "Войти"}
+      </button>
+      {state.message ? <p className="help-text">{state.message}</p> : null}
     </form>
   );
 }

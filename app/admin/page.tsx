@@ -1,12 +1,8 @@
 import Link from "next/link";
-import { CheckCircle2, Clock3, UsersRound } from "lucide-react";
+import { Check, Clock3, Filter, Plus, Search, X } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getSettings } from "@/lib/assessment";
 import { formatPercent } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { CoinAvatar, CoinSearchButton, CoinTopbar } from "@/components/layout/coin-shell";
 
 function formatDateTime(value: Date | null | undefined) {
   if (!value) return "--";
@@ -20,11 +16,41 @@ function formatDateTime(value: Date | null | undefined) {
   });
 }
 
+function statusMeta(score: number | null, status: string) {
+  if (status === "IN_PROGRESS") {
+    return {
+      label: "Проходит",
+      className: "chip chip-blue",
+      icon: <Clock3 size={12} />,
+    };
+  }
+
+  if (status === "SUBMITTED" || status === "AUTO_SUBMITTED" || status === "EXPIRED") {
+    if ((score ?? 0) >= 100) {
+      return {
+        label: "Принят",
+        className: "chip chip-green",
+        icon: <Check size={12} />,
+      };
+    }
+
+    return {
+      label: "Не прошёл",
+      className: "chip chip-red",
+      icon: <X size={12} />,
+    };
+  }
+
+  return {
+    label: "Ожидает",
+    className: "chip chip-grey",
+    icon: null,
+  };
+}
+
 export default async function AdminPage() {
-  const [settings, internCount, activeQuestionCount, attempts] = await Promise.all([
-    getSettings(),
+  const [internCount, attempts] = await Promise.all([
     prisma.internProfile.count(),
-    prisma.question.count({ where: { isActive: true } }),
     prisma.assessmentAttempt.findMany({
       orderBy: { startedAt: "desc" },
       take: 6,
@@ -36,112 +62,167 @@ export default async function AdminPage() {
     }),
   ]);
 
+  const totalCandidates = internCount;
   const passed = attempts.filter((attempt) => (attempt.scorePercent ?? 0) >= 100).length;
+  const inProgress = attempts.filter((attempt) => attempt.status === "IN_PROGRESS").length;
+  const failed = attempts.filter(
+    (attempt) => attempt.status !== "IN_PROGRESS" && (attempt.scorePercent ?? 0) < 100,
+  ).length;
 
   return (
-    <main className="page stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Панель администратора</h1>
-          <p className="body-1 muted m-0">
-            Управляйте доступом, вопросами и результатами стажёров.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/interns">Выдать доступ</Link>
-        </Button>
-      </div>
+    <main className="coin-page">
+      <CoinTopbar
+        title="Стажёры"
+        subtitle="Управление кандидатами и их результатами"
+        right={
+          <>
+            <CoinSearchButton />
+            <Link className="coin-btn coin-btn--primary" href="/admin/interns">
+              <Plus size={16} />
+              Создать стажёра
+            </Link>
+          </>
+        }
+      />
 
-      <section className="grid-3">
-        <Card>
-          <CardHeader>
-            <UsersRound color="var(--primary)" />
-            <CardTitle>Стажёры</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{internCount}</span>
-            <Badge>в базе</Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CheckCircle2 color="var(--primary)" />
-            <CardTitle>Активные вопросы</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{activeQuestionCount}</span>
-            <Badge variant="success">100% pass</Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Clock3 color="var(--primary)" />
-            <CardTitle>Лимит времени</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{settings.totalTimeMinutes}</span>
-            <Badge variant="muted">минут</Badge>
-          </CardContent>
-        </Card>
-      </section>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Последние попытки</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Стажёр</th>
-                  <th>Начал тест</th>
-                  <th>Прошёл тест</th>
-                  <th>Статус</th>
-                  <th>Результат</th>
-                  <th>Прогресс</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {attempts.map((attempt) => (
-                  <tr key={attempt.id}>
-                    <td>{attempt.internProfile.fullName}</td>
-                    <td>{formatDateTime(attempt.startedAt)}</td>
-                    <td>{formatDateTime(attempt.submittedAt)}</td>
-                    <td>
-                      <Badge variant={attempt.status === "SUBMITTED" ? "success" : "warning"}>
-                        {attempt.status}
-                      </Badge>
-                    </td>
-                    <td>{formatPercent(attempt.scorePercent)}</td>
-                    <td>
-                      <Progress value={attempt.scorePercent ?? 0} />
-                    </td>
-                    <td>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/attempts/${attempt.id}`}>Открыть</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {attempts.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="muted">
-                      Пока нет попыток.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+      <div className="coin-page__body">
+        <div className="coin-stats-grid">
+          <div className="coin-card coin-stat-card">
+            <div className="coin-stat-card__label">Всего кандидатов</div>
+            <div className="coin-stat-card__value-row">
+              <div className="coin-stat-card__value">{totalCandidates}</div>
+              <div className="t-body2 muted">всего</div>
+            </div>
           </div>
-          {attempts.length > 0 ? (
-            <p className="body-2 muted">
-              В выборке последних попыток прошли {passed} из {attempts.length}.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+          <div className="coin-card coin-stat-card">
+            <div className="coin-stat-card__label">Прошли успешно</div>
+            <div className="coin-stat-card__value-row">
+              <div className="coin-stat-card__value" style={{ color: "var(--c-green)" }}>
+                {passed}
+              </div>
+              <div className="t-body2 muted">100%</div>
+            </div>
+          </div>
+          <div className="coin-card coin-stat-card">
+            <div className="coin-stat-card__label">В процессе</div>
+            <div className="coin-stat-card__value-row">
+              <div className="coin-stat-card__value" style={{ color: "var(--c-blue)" }}>
+                {inProgress}
+              </div>
+            </div>
+          </div>
+          <div className="coin-card coin-stat-card">
+            <div className="coin-stat-card__label">Не прошли</div>
+            <div className="coin-stat-card__value-row">
+              <div className="coin-stat-card__value" style={{ color: "var(--c-red)" }}>
+                {failed}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="coin-filters-row">
+          <div className="coin-search-input">
+            <Search size={16} />
+            <input className="coin-input" placeholder="Поиск по имени или логину" />
+          </div>
+          <button className="coin-btn coin-btn--secondary" type="button">
+            <Filter size={16} />
+            Все треки
+          </button>
+          <button className="coin-btn coin-btn--secondary" type="button">
+            <Filter size={16} />
+            Все статусы
+          </button>
+          <div className="coin-filters-row__spacer" />
+          <span className="t-body2 muted">{attempts.length} из {totalCandidates}</span>
+        </div>
+
+        <div className="coin-table-card">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Кандидат</th>
+                <th>Трек</th>
+                <th>Статус</th>
+                <th style={{ textAlign: "right" }}>Балл</th>
+                <th>Время</th>
+                <th>Дата</th>
+                <th style={{ width: 60 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {attempts.map((attempt) => {
+                const meta = statusMeta(attempt.scorePercent, attempt.status);
+                return (
+                  <tr key={attempt.id}>
+                    <td>
+                      <div className="coin-candidate-cell">
+                        <CoinAvatar name={attempt.internProfile.fullName} />
+                        <div>
+                          <div className="coin-candidate-cell__name">
+                            {attempt.internProfile.fullName}
+                          </div>
+                          <div className="t-body2 muted">
+                            @
+                            {attempt.internProfile.fullName
+                              .toLowerCase()
+                              .replace(/\s+/g, ".")}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="muted">General · QA</td>
+                    <td>
+                      <span className={meta.className}>
+                        {meta.icon}
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 500,
+                        color:
+                          attempt.scorePercent == null
+                            ? "var(--c-g80)"
+                            : attempt.scorePercent === 100
+                              ? "var(--c-green)"
+                              : attempt.scorePercent >= 85
+                                ? "var(--c-orange)"
+                                : "var(--c-red)",
+                      }}
+                    >
+                      {attempt.scorePercent == null ? "—" : formatPercent(attempt.scorePercent)}
+                    </td>
+                    <td className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      {attempt.totalTimeSeconds
+                        ? `${Math.floor(attempt.totalTimeSeconds / 60)}:${String(
+                            attempt.totalTimeSeconds % 60,
+                          ).padStart(2, "0")}`
+                        : "—"}
+                    </td>
+                    <td className="muted">{formatDateTime(attempt.submittedAt ?? attempt.startedAt)}</td>
+                    <td>
+                      <Link className="coin-icon-button" href={`/admin/attempts/${attempt.id}`}>
+                        <Search size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+              {attempts.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    Пока нет попыток.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
   );
 }

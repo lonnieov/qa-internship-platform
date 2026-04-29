@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { startAttemptAction } from "@/actions/intern";
+import { CheckCircle2, Clock3, List, LogOut, Play } from "lucide-react";
+import { logoutInternAction, startAttemptAction } from "@/actions/intern";
 import { getSettings } from "@/lib/assessment";
 import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatPercent } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { CoinAvatar, CoinLogo } from "@/components/layout/coin-shell";
 
 export default async function InternHomePage() {
   const profile = await requireIntern();
@@ -36,99 +33,107 @@ export default async function InternHomePage() {
   }
 
   return (
-    <main className="page stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Добро пожаловать, {profile.internProfile.fullName}</h1>
-          <p className="body-1 muted m-0">
-            Тест закрытого типа. Для прохождения нужен результат 100%.
-          </p>
-        </div>
-        {inProgress ? (
-          <Button asChild>
-            <Link href={`/intern/test?attempt=${inProgress.id}`}>Продолжить</Link>
-          </Button>
-        ) : (
-          <form action={startAttemptAction}>
-            <Button type="submit" disabled={activeQuestionCount === 0}>
-              Старт
-            </Button>
-          </form>
-        )}
-      </div>
-
-      <section className="grid-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Вопросов</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{activeQuestionCount}</span>
-            <Badge>активно</Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Время</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{settings.totalTimeMinutes}</span>
-            <Badge variant="muted">минут</Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Последний результат</CardTitle>
-          </CardHeader>
-          <CardContent className="stack">
-            <span className="metric-value">{formatPercent(latest?.scorePercent)}</span>
-            <Progress value={latest?.scorePercent ?? 0} />
-          </CardContent>
-        </Card>
-      </section>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>История попыток</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Статус</th>
-                  <th>Результат</th>
-                  <th>Верно</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attempts.map((attempt) => (
-                  <tr key={attempt.id}>
-                    <td>{attempt.startedAt.toLocaleString("ru-RU")}</td>
-                    <td>
-                      <Badge variant={attempt.status === "SUBMITTED" ? "success" : "warning"}>
-                        {attempt.status}
-                      </Badge>
-                    </td>
-                    <td>{formatPercent(attempt.scorePercent)}</td>
-                    <td>
-                      {attempt.correctCount}/{attempt.questionCount}
-                    </td>
-                  </tr>
-                ))}
-                {attempts.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="muted">
-                      Попыток ещё нет.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+    <main className="coin-intern-page">
+      <header className="coin-intern-topbar">
+        <CoinLogo compact />
+        <div className="coin-intern-topbar__profile">
+          <CoinAvatar name={profile.internProfile.fullName} />
+          <div>
+            <div className="coin-intern-topbar__name">{profile.internProfile.fullName}</div>
+            <div className="coin-intern-topbar__role">TODO · трек кандидата</div>
           </div>
-        </CardContent>
-      </Card>
+          <form action={logoutInternAction}>
+            <button className="coin-icon-button" type="submit" aria-label="Выйти">
+              <LogOut size={18} />
+            </button>
+          </form>
+        </div>
+      </header>
+
+      <section className="coin-intern-center">
+        <div className="coin-start-card">
+          <div className="coin-start-card__icon">
+            <Play size={32} />
+          </div>
+
+          <div className="coin-start-card__copy">
+            <h1>Готовы начать ассессмент?</h1>
+            <p>
+              Привет, {profile.internProfile.fullName}! Пройдите технический отбор по
+              треку <strong>TODO</strong>
+            </p>
+          </div>
+
+          <div className="coin-start-stats">
+            {[
+              { icon: <List size={18} />, label: "Вопросов", value: String(activeQuestionCount) },
+              {
+                icon: <Clock3 size={18} />,
+                label: "Времени",
+                value: `${settings.totalTimeMinutes} мин`,
+              },
+              { icon: <CheckCircle2 size={18} />, label: "Проходной балл", value: "100%" },
+            ].map((item) => (
+              <div className="coin-start-stat" key={item.label}>
+                <div className="coin-start-stat__icon">{item.icon}</div>
+                <div className="coin-start-stat__value">{item.value}</div>
+                <div className="coin-start-stat__label">{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="coin-start-rules">
+            <div className="coin-start-rules__title">Перед началом обратите внимание</div>
+            {[
+              "Каждый вопрос имеет 4 варианта ответа, верный — только один.",
+              "Вы можете возвращаться к пропущенным вопросам в пределах общего времени.",
+              "Когда время закончится, тест завершится автоматически. Незаполненные ответы получат 0 баллов.",
+              "С момента нажатия «Старт» система записывает движения курсора и время на каждом вопросе.",
+            ].map((rule) => (
+              <div className="coin-start-rule" key={rule}>
+                <CheckCircle2 size={16} />
+                <span>{rule}</span>
+              </div>
+            ))}
+          </div>
+
+          {inProgress ? (
+            <Link className="coin-btn coin-btn--primary coin-btn--lg coin-btn--full" href={`/intern/test?attempt=${inProgress.id}`}>
+              <Play size={18} />
+              Продолжить ассессмент
+            </Link>
+          ) : (
+            <form action={startAttemptAction}>
+              <button
+                className="coin-btn coin-btn--primary coin-btn--lg coin-btn--full"
+                disabled={activeQuestionCount === 0}
+                type="submit"
+              >
+                <Play size={18} />
+                Старт ассессмента
+              </button>
+            </form>
+          )}
+
+          <div className="coin-start-card__footnote">
+            Нажимая «Старт», вы соглашаетесь с записью телеметрии: курсор, клики и время.
+          </div>
+
+          {attempts.length > 0 ? (
+            <div className="coin-start-history">
+              <div className="coin-start-history__title">Последние попытки</div>
+              <div className="coin-start-history__list">
+                {attempts.map((attempt) => (
+                  <div className="coin-start-history__item" key={attempt.id}>
+                    <span>{attempt.startedAt.toLocaleString("ru-RU")}</span>
+                    <strong>{attempt.status}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }

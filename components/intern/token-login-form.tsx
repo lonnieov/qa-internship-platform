@@ -5,10 +5,6 @@ import {
   loginInternByTokenAction,
   type InternTokenLoginState,
 } from "@/actions/intern";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const initialState: InternTokenLoginState = {
   ok: false,
@@ -22,24 +18,21 @@ export function TokenLoginForm() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Войти по токену</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={action} className="form-grid">
-          <div className="form-grid">
-            <Label htmlFor="token">Токен стажёра</Label>
-            <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
-          </div>
-          <Button disabled={isPending} type="submit">
-            Войти
-          </Button>
-        </form>
-        {state.message ? (
-          <p className="body-2 muted mt-4 mb-0">{state.message}</p>
-        ) : null}
-      </CardContent>
-    </Card>
+    <form action={action} className="coin-form">
+      <div>
+        <label className="input-label" htmlFor="token">
+          Токен стажёра
+        </label>
+        <div className="coin-field">
+          <span className="coin-field__icon">#</span>
+          <input className="coin-input" id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
+        </div>
+      </div>
+      <button className="coin-btn coin-btn--primary coin-btn--lg coin-btn--full" disabled={isPending} type="submit">
+        {isPending ? "Проверяем токен..." : "Войти"}
+      </button>
+      <div className="help-text">Токен выдаётся администратором</div>
+      {state.message ? <p className="help-text">{state.message}</p> : null}
+    </form>
   );
 }

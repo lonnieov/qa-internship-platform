@@ -13,15 +13,20 @@ export function QuestionForm() {
   const [questionType, setQuestionType] = useState("QUIZ");
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Новый вопрос</CardTitle>
+    <Card className="v2-card">
+      <CardHeader className="v2-card__header">
+        <div>
+          <CardTitle>Новый вопрос</CardTitle>
+          <p className="v2-card__description">
+            Используйте существующие типы из текущей схемы. Новые manual-review сценарии сюда пока не заведены.
+          </p>
+        </div>
       </CardHeader>
       <CardContent>
-        <form action={createQuestionAction} className="form-grid">
+        <form action={createQuestionAction} className="v2-form">
           <input type="hidden" name="questionType" value={questionType} />
 
-          <div className="form-grid">
+          <div className="v2-form__group">
             <Label htmlFor="questionType">Тип вопроса</Label>
             <Select
               id="questionType"
@@ -34,7 +39,7 @@ export function QuestionForm() {
             </Select>
           </div>
 
-          <div className="form-grid">
+          <div className="v2-form__group">
             <Label htmlFor="text">
               {questionType === "QUIZ" ? "Текст вопроса" : "Описание API-задачи"}
             </Label>
@@ -274,7 +279,7 @@ export function QuestionForm() {
             </div>
           )}
 
-          <div className="form-grid">
+          <div className="v2-form__group">
             <Label htmlFor="explanation">Пояснение для админа</Label>
             <Textarea id="explanation" name="explanation" />
           </div>

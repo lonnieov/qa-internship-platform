@@ -41,14 +41,20 @@ export function AiQuestionGenerator() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AI-подсказки вопросов</CardTitle>
+    <Card className="v2-card">
+      <CardHeader className="v2-card__header">
+        <div>
+          <CardTitle>AI-подсказки вопросов</CardTitle>
+          <p className="v2-card__description">
+            Генератор предлагает только текстовые варианты для quiz-flow. Он не создаёт вопросы автоматически.
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="stack">
-        <div className="form-grid">
+        <div className="v2-form__group">
           <Label htmlFor="topic">Тема</Label>
           <Input
+            className="v2-input"
             id="topic"
             value={topic}
             onChange={(event) => setTopic(event.target.value)}

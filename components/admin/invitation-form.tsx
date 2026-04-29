@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { CalendarClock, UserRound } from "lucide-react";
 import { createInvitationAction, type InvitationState } from "@/actions/admin";
 import { CopyableToken } from "@/components/admin/copyable-token";
 import { Button } from "@/components/ui/button";
@@ -20,29 +21,46 @@ export function InvitationForm() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Выдать доступ стажёру</CardTitle>
+    <Card className="v2-card">
+      <CardHeader className="v2-card__header">
+        <div>
+          <CardTitle>Выдать доступ стажёру</CardTitle>
+          <p className="v2-card__description">
+            В текущем flow создаётся token-only доступ без email и без отдельного пароля.
+          </p>
+        </div>
       </CardHeader>
       <CardContent>
-        <form action={action} className="form-grid">
-          <div className="form-grid">
+        <form action={action} className="v2-form">
+          <div className="v2-form__group">
             <Label htmlFor="candidateName">Имя и фамилия кандидата</Label>
-            <Input id="candidateName" name="candidateName" placeholder="Алина Каримова" />
+            <div className="v2-input-wrap">
+              <UserRound className="v2-input-wrap__icon" size={18} />
+              <Input
+                className="v2-input v2-input--with-icon"
+                id="candidateName"
+                name="candidateName"
+                placeholder="Алина Каримова"
+              />
+            </div>
           </div>
-          <div className="form-grid">
+          <div className="v2-form__group">
             <Label htmlFor="expiresInDays">Срок действия, дней</Label>
-            <Input
-              id="expiresInDays"
-              name="expiresInDays"
-              type="number"
-              min="1"
-              max="90"
-              defaultValue="14"
-            />
+            <div className="v2-input-wrap">
+              <CalendarClock className="v2-input-wrap__icon" size={18} />
+              <Input
+                className="v2-input v2-input--with-icon"
+                id="expiresInDays"
+                name="expiresInDays"
+                type="number"
+                min="1"
+                max="90"
+                defaultValue="14"
+              />
+            </div>
           </div>
           <Button disabled={isPending} type="submit">
-            Создать токен
+            {isPending ? "Создаём токен..." : "Создать токен"}
           </Button>
         </form>
         {state.message ? (

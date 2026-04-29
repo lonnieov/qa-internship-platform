@@ -2,7 +2,14 @@
 
 import type { ClipboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Clock3,
+  Flag,
+  Send,
+} from "lucide-react";
 import {
   selectAnswerAction,
   submitDevtoolsAnswerAction,
@@ -10,13 +17,8 @@ import {
   submitApiSandboxAction,
   submitAttemptAction,
 } from "@/actions/intern";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { CoinLogo } from "@/components/layout/coin-shell";
+import { InProgressOverlay } from "@/components/ui/in-progress-overlay";
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -120,6 +122,18 @@ function getDevtoolsConfig(question: Question) {
       : null;
 
   return config?.mode === "DEVTOOLS_RESPONSE" ? config : null;
+}
+
+function questionMeta(question: Question) {
+  if (question.type === "API_SANDBOX") {
+    return { label: "API Testing", chipClass: "chip chip-blue" };
+  }
+
+  if (question.type === "DEVTOOLS_SANDBOX") {
+    return { label: "Documentation Review", chipClass: "chip chip-orange" };
+  }
+
+  return { label: "General", chipClass: "chip chip-grey" };
 }
 
 function buildDevtoolsEndpoint(attemptId: string, question: Question, config: DevtoolsConfig) {
@@ -421,302 +435,364 @@ export function TestRunner({
       : null;
   const currentDevtoolsConfig =
     currentQuestion.type === "DEVTOOLS_SANDBOX" ? getDevtoolsConfig(currentQuestion) : null;
+  const currentMeta = questionMeta(currentQuestion);
 
   return (
-    <main className="page stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Тестирование</h1>
-          <p className="body-1 muted m-0">
-            Можно возвращаться к вопросам до истечения общего времени.
-          </p>
-          <div className="test-warning">
-            <AlertTriangle size={18} />
-            <strong>Не закрывайте вкладку до завершения теста.</strong>
+    <main className="coin-test-page">
+      <header className="coin-test-topbar">
+        <CoinLogo compact />
+        <div className="coin-test-topbar__progress">
+          <div className="muted">
+            Вопрос <strong>{currentIndex + 1}</strong> / {questions.length}
+          </div>
+          <div className="coin-progress-bar">
+            <div className="coin-progress-bar__fill" style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <span className="timer-pill">
+        <div className="coin-test-topbar__timer">
           <Clock3 size={18} />
-          {minutes}:{seconds.toString().padStart(2, "0")}
-        </span>
-      </div>
+          <span>
+            {minutes}:{seconds.toString().padStart(2, "0")}
+          </span>
+        </div>
+      </header>
 
-      <section className="grid-2">
-        <Card>
-          <CardHeader>
-            <div className="nav-row" style={{ justifyContent: "space-between" }}>
-              <CardTitle>
-                {currentIndex + 1}. {currentQuestion.text}
-              </CardTitle>
-              <Badge variant={currentQuestion.type === "QUIZ" ? "default" : "warning"}>
-                {currentQuestion.type === "DEVTOOLS_SANDBOX"
-                  ? "DevTools Sandbox"
-                  : currentQuestion.type === "API_SANDBOX"
-                    ? "API Sandbox"
-                    : "Quiz"}
-              </Badge>
+      {currentQuestion.type === "API_SANDBOX" && currentApiDraft ? (
+        <section className="coin-api-layout">
+          <aside className="coin-api-brief">
+            <span className={currentMeta.chipClass}>{currentMeta.label}</span>
+            <h2>API задание</h2>
+            <p>{currentQuestion.text}</p>
+
+            <div className="coin-rail-section-title">Условия задачи</div>
+            <div className="coin-check-list">
+              {(currentQuestion.explanation
+                ? currentQuestion.explanation.split(". ").filter(Boolean)
+                : [
+                    "Соберите корректный HTTP-запрос.",
+                    "Проверьте, что ответ совпадает с ожидаемым.",
+                    "Используйте нужный метод и JSON body.",
+                  ]
+              ).map((item) => (
+                <div className="coin-check-list__item" key={item}>
+                  <span>✓</span>
+                  <span>{item.replace(/\.$/, "")}</span>
+                </div>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent className="stack">
-            {currentQuestion.explanation ? (
-              <p className="body-2 muted m-0">{currentQuestion.explanation}</p>
-            ) : null}
 
-            {currentQuestion.type === "QUIZ" ? (
-              <>
-                <div className="stack">
-                  {currentQuestion.options.map((option) => {
+            <div className="coin-rail-section-title">Авторизация</div>
+            <div className="coin-code-inline">{currentApiDraft.headersText || "TODO · auth header"}</div>
+
+            <div className="coin-api-hint">
+              <strong>Подсказка.</strong> Для создания нового ресурса обычно нужен `POST`.
+            </div>
+          </aside>
+
+          <section className="coin-api-builder">
+            <div className="coin-api-builder__requestbar">
+              <select
+                className="coin-method-select"
+                onChange={(event) => updateApiDraft({ method: event.target.value })}
+                value={currentApiDraft.method}
+              >
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+
+              <input
+                className="coin-url-input"
+                data-track="api-url"
+                onChange={(event) => updateApiDraft({ url: event.target.value })}
+                value={currentApiDraft.url}
+              />
+
+              <button
+                className="coin-btn coin-btn--primary coin-btn--lg"
+                data-track="api-send"
+                disabled={isPending}
+                onClick={sendApiRequest}
+                type="button"
+              >
+                <Send size={16} />
+                Send
+              </button>
+            </div>
+
+            <div className="coin-api-tabs">
+              <div className="coin-api-tabs__item">Headers</div>
+              <div className="coin-api-tabs__item coin-api-tabs__item--active">Body</div>
+              <div className="coin-api-tabs__item">Params</div>
+              <div className="coin-api-tabs__item">Auth</div>
+            </div>
+
+            <div className="coin-api-builder__editor">
+              <div className="coin-api-builder__modes">
+                <span className="chip chip-blue">raw</span>
+                <span className="chip chip-grey">form-data</span>
+                <span className="chip chip-grey">x-www-form-urlencoded</span>
+                <span className="chip chip-grey">binary</span>
+                <span className="chip chip-grey">JSON</span>
+              </div>
+
+              <textarea
+                className="coin-code-editor"
+                data-track="api-body"
+                onChange={(event) => updateApiDraft({ bodyText: event.target.value })}
+                value={currentApiDraft.bodyText}
+              />
+
+              <div className="coin-api-response">
+                <div className="coin-api-response__head">
+                  <strong>Response</strong>
+                  {currentApiDraft.response ? (
+                    <span className={`chip ${currentApiDraft.response.status < 400 ? "chip-green" : "chip-red"}`}>
+                      {currentApiDraft.response.status}
+                    </span>
+                  ) : (
+                    <span className="chip chip-grey">ожидается</span>
+                  )}
+                  <span className="muted">отправок: {currentApiDraft.submissionCount}</span>
+                  {currentApiDraft.submissionCount > 0 ? (
+                    <span className={`chip ${currentApiDraft.isCorrect ? "chip-green" : "chip-red"}`}>
+                      {currentApiDraft.isCorrect ? "Совпадает с ожидаемым" : "Нужно исправить"}
+                    </span>
+                  ) : null}
+                </div>
+                <pre className="coin-code-response">
+                  {currentApiDraft.response
+                    ? JSON.stringify(currentApiDraft.response.body, null, 2)
+                    : "Ответ появится после отправки запроса."}
+                </pre>
+              </div>
+            </div>
+
+            <div className="coin-test-footer">
+              <div className="coin-test-footer__nav">
+                <button
+                  className="coin-btn coin-btn--secondary"
+                  disabled={currentIndex === 0}
+                  onClick={() => goTo(currentIndex - 1)}
+                  type="button"
+                >
+                  <ArrowLeft size={16} />
+                  Назад
+                </button>
+                <button
+                  className="coin-btn coin-btn--ghost"
+                  onClick={() => goTo(currentIndex + 1)}
+                  type="button"
+                >
+                  Пропустить
+                </button>
+                <button
+                  className="coin-btn coin-btn--primary"
+                  disabled={currentIndex === questions.length - 1}
+                  onClick={() => goTo(currentIndex + 1)}
+                  type="button"
+                >
+                  Дальше
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+              <button
+                className="coin-btn coin-btn--secondary coin-btn--danger"
+                disabled={isPending}
+                onClick={() => submit(false)}
+                type="button"
+              >
+                Завершить
+              </button>
+            </div>
+          </section>
+        </section>
+      ) : (
+        <section className="coin-test-layout">
+          <div className="coin-test-main">
+            <div className="coin-test-main__content">
+              <div className="coin-test-main__meta">
+                <span className={currentMeta.chipClass}>{currentMeta.label}</span>
+                <span className="chip chip-grey">
+                  Вопрос {currentIndex + 1} из {questions.length}
+                </span>
+                <div className="coin-test-main__meta-spacer" />
+                <button className="coin-btn coin-btn--ghost coin-btn--sm" type="button">
+                  <Flag size={16} />
+                  Отметить
+                </button>
+              </div>
+
+              <h1 className="coin-test-main__title">{currentQuestion.text}</h1>
+              <p className="coin-test-main__subtitle">
+                {currentQuestion.explanation || "Выберите один правильный вариант ответа."}
+              </p>
+
+              {currentQuestion.type === "QUIZ" ? (
+                <div className="coin-test-options">
+                  {currentQuestion.options.map((option, optionIndex) => {
                     const selected = answers.get(currentQuestion.id) === option.id;
                     return (
                       <button
-                        className="soft-panel text-left transition"
+                        className={`coin-test-option${selected ? " coin-test-option--selected" : ""}`}
                         data-track={`answer-${option.label}`}
                         key={option.id}
                         onClick={() => selectOption(option.id)}
-                        style={{
-                          border: selected
-                            ? "2px solid var(--primary)"
-                            : "1px solid var(--surface-border)",
-                          background: selected ? "var(--muted)" : "var(--card)",
-                        }}
                         type="button"
                       >
-                        <strong>{option.label}.</strong> {option.text}
+                        <span className="coin-test-option__radio">
+                          {selected ? <span /> : null}
+                        </span>
+                        <span className="coin-test-option__copy">
+                          <strong>{option.text}</strong>
+                        </span>
+                        <span className="coin-test-option__letter">
+                          {String.fromCharCode(65 + optionIndex)}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
-              </>
-            ) : currentApiDraft && currentDevtoolsConfig ? (
-              <div className="stack">
-                <div className="soft-panel stack">
-                  <div className="nav-row" style={{ justifyContent: "space-between" }}>
-                    <div>
-                      <p className="body-2 muted m-0">Запрос для проверки в DevTools</p>
-                      <strong>
-                        {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
-                        {buildDevtoolsEndpoint(
-                          attemptId,
-                          currentQuestion,
-                          currentDevtoolsConfig,
-                        ).split("?")[0]}
-                      </strong>
-                    </div>
-                    {currentApiDraft.requestSent ? (
-                      <Badge variant="success">запрос отправлен</Badge>
-                    ) : null}
+              ) : currentApiDraft && currentDevtoolsConfig ? (
+                <div className="coin-devtools-panel coin-panel coin-panel--relative">
+                  <div className="coin-devtools-panel__head">
+                    <strong>
+                      {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
+                      {buildDevtoolsEndpoint(attemptId, currentQuestion, currentDevtoolsConfig)}
+                    </strong>
                   </div>
-                  <Button
-                    data-track="devtools-request-button"
-                    disabled={isPending}
-                    onClick={sendDevtoolsRequest}
-                    type="button"
-                  >
-                    <Send size={18} />
-                    {currentDevtoolsConfig.buttonLabel || "Отправить запрос"}
-                  </Button>
-                </div>
-
-                <div className="form-grid">
-                  <LabelLike>
-                    {currentDevtoolsConfig.answerLabel ||
-                      `Введите значение ${currentDevtoolsConfig.answerPath || "параметра"} из response`}
-                  </LabelLike>
-                  <Input
-                    data-track="devtools-answer"
-                    onChange={(event) =>
-                      updateApiDraft({ devtoolsAnswer: event.target.value })
-                    }
-                    onPaste={pasteDevtoolsAnswer}
-                    placeholder={currentDevtoolsConfig.answerPath || "message"}
-                    value={currentApiDraft.devtoolsAnswer}
-                  />
-                </div>
-
-                <div className="nav-row" style={{ justifyContent: "space-between" }}>
-                  <Button
-                    disabled={isPending || !currentApiDraft.devtoolsAnswer.trim()}
-                    onClick={submitDevtoolsAnswer}
-                    type="button"
-                  >
-                    Проверить ответ
-                  </Button>
-                  {currentApiDraft.submissionCount > 0 ? (
-                    <Badge variant={currentApiDraft.isCorrect ? "success" : "warning"}>
-                      {currentApiDraft.isCorrect ? "зачтено" : "ответ не совпал"}
-                    </Badge>
-                  ) : null}
-                </div>
-              </div>
-            ) : currentApiDraft ? (
-              <div className="stack">
-                <div className="grid-2">
-                  <div className="form-grid">
-                    <LabelLike>Method</LabelLike>
-                    <Select
-                      value={currentApiDraft.method}
-                      onChange={(event) => updateApiDraft({ method: event.target.value })}
-                    >
-                      <option value="GET">GET</option>
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="PATCH">PATCH</option>
-                      <option value="DELETE">DELETE</option>
-                    </Select>
-                  </div>
-                  <div className="form-grid">
-                    <LabelLike>Request URL</LabelLike>
-                    <Input
-                      data-track="api-url"
-                      onChange={(event) => updateApiDraft({ url: event.target.value })}
-                      placeholder="/users?status=active"
-                      value={currentApiDraft.url}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-grid">
-                  <LabelLike>Headers</LabelLike>
-                  <Textarea
-                    data-track="api-headers"
-                    onChange={(event) => updateApiDraft({ headersText: event.target.value })}
-                    placeholder={"Authorization: Bearer test-token\nContent-Type: application/json"}
-                    value={currentApiDraft.headersText}
-                  />
-                </div>
-
-                <div className="form-grid">
-                  <LabelLike>JSON Body</LabelLike>
-                  <Textarea
-                    data-track="api-body"
-                    onChange={(event) => updateApiDraft({ bodyText: event.target.value })}
-                    placeholder={'{\n  "name": "Ali Valiyev"\n}'}
-                    value={currentApiDraft.bodyText}
-                  />
-                </div>
-
-                <div className="nav-row" style={{ justifyContent: "space-between" }}>
-                  <div className="nav-row">
-                    <Button type="button" onClick={sendApiRequest} disabled={isPending}>
-                      <Send size={18} />
-                      Send
-                    </Button>
-                    <span className="body-2 muted">
-                      Отправок: {currentApiDraft.submissionCount}
-                    </span>
-                  </div>
-                  {currentApiDraft.submissionCount > 0 ? (
-                    <Badge variant={currentApiDraft.isCorrect ? "success" : "warning"}>
-                      {currentApiDraft.isCorrect ? "зачтено" : "нужно исправить"}
-                    </Badge>
-                  ) : null}
-                </div>
-
-                {currentApiDraft.response ? (
-                  <div className="soft-panel stack">
-                    <div className="nav-row" style={{ justifyContent: "space-between" }}>
-                      <strong>Response</strong>
-                      <Badge variant={currentApiDraft.response.status < 400 ? "success" : "danger"}>
-                        {currentApiDraft.response.status}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="body-2 muted m-0">Headers</p>
-                      <pre className="body-2 m-0 whitespace-pre-wrap">
-                        {JSON.stringify(currentApiDraft.response.headers, null, 2)}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className="body-2 muted m-0">Body</p>
-                      <pre className="body-2 m-0 whitespace-pre-wrap">
-                        {JSON.stringify(currentApiDraft.response.body, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="test-action-row">
-              <div className="nav-row">
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => goTo(currentIndex - 1)}
-                  disabled={currentIndex === 0}
-                >
-                  <ArrowLeft size={18} />
-                  Назад
-                </Button>
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => goTo(currentIndex + 1)}
-                  disabled={currentIndex === questions.length - 1}
-                >
-                  Далее
-                  <ArrowRight size={18} />
-                </Button>
-              </div>
-              <div className="test-submit-zone">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => submit(false)}
-                  disabled={isPending}
-                >
-                  <Send size={18} />
-                  Завершить
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="stack">
-          <Card>
-            <CardHeader>
-              <CardTitle>Навигация</CardTitle>
-            </CardHeader>
-            <CardContent className="stack">
-              <Progress value={progress} />
-              <div className="question-grid">
-                {questions.map((question, index) => {
-                  const done =
-                    question.type === "API_SANDBOX" ||
-                    question.type === "DEVTOOLS_SANDBOX"
-                      ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
-                      : Boolean(answers.get(question.id));
-                  const active = index === currentIndex;
-                  return (
+                  <div className="coin-devtools-panel__actions">
                     <button
-                      className={`question-dot ${done ? "done" : ""} ${
-                        active ? "active" : ""
-                      }`}
-                      key={question.id}
-                      onClick={() => goTo(index)}
+                      className="coin-btn coin-btn--primary"
+                      disabled={isPending}
+                      onClick={sendDevtoolsRequest}
                       type="button"
                     >
-                      {index + 1}
+                      <Send size={16} />
+                      {currentDevtoolsConfig.buttonLabel || "Отправить запрос"}
                     </button>
-                  );
-                })}
-              </div>
-              <p className="body-2 muted m-0">
-                Отмечено {answeredCount} из {questions.length}. Для API sandbox вопроса
-                прогресс появляется после проверки ответа.
-              </p>
-            </CardContent>
-          </Card>
+                    <input
+                      className="coin-input coin-input--plain"
+                      onChange={(event) => updateApiDraft({ devtoolsAnswer: event.target.value })}
+                      onPaste={pasteDevtoolsAnswer}
+                      placeholder={currentDevtoolsConfig.answerPath || "message"}
+                      value={currentApiDraft.devtoolsAnswer}
+                    />
+                    <button
+                      className="coin-btn coin-btn--secondary"
+                      disabled={isPending || !currentApiDraft.devtoolsAnswer.trim()}
+                      onClick={submitDevtoolsAnswer}
+                      type="button"
+                    >
+                      Проверить
+                    </button>
+                  </div>
+                  <InProgressOverlay
+                    badgeLabel="TODO"
+                    title="Сценарий из макетов ещё не совпадает с текущим backend"
+                    description="Для bug detection и document review нужен отдельный UI и новые типы заданий."
+                  />
+                </div>
+              ) : null}
 
-          {remainingMs < 60_000 ? (
-            <div className="soft-panel nav-row" style={{ color: "var(--destructive)" }}>
-              <AlertTriangle size={18} />
-              <strong>Осталось меньше минуты</strong>
+              <div className="coin-test-footer">
+                <div className="coin-test-footer__nav">
+                  <button
+                    className="coin-btn coin-btn--secondary"
+                    disabled={currentIndex === 0}
+                    onClick={() => goTo(currentIndex - 1)}
+                    type="button"
+                  >
+                    <ArrowLeft size={16} />
+                    Назад
+                  </button>
+                  <button
+                    className="coin-btn coin-btn--ghost"
+                    onClick={() => goTo(currentIndex + 1)}
+                    type="button"
+                  >
+                    Пропустить
+                  </button>
+                  <button
+                    className="coin-btn coin-btn--primary"
+                    disabled={currentIndex === questions.length - 1}
+                    onClick={() => goTo(currentIndex + 1)}
+                    type="button"
+                  >
+                    Дальше
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : null}
-        </div>
-      </section>
+          </div>
+
+          <aside className="coin-test-sidebar">
+            <div className="coin-rail-section-title">Навигация</div>
+            <div className="coin-nav-grid">
+              {questions.map((question, index) => {
+                const done =
+                  question.type === "API_SANDBOX" || question.type === "DEVTOOLS_SANDBOX"
+                    ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                    : Boolean(answers.get(question.id));
+                const active = index === currentIndex;
+
+                return (
+                  <button
+                    className={`coin-nav-grid__item${done ? " is-done" : ""}${active ? " is-active" : ""}`}
+                    key={question.id}
+                    onClick={() => goTo(index)}
+                    type="button"
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="coin-divider" />
+
+            <div className="coin-legend-list">
+              <div className="coin-legend-item">
+                <span className="coin-legend-item__swatch coin-legend-item__swatch--done" />
+                Отвечено · {answeredCount}
+              </div>
+              <div className="coin-legend-item">
+                <span className="coin-legend-item__swatch coin-legend-item__swatch--active" />
+                Текущий · 1
+              </div>
+              <div className="coin-legend-item">
+                <span className="coin-legend-item__swatch coin-legend-item__swatch--idle" />
+                Не открыто · {Math.max(0, questions.length - answeredCount - 1)}
+              </div>
+            </div>
+
+            <div className="coin-danger-card">
+              <div className="coin-danger-card__title">Завершить досрочно</div>
+              <div className="coin-danger-card__subtitle">
+                После завершения вернуться к ассессменту нельзя.
+              </div>
+              <button
+                className="coin-btn coin-btn--secondary coin-btn--danger coin-btn--full"
+                disabled={isPending}
+                onClick={() => submit(false)}
+                type="button"
+              >
+                Завершить
+              </button>
+            </div>
+
+            {remainingMs < 60_000 ? (
+              <div className="coin-inline-alert">
+                <AlertTriangle size={18} />
+                <strong>Осталось меньше минуты</strong>
+              </div>
+            ) : null}
+          </aside>
+        </section>
+      )}
     </main>
   );
 }

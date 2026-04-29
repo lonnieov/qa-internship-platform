@@ -4,25 +4,57 @@ Next.js App Router проект для ассессмента кандидато
 
 ## Стек
 
-- Next.js App Router, TypeScript, Vercel
-- Clerk Auth для админов, token-only вход для стажёров
-- Prisma 7 style client + `@prisma/adapter-pg`
-- PostgreSQL через `DATABASE_URL`
-- shadcn/ui-style компоненты и Coin design tokens
-- OpenAI Responses API для опциональных подсказок вопросов
+- Next.js App Router
+- TypeScript
+- Prisma + PostgreSQL
+- Clerk для production admin auth
+- demo admin auth для локального запуска
+- Tailwind CSS и локальные UI-компоненты
+- OpenAI Responses API для опциональной генерации вопросов
 
-## Локальный запуск
+## Что Умеет Проект
 
-1. Установить зависимости:
+- Админ создаёт стажёра и выдаёт токен.
+- Стажёр входит только по токену, без email и без регистрации.
+- Токен хранится только как SHA-256 hash.
+- Админ управляет банком вопросов.
+- Поддерживаются `QUIZ`, `API_SANDBOX` и `DEVTOOLS_SANDBOX`.
+- Для попытки действует общий таймер.
+- Результат считается как `correct / total * 100`.
+- Проходной балл сейчас фиксирован на `100%`.
+- После завершения токен аннулируется для повторного входа.
+- Сохраняются ответы, время на вопросы и tracking events.
+
+## Требования
+
+- Node.js `20+`
+- npm `10+`
+- PostgreSQL `14+`
+
+## Быстрый Старт
+
+1. Установите зависимости:
 
 ```bash
 npm install
 ```
 
-2. Создать `.env` из `.env.example` и указать PostgreSQL `DATABASE_URL`.
-   Для demo-админки Clerk keys не нужны.
+2. Создайте локальный env-файл:
 
-3. Подготовить БД:
+```bash
+cp .env.example .env
+```
+
+3. Заполните обязательные переменные в `.env`:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/qa_internship_validator?schema=public"
+DEMO_ADMIN_ENABLED=true
+DEMO_ADMIN_SESSION_SECRET=change-me-demo-admin-session-secret
+INTERN_SESSION_SECRET=change-me-intern-session-secret
+```
+
+4. Подготовьте базу:
 
 ```bash
 npm run db:generate
@@ -30,66 +62,111 @@ npm run db:push
 npm run db:seed
 ```
 
-4. Запустить:
+5. Запустите dev-сервер:
 
 ```bash
 npm run dev
 ```
 
-Откройте `http://localhost:3000`. Для админки в локальном `.env` включён
-demo-вход:
+6. Откройте `http://localhost:3000`.
 
+## Переменные Окружения
+
+Минимум для локального запуска:
+
+- `DATABASE_URL` - строка подключения к PostgreSQL
+- `DEMO_ADMIN_ENABLED=true` - включает локальный admin login без Clerk
+- `DEMO_ADMIN_SESSION_SECRET` - secret для demo admin cookie
+- `INTERN_SESSION_SECRET` - secret для intern session cookie
+
+Опционально:
+
+- `OPENAI_API_KEY` - нужен только для AI-подсказок или генерации вопросов
+- `OPENAI_MODEL` - модель для OpenAI integration
+- `ADMIN_EMAILS` - список production admin email-ов для Clerk
+- `NEXT_PUBLIC_CLERK_*` и `CLERK_SECRET_KEY` - нужны только если реально используется Clerk flow
+
+Важно:
+
+- Для локального demo-входа Clerk keys не обязательны.
+- Если `DEMO_ADMIN_ENABLED=false`, локальный вход `admin/admin` работать не будет.
+
+## Локальные Входы
+
+Администратор:
+
+- URL: `http://localhost:3000/sign-in/admin`
 - логин: `admin`
 - пароль: `admin`
 
-Страница входа: `http://localhost:3000/sign-in/admin`.
+Стажёр:
 
-## Роли и доступы
-
-Админ создаётся автоматически после входа через Clerk, если email есть в
-`ADMIN_EMAILS`, либо входит через локальный demo-доступ `admin/admin`.
-Стажёр не регистрируется по почте: админ вводит имя и фамилию, система выдаёт
-токен, а стажёр входит только по этому токену. Токен хранится только как
-SHA-256 hash.
-
-Для локального тестирования есть отдельный demo-admin вход `admin/admin`. Его
-пароль хранится в `.env` как PBKDF2-SHA256 hash, а сессия - в httpOnly cookie.
-В production установите `DEMO_ADMIN_ENABLED=false` или не задавайте эти переменные.
+- URL: `http://localhost:3000/sign-in/intern`
+- токен выдаётся из админки после создания кандидата
 
 ## PostgreSQL
 
-Приложение использует PostgreSQL. В `.env` и на сервере задайте:
+Пример локального `DATABASE_URL`:
 
 ```bash
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/qa_internship_validator?schema=public"
 ```
 
-Для Render/другого хостинга используйте external PostgreSQL URL. После смены
-переменной окружения примените схему:
+Если база пустая, достаточно:
 
 ```bash
 npm run db:push
+npm run db:seed
 ```
 
-Для деплоя можно использовать build command:
+Если меняли Prisma schema:
+
+```bash
+npm run db:generate
+npm run db:push
+```
+
+Для просмотра данных:
+
+```bash
+npm run db:studio
+```
+
+## Основные Скрипты
+
+```bash
+npm run dev
+npm run build
+npm run build:deploy
+npm run lint
+npm run db:generate
+npm run db:push
+npm run db:migrate
+npm run db:seed
+npm run db:studio
+```
+
+## Деплой
+
+Build command:
 
 ```bash
 npm run build:deploy
 ```
 
-## Что реализовано
+Для production:
 
-- Выдача токенов стажёрам из админки.
-- Вход стажёров по токену без email.
-- Банк вопросов: 4 варианта, один правильный, активность вопроса.
-- Настройка общего времени на тест.
-- Старт попытки, дедлайн, автозавершение при истечении времени.
-- Только одна попытка на стажёра, без ретрая.
-- Свободная навигация между вопросами до завершения.
-- Подсчёт процента: `correct / total * 100`, проходной балл 100%.
-- Финальный экран результата с процентом прохождения.
-- После завершения теста токен получает статус `COMPLETED`, сессия стажёра
-  очищается, повторный вход по токену невозможен.
-- Сохранение времени на каждый вопрос и выбранного ответа.
-- Автозавершение теста при уходе со вкладки.
-- Детализация попытки для администратора.
+- задайте production `DATABASE_URL`
+- отключите `DEMO_ADMIN_ENABLED`
+- настройте Clerk keys, если нужен Clerk admin login
+
+## Полезные Маршруты
+
+- `/` - главная
+- `/sign-in/admin` - вход администратора
+- `/sign-in/intern` - вход стажёра
+- `/admin` - админ-панель
+- `/admin/interns` - стажёры и токены
+- `/admin/questions` - банк вопросов
+- `/admin/settings` - настройки теста
+- `/intern` - стартовая страница стажёра
