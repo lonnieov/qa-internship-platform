@@ -68,7 +68,6 @@ export default async function InternTestPage({
   return (
     <TestRunner
       attemptId={attempt.id}
-      startedAt={attempt.startedAt.toISOString()}
       deadlineAt={attempt.deadlineAt.toISOString()}
       questions={questions}
     />

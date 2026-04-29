@@ -57,20 +57,6 @@ async function handleRequest(
     );
   }
 
-  await prisma.trackingEvent.create({
-    data: {
-      attemptId,
-      questionId,
-      type: "API_REQUEST",
-      elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      metadata: {
-        mode: "DEVTOOLS_RESPONSE",
-        method: request.method,
-        endpoint: `/${actualEndpoint}`,
-      },
-    },
-  });
-
   const response = NextResponse.json(config.successBody ?? { ok: true }, {
     status: config.successStatus ?? 200,
   });

@@ -1,7 +1,7 @@
 "use client";
 
-import type { ClipboardEvent, ReactNode, SyntheticEvent } from "react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { ClipboardEvent, ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock3, Send } from "lucide-react";
 import {
   selectAnswerAction,
@@ -47,15 +47,6 @@ type Question = {
   apiResponse: unknown;
   isCorrect: boolean;
 };
-
-type TrackingType =
-  | "MOUSE_MOVE"
-  | "CLICK"
-  | "KEYDOWN"
-  | "VISIBILITY_CHANGE"
-  | "FOCUS"
-  | "BLUR"
-  | "NAVIGATION";
 
 type ApiDraft = {
   method: string;
@@ -144,12 +135,10 @@ function buildDevtoolsEndpoint(attemptId: string, question: Question, config: De
 
 export function TestRunner({
   attemptId,
-  startedAt,
   deadlineAt,
   questions,
 }: {
   attemptId: string;
-  startedAt: string;
   deadlineAt: string;
   questions: Question[];
 }) {
@@ -180,8 +169,6 @@ export function TestRunner({
   const [isPending, startTransition] = useTransition();
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
-  const lastMoveRef = useRef(0);
-  const startedAtMs = useMemo(() => new Date(startedAt).getTime(), [startedAt]);
   const currentQuestion = questions[currentIndex];
   const answeredCount = questions.filter((question) => {
     if (question.type === "API_SANDBOX" || question.type === "DEVTOOLS_SANDBOX") {
@@ -191,37 +178,6 @@ export function TestRunner({
     return Boolean(answers.get(question.id));
   }).length;
   const progress = questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
-
-  async function postEvent(type: TrackingType, event?: Event | SyntheticEvent) {
-    const native = event && "nativeEvent" in event ? event.nativeEvent : event;
-    const pointer =
-      native instanceof MouseEvent
-        ? { x: Math.round(native.clientX), y: Math.round(native.clientY) }
-        : {};
-    const rawTarget = event?.target;
-    const target =
-      rawTarget instanceof HTMLElement
-        ? rawTarget.dataset.track || rawTarget.tagName.toLowerCase()
-        : undefined;
-
-    await fetch("/api/tracking/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        attemptId,
-        questionId: currentQuestion?.id,
-        type,
-        target,
-        elapsedMs: Date.now() - startedAtMs,
-        ...pointer,
-        metadata:
-          type === "VISIBILITY_CHANGE"
-            ? { visibilityState: document.visibilityState }
-            : undefined,
-      }),
-    });
-  }
 
   function flushCurrentTime() {
     const questionId = currentQuestion?.id;
@@ -240,7 +196,6 @@ export function TestRunner({
   function goTo(index: number) {
     if (index < 0 || index >= questions.length || index === currentIndex) return;
     flushCurrentTime();
-    void postEvent("NAVIGATION");
     setCurrentIndex(index);
   }
 
@@ -434,23 +389,7 @@ export function TestRunner({
   }, [deadlineAt]);
 
   useEffect(() => {
-    function handleMove(event: MouseEvent) {
-      const now = Date.now();
-      if (now - lastMoveRef.current < 750) return;
-      lastMoveRef.current = now;
-      void postEvent("MOUSE_MOVE", event);
-    }
-
-    function handleClick(event: MouseEvent) {
-      void postEvent("CLICK", event);
-    }
-
-    function handleKeydown(event: KeyboardEvent) {
-      void postEvent("KEYDOWN", event);
-    }
-
     function handleVisibility() {
-      void postEvent("VISIBILITY_CHANGE");
       if (document.visibilityState === "hidden") {
         submit(true);
       }
@@ -460,30 +399,12 @@ export function TestRunner({
       submit(true);
     }
 
-    function handleFocus() {
-      void postEvent("FOCUS");
-    }
-
-    function handleBlur() {
-      void postEvent("BLUR");
-    }
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("click", handleClick);
-    window.addEventListener("keydown", handleKeydown);
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", handlePageHide);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
 
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("click", handleClick);
-      window.removeEventListener("keydown", handleKeydown);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
       if (!submittedRef.current) {
         flushCurrentTime();
       }

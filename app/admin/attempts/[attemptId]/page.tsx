@@ -1,10 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  Clock3,
-  MousePointerClick,
-  Route,
-  TimerReset,
-} from "lucide-react";
+import { Clock3, Route, TimerReset } from "lucide-react";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
@@ -12,32 +7,6 @@ import { ReportPrintButton } from "@/components/admin/report-print-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-
-type TimedReportEvent = {
-  elapsedMs: number | null;
-  occurredAt: Date;
-};
-
-function formatMoment(event: TimedReportEvent, startedAt: Date) {
-  const elapsed = event.elapsedMs ?? event.occurredAt.getTime() - startedAt.getTime();
-  return formatDuration(Math.max(0, elapsed));
-}
-
-function targetLabel(target: string | null) {
-  if (!target) return "Область страницы";
-  if (target.startsWith("answer-")) {
-    return `Вариант ${target.replace("answer-", "").toUpperCase()}`;
-  }
-
-  const labels: Record<string, string> = {
-    button: "Кнопка",
-    div: "Блок интерфейса",
-    body: "Страница",
-    html: "Страница",
-  };
-
-  return labels[target] ?? target;
-}
 
 export default async function AttemptDetailsPage({
   params,
@@ -55,10 +24,6 @@ export default async function AttemptDetailsPage({
           selectedOption: true,
         },
         orderBy: { createdAt: "asc" },
-      },
-      events: {
-        orderBy: { occurredAt: "asc" },
-        include: { question: true },
       },
     },
   });
@@ -79,14 +44,6 @@ export default async function AttemptDetailsPage({
         );
   const averageQuestionTimeMs =
     attempt.questionCount > 0 ? Math.round(answerTimeMs / attempt.questionCount) : 0;
-  const clickEvents = attempt.events.filter((event) => event.type === "CLICK");
-  const moveCount = attempt.events.filter((event) => event.type === "MOUSE_MOVE").length;
-  const navigationCount = attempt.events.filter(
-    (event) => event.type === "NAVIGATION",
-  ).length;
-  const focusLossCount = attempt.events.filter(
-    (event) => event.type === "BLUR" || event.type === "VISIBILITY_CHANGE",
-  ).length;
 
   return (
     <main className="page stack-lg report-print-area">
@@ -105,7 +62,7 @@ export default async function AttemptDetailsPage({
         </div>
       </div>
 
-      <section className="grid-3">
+      <section className="grid-2">
         <Card>
           <CardHeader>
             <Clock3 color="var(--primary)" />
@@ -124,15 +81,6 @@ export default async function AttemptDetailsPage({
             <span className="metric-value">
               {formatDuration(averageQuestionTimeMs)}
             </span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <MousePointerClick color="var(--business)" />
-            <CardTitle>Клики</CardTitle>
-          </CardHeader>
-          <CardContent className="metric">
-            <span className="metric-value">{clickEvents.length}</span>
           </CardContent>
         </Card>
       </section>
@@ -154,20 +102,7 @@ export default async function AttemptDetailsPage({
                 {attempt.correctCount}/{attempt.questionCount}
               </strong>
             </div>
-            <div>
-              <span className="body-2 muted">Переходы между вопросами</span>
-              <strong>{navigationCount}</strong>
-            </div>
-            <div>
-              <span className="body-2 muted">Потери фокуса страницы</span>
-              <strong>{focusLossCount}</strong>
-            </div>
           </div>
-          <p className="body-2 muted m-0">
-            За время прохождения система зафиксировала {moveCount} контрольных
-            точек движения курсора. В отчёте ниже они свернуты в резюме, без
-            сырой таблицы технических событий.
-          </p>
         </CardContent>
       </Card>
 
@@ -184,7 +119,6 @@ export default async function AttemptDetailsPage({
                   <th>Вопрос</th>
                   <th>Ответ</th>
                   <th>Время</th>
-                  <th>Визиты</th>
                   <th>Результат</th>
                 </tr>
               </thead>
@@ -219,7 +153,6 @@ export default async function AttemptDetailsPage({
                       )}
                     </td>
                     <td>{formatDuration(answer.timeSpentMs)}</td>
-                    <td>{answer.visits}</td>
                     <td>
                       <Badge variant={answer.isCorrect ? "success" : "danger"}>
                         {answer.isCorrect ? "верно" : "0 баллов"}
@@ -230,36 +163,6 @@ export default async function AttemptDetailsPage({
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <MousePointerClick color="var(--business)" />
-          <CardTitle>Карта кликов</CardTitle>
-        </CardHeader>
-        <CardContent className="stack">
-          {clickEvents.length === 0 ? (
-            <p className="body-2 muted m-0">Клики во время попытки не зафиксированы.</p>
-          ) : (
-            <div className="click-timeline">
-              {clickEvents.map((event, index) => (
-                <div className="click-timeline-item" key={event.id}>
-                  <span className="click-marker">{index + 1}</span>
-                  <div>
-                    <strong>{formatMoment(event, attempt.startedAt)} от старта</strong>
-                    <p className="body-2 muted m-0">
-                      {targetLabel(event.target)}
-                      {event.question ? ` · ${event.question.text}` : ""}
-                      {event.x !== null && event.y !== null
-                        ? ` · координаты ${event.x}, ${event.y}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </main>

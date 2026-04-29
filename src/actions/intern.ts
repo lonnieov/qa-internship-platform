@@ -166,13 +166,6 @@ export async function startAttemptAction() {
           questionId: question.id,
         })),
       },
-      events: {
-        create: {
-          type: "START",
-          occurredAt: now,
-          metadata: { questionCount: questions.length },
-        },
-      },
     },
   });
 
@@ -223,16 +216,6 @@ export async function selectAnswerAction(input: {
       timeSpentMs: {
         increment: Math.max(0, Math.round(input.timeSpentMs)),
       },
-    },
-  });
-
-  await prisma.trackingEvent.create({
-    data: {
-      attemptId: input.attemptId,
-      questionId: input.questionId,
-      type: "ANSWER_SELECT",
-      elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      metadata: { optionId: option.id, isCorrect: option.isCorrect },
     },
   });
 
@@ -289,16 +272,6 @@ export async function submitAttemptAction(input: {
 
   if (!attempt) {
     redirect("/intern");
-  }
-
-  if (attempt.status === "IN_PROGRESS") {
-    await prisma.trackingEvent.create({
-      data: {
-        attemptId: attempt.id,
-        type: input.auto ? "TIMER_EXPIRED" : "SUBMIT",
-        elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      },
-    });
   }
 
   const expired = await expireAttemptIfNeeded(attempt.id);
@@ -384,21 +357,6 @@ export async function submitApiSandboxAction(input: {
       },
       timeSpentMs: {
         increment: Math.max(0, Math.round(input.timeSpentMs)),
-      },
-    },
-  });
-
-  await prisma.trackingEvent.create({
-    data: {
-      attemptId: input.attemptId,
-      questionId: input.questionId,
-      type: "API_REQUEST",
-      elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      metadata: {
-        request: evaluation.normalizedRequest,
-        response: evaluation.response,
-        ok: evaluation.ok,
-        errorCode: evaluation.errorCode ?? null,
       },
     },
   });
@@ -490,20 +448,6 @@ export async function submitDevtoolsAnswerAction(input: {
       },
       timeSpentMs: {
         increment: Math.max(0, Math.round(input.timeSpentMs)),
-      },
-    },
-  });
-
-  await prisma.trackingEvent.create({
-    data: {
-      attemptId: input.attemptId,
-      questionId: input.questionId,
-      type: "ANSWER_SELECT",
-      elapsedMs: Date.now() - attempt.startedAt.getTime(),
-      metadata: {
-        mode: "DEVTOOLS_RESPONSE",
-        answerPath: config.answerPath,
-        isCorrect,
       },
     },
   });
