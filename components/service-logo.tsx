@@ -1,6 +1,42 @@
+"use client";
+
+import type { MouseEvent } from "react";
+import { useRef } from "react";
+
+const easterEggUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
 export function ServiceLogo() {
+  const clickCountRef = useRef(0);
+  const resetTimerRef = useRef<number | null>(null);
+
+  function handleLogoClick(event: MouseEvent<HTMLSpanElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    clickCountRef.current += 1;
+
+    if (resetTimerRef.current) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+
+    if (clickCountRef.current >= 5) {
+      clickCountRef.current = 0;
+      window.location.href = easterEggUrl;
+      return;
+    }
+
+    resetTimerRef.current = window.setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 1400);
+  }
+
   return (
-    <span className="brand-mark" aria-hidden="true">
+    <span
+      className="brand-mark"
+      onClick={handleLogoClick}
+      role="presentation"
+      title="QA Internship Validator"
+    >
       <svg
         width="32"
         height="32"
