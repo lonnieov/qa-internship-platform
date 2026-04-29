@@ -33,6 +33,30 @@
 - Enter `admin@resting.chat` and `RESTingChat`.
 - Expected: user is redirected to `/admin`.
 
+## Admin Creates Admin Case
+
+- Sign in as an existing admin.
+- Open `/admin/settings`.
+- In `Администраторы`, enter `Second`, `Admin`, `second-admin@example.com`, and `password123`.
+- Submit the form.
+- Expected: success message appears and `second-admin@example.com` appears in the admin list.
+- Log out and sign in with `second-admin@example.com` and `password123`.
+- Expected: user is redirected to `/admin`.
+
+## Admin Edit/Delete Case
+
+- Sign in as an existing admin.
+- Open `/admin/settings`.
+- Open the actions modal for a non-seed admin.
+- Change the name or email and submit.
+- Expected: the admin list updates with the new values.
+- Set a new password, log out, and sign in with the new password.
+- Expected: user is redirected to `/admin`.
+- Open the actions modal for a non-seed, non-current admin and delete it.
+- Expected: the admin disappears from the list and cannot sign in.
+- Open the actions modal for `admin@resting.chat`.
+- Expected: `admin@resting.chat` is not shown in the admin management list.
+
 ## Negative Cases
 
 - Open `/sign-in/admin`.

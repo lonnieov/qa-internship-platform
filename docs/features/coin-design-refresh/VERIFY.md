@@ -19,7 +19,7 @@
 
 - Log in as admin.
 - Expected: admin pages render with a left sidebar and existing page content.
-- Open `Стажёры`, `Вопросы`, and `Настройки теста`.
+- Open `Стажёры`, `Вопросы`, and `Настройки`.
 - Expected: navigation works and the active sidebar item changes.
 - Create a test intern token.
 - Expected: token creation still works and the token can be copied.

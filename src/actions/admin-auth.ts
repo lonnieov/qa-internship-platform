@@ -1,7 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { seedAdminEmail } from "@/lib/admin-constants";
+import { requireAdmin } from "@/lib/auth";
 import {
   canRegisterAdmin,
   clearAdminSession,
@@ -16,7 +19,9 @@ export type AdminAuthState = {
 };
 
 function normalizeEmail(value: FormDataEntryValue | null) {
-  return String(value ?? "").trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizePassword(value: FormDataEntryValue | null) {
@@ -91,10 +96,153 @@ export async function registerAdminAction(
 
     await createAdminSession(profile.id);
   } catch {
-    return { ok: false, message: "Администратор с таким email уже существует." };
+    return {
+      ok: false,
+      message: "Администратор с таким email уже существует.",
+    };
   }
 
   redirect("/admin");
+}
+
+export async function createAdminAction(
+  _prevState: AdminAuthState,
+  formData: FormData,
+): Promise<AdminAuthState> {
+  await requireAdmin();
+
+  const email = normalizeEmail(formData.get("email"));
+  const password = normalizePassword(formData.get("password"));
+  const firstName = String(formData.get("firstName") ?? "").trim() || null;
+  const lastName = String(formData.get("lastName") ?? "").trim() || null;
+
+  if (!email || !email.includes("@")) {
+    return { ok: false, message: "Введите корректный email." };
+  }
+
+  if (password.length < 6) {
+    return { ok: false, message: "Пароль должен быть не короче 6 символов." };
+  }
+
+  try {
+    await prisma.profile.create({
+      data: {
+        email,
+        passwordHash: hashPassword(password),
+        firstName,
+        lastName,
+        role: "ADMIN",
+      },
+    });
+  } catch {
+    return {
+      ok: false,
+      message: "Администратор с таким email уже существует.",
+    };
+  }
+
+  revalidatePath("/admin/settings");
+
+  return { ok: true, message: "Администратор создан." };
+}
+
+export async function updateAdminAction(
+  _prevState: AdminAuthState,
+  formData: FormData,
+): Promise<AdminAuthState> {
+  await requireAdmin();
+
+  const adminId = String(formData.get("adminId") ?? "");
+  const email = normalizeEmail(formData.get("email"));
+  const password = normalizePassword(formData.get("password"));
+  const firstName = String(formData.get("firstName") ?? "").trim() || null;
+  const lastName = String(formData.get("lastName") ?? "").trim() || null;
+
+  if (!adminId) {
+    return { ok: false, message: "Администратор не найден." };
+  }
+
+  const target = await prisma.profile.findUnique({ where: { id: adminId } });
+
+  if (!target || target.role !== "ADMIN" || !target.passwordHash) {
+    return { ok: false, message: "Администратор не найден." };
+  }
+
+  if (target.email?.toLowerCase() === seedAdminEmail) {
+    return { ok: false, message: "Сидового администратора нельзя изменять." };
+  }
+
+  if (!email || !email.includes("@")) {
+    return { ok: false, message: "Введите корректный email." };
+  }
+
+  if (password && password.length < 6) {
+    return { ok: false, message: "Пароль должен быть не короче 6 символов." };
+  }
+
+  try {
+    await prisma.profile.update({
+      where: { id: adminId },
+      data: {
+        email,
+        firstName,
+        lastName,
+        ...(password ? { passwordHash: hashPassword(password) } : {}),
+      },
+    });
+  } catch {
+    return {
+      ok: false,
+      message: "Администратор с таким email уже существует.",
+    };
+  }
+
+  revalidatePath("/admin/settings");
+
+  return { ok: true, message: "Администратор обновлён." };
+}
+
+export async function deleteAdminAction(
+  _prevState: AdminAuthState,
+  formData: FormData,
+): Promise<AdminAuthState> {
+  const currentAdmin = await requireAdmin();
+  const adminId = String(formData.get("adminId") ?? "");
+
+  if (!adminId) {
+    return { ok: false, message: "Администратор не найден." };
+  }
+
+  if (adminId === currentAdmin.id) {
+    return { ok: false, message: "Нельзя удалить текущую учётную запись." };
+  }
+
+  const target = await prisma.profile.findUnique({ where: { id: adminId } });
+
+  if (!target || target.role !== "ADMIN" || !target.passwordHash) {
+    return { ok: false, message: "Администратор не найден." };
+  }
+
+  if (target.email?.toLowerCase() === seedAdminEmail) {
+    return { ok: false, message: "Сидового администратора нельзя удалить." };
+  }
+
+  await prisma.$transaction([
+    prisma.adminSession.deleteMany({ where: { profileId: adminId } }),
+    prisma.profile.update({
+      where: { id: adminId },
+      data: {
+        email: `deleted-admin-${adminId}@deleted.local`,
+        passwordHash: null,
+        firstName: "Deleted",
+        lastName: "Admin",
+      },
+    }),
+  ]);
+
+  revalidatePath("/admin/settings");
+
+  return { ok: true, message: "Администратор удалён." };
 }
 
 export async function logoutAdminAction() {

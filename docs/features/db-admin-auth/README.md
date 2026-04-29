@@ -8,6 +8,10 @@ Authenticate administrators with local database credentials and remove Clerk fro
 
 - Admins register at `/sign-up/admin`.
 - Admins sign in at `/sign-in/admin` with email and password.
+- Signed-in admins can create other admin accounts from `/admin/settings`.
+- Signed-in admins can edit or soft-delete non-seed admin accounts.
+- The admin sidebar shows the current admin name and email.
+- Seed admin is hidden from the admin management list.
 - Admin passwords are stored as PBKDF2-SHA256 hashes.
 - Admin sessions are stored in `AdminSession` and referenced by an httpOnly cookie.
 - Seed creates a test admin profile: `admin@resting.chat` / `RESTingChat`.
@@ -24,6 +28,9 @@ Authenticate administrators with local database credentials and remove Clerk fro
 - First admin opens `/sign-up/admin` and creates an account.
 - Later admin registrations require `ADMIN_REGISTRATION_CODE` when it is set.
 - Admin opens `/sign-in/admin`, enters email and password, and receives a DB-backed session.
+- Signed-in admin opens `/admin/settings` and creates another admin with email and password.
+- Signed-in admin edits another admin from the admin list modal.
+- Deleting an admin clears their sessions and removes their password without cascading app data.
 - Admin logout deletes the matching `AdminSession` and clears the cookie.
 - Running `npm run db:seed` ensures the test admin exists.
 - Intern opens `/` or `/sign-in/intern` and still logs in with an invitation token.
@@ -43,6 +50,8 @@ Authenticate administrators with local database credentials and remove Clerk fro
 - `app/sign-up/admin/[[...sign-up]]/page.tsx`
 - `components/admin/admin-login-form.tsx`
 - `components/admin/admin-register-form.tsx`
+- `components/admin/admin-create-form.tsx`
+- `components/admin/admin-manage-modal.tsx`
 - `components/admin/admin-shell.tsx`
 - `package.json`
 

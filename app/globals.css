@@ -241,6 +241,47 @@ button {
   border-top: 1px solid var(--surface-border);
 }
 
+.admin-user-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: var(--radius-garden);
+  background: var(--muted);
+}
+
+.admin-user-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-user-card strong,
+.admin-user-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-card strong {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.admin-user-card small {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 14px;
+}
+
 .admin-content {
   min-width: 0;
 }
@@ -485,6 +526,12 @@ button {
   gap: 16px;
 }
 
+.stack-xs {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
 .stack-lg {
   display: grid;
   gap: 24px;
@@ -527,6 +574,14 @@ button {
 
 .muted {
   color: var(--muted-foreground);
+}
+
+.success-text {
+  color: var(--accent);
+}
+
+.danger-text {
+  color: var(--destructive);
 }
 
 .body-2 {
@@ -869,6 +924,17 @@ button {
   overflow: auto;
 }
 
+.admin-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: auto;
+}
+
+.admin-modal .modal-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
 .track-modal .modal-header {
   padding: 20px 20px 16px;
   border-bottom: 1px solid var(--surface-border);
@@ -1091,6 +1157,16 @@ button {
 .interns-table td:last-child {
   width: 128px;
   white-space: nowrap;
+}
+
+.admins-table {
+  min-width: 620px;
+}
+
+.admins-table th:last-child,
+.admins-table td:last-child {
+  width: 56px;
+  text-align: right;
 }
 
 .question-grid {
