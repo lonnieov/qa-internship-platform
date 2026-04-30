@@ -7,6 +7,7 @@ import {
 } from "@/actions/intern";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialState: InternTokenLoginState = {
   ok: false,
@@ -22,6 +23,18 @@ export function TokenLoginForm() {
   return (
     <form action={action} className="form-grid">
       <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
+      <Label className="consent-field" htmlFor="personalDataConsent">
+        <input
+          id="personalDataConsent"
+          name="personalDataConsent"
+          type="checkbox"
+          required
+        />
+        <span>
+          Я согласен(а) на обработку персональных данных для прохождения
+          ассессмента и проверки результатов.
+        </span>
+      </Label>
       <Button disabled={isPending} type="submit">
         Войти
       </Button>

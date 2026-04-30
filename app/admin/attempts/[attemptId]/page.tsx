@@ -162,9 +162,13 @@ export default async function AttemptDetailsPage({
                     </td>
                     <td>{formatDuration(answer.timeSpentMs)}</td>
                     <td>
-                      <Badge variant={answer.isCorrect ? "success" : "danger"}>
-                        {answer.isCorrect ? "верно" : "0 баллов"}
-                      </Badge>
+                      {getOpenQuizConfig(answer.question.apiConfig) ? (
+                        <Badge variant="muted">без оценки</Badge>
+                      ) : (
+                        <Badge variant={answer.isCorrect ? "success" : "danger"}>
+                          {answer.isCorrect ? "верно" : "0 баллов"}
+                        </Badge>
+                      )}
                     </td>
                   </tr>
                 ))}

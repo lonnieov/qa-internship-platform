@@ -8,7 +8,7 @@ Allow admins to update existing assessment questions without deleting and recrea
 
 - Existing questions show a `Редактировать` panel in the admin question bank.
 - Quiz questions can be either multiple choice or open-answer.
-- Quiz questions can update text, explanation, four answer options, the correct option, or the expected open answer.
+- Quiz questions can update text, explanation, four answer options, the correct option, or an optional reviewer hint for open-answer mode.
 - API Sandbox questions can update request expectations and response payload.
 - DevTools Sandbox questions can update request settings, response payload, answer path, and expected answer.
 - New questions show a transient success popup after creation.
@@ -18,7 +18,7 @@ Allow admins to update existing assessment questions without deleting and recrea
 
 - `Question.text`, `Question.explanation`, and `Question.apiConfig` can be updated.
 - Existing `QuestionOption` rows are updated in place for quiz questions.
-- Open quiz questions store expected-answer metadata inside `Question.apiConfig`.
+- Open quiz questions store optional reviewer-hint metadata inside `Question.apiConfig`.
 - No schema changes were made.
 
 ## Main Flow
@@ -43,6 +43,6 @@ Allow admins to update existing assessment questions without deleting and recrea
 ## Constraints
 
 - Editing keeps the original question type.
-- Open-answer quiz validation uses a normalized text comparison.
+- Open-answer quiz answers are stored for manual review and do not affect the automatic score.
 - Invalid JSON in API fields cancels the update.
 - Historical attempts keep their existing stored answer data.

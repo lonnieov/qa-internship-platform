@@ -218,13 +218,11 @@ export async function createQuestionAction(formData: FormData) {
     });
   } else {
     if (quizMode === "OPEN_TEXT") {
-      const expectedAnswer = String(
-        formData.get("openExpectedAnswer") ?? "",
-      ).trim();
+      const expectedAnswer = String(formData.get("openExpectedAnswer") ?? "").trim();
       const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
       const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
 
-      if (!text || !expectedAnswer) {
+      if (!text) {
         return;
       }
 
@@ -239,7 +237,7 @@ export async function createQuestionAction(formData: FormData) {
           createdById: admin.id,
           apiConfig: {
             mode: "OPEN_TEXT",
-            expectedAnswer,
+            ...(expectedAnswer ? { expectedAnswer } : {}),
             ...(answerLabel ? { answerLabel } : {}),
             ...(placeholder ? { placeholder } : {}),
           },
@@ -389,15 +387,9 @@ export async function updateQuestionAction(formData: FormData) {
       },
     });
   } else if (quizMode === "OPEN_TEXT") {
-    const expectedAnswer = String(
-      formData.get("openExpectedAnswer") ?? "",
-    ).trim();
+    const expectedAnswer = String(formData.get("openExpectedAnswer") ?? "").trim();
     const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
     const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
-
-    if (!expectedAnswer) {
-      return;
-    }
 
     await prisma.$transaction([
       prisma.question.update({
@@ -409,7 +401,7 @@ export async function updateQuestionAction(formData: FormData) {
           explanation: explanation || null,
           apiConfig: {
             mode: "OPEN_TEXT",
-            expectedAnswer,
+            ...(expectedAnswer ? { expectedAnswer } : {}),
             ...(answerLabel ? { answerLabel } : {}),
             ...(placeholder ? { placeholder } : {}),
           },
