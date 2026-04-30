@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Search } from "lucide-react";
 import { revokeInvitationAction } from "@/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { formatPercent } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 function formatDateTime(value: Date | null | undefined) {
   if (!value) return "—";
@@ -21,7 +22,14 @@ function formatDateTime(value: Date | null | undefined) {
   });
 }
 
-export default async function AdminInternsPage() {
+export default async function AdminInternsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const internSearch = String(q ?? "").trim();
+
   const [invitations, interns] = await Promise.all([
     prisma.invitation.findMany({
       orderBy: { createdAt: "desc" },
@@ -29,6 +37,14 @@ export default async function AdminInternsPage() {
       include: { acceptedByProfile: true },
     }),
     prisma.internProfile.findMany({
+      where: internSearch
+        ? {
+            fullName: {
+              contains: internSearch,
+              mode: "insensitive",
+            },
+          }
+        : undefined,
       orderBy: { createdAt: "desc" },
       include: {
         profile: true,
@@ -116,66 +132,102 @@ export default async function AdminInternsPage() {
       </section>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Профили стажёров</CardTitle>
+        <CardHeader className="intern-profiles-header">
+          <div>
+            <CardTitle>Профили стажёров</CardTitle>
+            <p className="body-2 muted m-0">
+              {internSearch
+                ? `Поиск по ФИО: ${internSearch}`
+                : "Поиск работает по полному имени стажёра."}
+            </p>
+          </div>
+          <form className="intern-search-form" action="/admin/interns">
+            <Input
+              aria-label="Поиск по ФИО"
+              defaultValue={internSearch}
+              name="q"
+              placeholder="Поиск по ФИО"
+              type="search"
+            />
+            <Button className="intern-search-button" type="submit">
+              <Search size={16} />
+              Найти
+            </Button>
+            {internSearch ? (
+              <Button variant="outline" type="button" asChild>
+                <Link href="/admin/interns">Сбросить</Link>
+              </Button>
+            ) : null}
+          </form>
         </CardHeader>
         <CardContent>
-          <div className="table-wrap">
-            <table className="table interns-table">
-              <thead>
-                <tr>
-                  <th>Стажёр</th>
-                  <th>Прошёл тест</th>
-                  <th>Итоговый результат</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {interns.map((intern) => {
-                  const latest = intern.attempts.find(
-                    (attempt) => attempt.status !== "IN_PROGRESS",
-                  );
-                  const activeAttempt = intern.attempts.find(
-                    (attempt) => attempt.status === "IN_PROGRESS",
-                  );
-                  return (
-                    <tr key={intern.id}>
-                      <td>{intern.fullName}</td>
-                      <td>{formatDateTime(latest?.submittedAt)}</td>
-                      <td>
-                        {latest
-                          ? formatPercent(latest.scorePercent)
-                          : "нет попыток"}
-                      </td>
-                      <td className="intern-actions-cell">
-                        <div className="intern-actions">
-                          <div className="intern-actions-buttons">
-                            {latest ? (
-                              <Button
-                                className="intern-action-button intern-action-result"
-                                size="sm"
-                                variant="outline"
-                                asChild
-                              >
-                                <Link href={`/admin/attempts/${latest.id}`}>
-                                  <FileText size={15} />
-                                  Результат
-                                </Link>
-                              </Button>
+          {interns.length > 0 ? (
+            <div className="table-wrap">
+              <table className="table interns-table">
+                <thead>
+                  <tr>
+                    <th>Стажёр</th>
+                    <th>Прошёл тест</th>
+                    <th>Итоговый результат</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {interns.map((intern) => {
+                    const latest = intern.attempts.find(
+                      (attempt) => attempt.status !== "IN_PROGRESS",
+                    );
+                    const activeAttempt = intern.attempts.find(
+                      (attempt) => attempt.status === "IN_PROGRESS",
+                    );
+                    return (
+                      <tr key={intern.id}>
+                        <td>{intern.fullName}</td>
+                        <td>{formatDateTime(latest?.submittedAt)}</td>
+                        <td>
+                          {latest
+                            ? formatPercent(latest.scorePercent)
+                            : "нет попыток"}
+                        </td>
+                        <td className="intern-actions-cell">
+                          <div className="intern-actions">
+                            <div className="intern-actions-buttons">
+                              {latest ? (
+                                <Button
+                                  className="intern-action-button intern-action-result"
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                >
+                                  <Link href={`/admin/attempts/${latest.id}`}>
+                                    <FileText size={15} />
+                                    Результат
+                                  </Link>
+                                </Button>
+                              ) : null}
+                              <RetakeInvitationForm
+                                internProfileId={intern.id}
+                              />
+                            </div>
+                            {activeAttempt ? (
+                              <Badge variant="warning">идёт попытка</Badge>
                             ) : null}
-                            <RetakeInvitationForm internProfileId={intern.id} />
                           </div>
-                          {activeAttempt ? (
-                            <Badge variant="warning">идёт попытка</Badge>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <strong>Стажёры не найдены</strong>
+              <p className="body-2 muted m-0">
+                Попробуйте изменить ФИО или сбросить поиск.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </main>
