@@ -307,6 +307,11 @@ button {
   padding: 48px;
   background: linear-gradient(160deg, #0077ff 0%, #0055cc 100%);
   color: #ffffff;
+  transition: background 260ms ease;
+}
+
+.auth-shell[data-auth-role="admin"] .auth-brand-panel {
+  background: linear-gradient(160deg, #0f172a 0%, #0077ff 100%);
 }
 
 .auth-brand-panel::before,
@@ -413,6 +418,7 @@ button {
   display: grid;
   width: min(400px, 100%);
   gap: 24px;
+  animation: auth-panel-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .auth-form-top {
@@ -423,15 +429,40 @@ button {
 }
 
 .auth-tabs {
+  position: relative;
   display: flex;
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
   background: var(--muted);
+  overflow: hidden;
+}
+
+.auth-tabs::before {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 0;
+  width: calc((100% - 12px) / 2);
+  height: calc(100% - 8px);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(20, 20, 20, 0.06);
+  content: "";
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.auth-tabs-admin::before {
+  transform: translateX(calc(100% + 4px));
 }
 
 .auth-tabs a,
 .auth-tabs span {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: inline-flex;
   min-height: 40px;
@@ -441,12 +472,37 @@ button {
   color: var(--muted-foreground);
   font-size: 13px;
   font-weight: 500;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.auth-tabs a:hover {
+  color: var(--foreground);
+}
+
+.auth-tabs.is-switching a {
+  pointer-events: none;
+}
+
+.auth-tabs.is-switching .active {
+  transform: scale(0.98);
 }
 
 .auth-tabs .active {
-  background: var(--card);
   color: var(--foreground);
-  box-shadow: 0 1px 3px rgba(20, 20, 20, 0.06);
+}
+
+@keyframes auth-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .topbar {

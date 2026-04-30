@@ -18,7 +18,9 @@
 - Enter a valid intern token and submit.
 - Expected: the intern is routed into the existing intern flow.
 - Open `/` again and click `Администратор`.
-- Expected: `/sign-in/admin` opens and shows the admin login form.
+- Expected: the tab indicator moves smoothly, `/sign-in/admin` opens, and the admin login form fades into place.
+- Click `Стажёр`.
+- Expected: the role switch animates back and the token login form is shown.
 
 ## Negative Cases
 
@@ -31,3 +33,5 @@
 - Expected: the same intern sign-in screen still works.
 - Open `/sign-in/admin`.
 - Expected: admin sign-in still works and can switch back to `Стажёр`.
+- Use Cmd/Ctrl-click on a role tab.
+- Expected: the browser keeps the normal new-tab behavior.
