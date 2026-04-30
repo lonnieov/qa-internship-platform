@@ -12,6 +12,7 @@ import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
+import { SortableQuestionList } from "@/components/admin/sortable-question-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,7 +145,8 @@ function renderQuestionCard(
                   ) : null}
                   {openQuiz.expectedAnswer ? (
                     <p className="body-2 m-0">
-                      <strong>Подсказка проверяющему:</strong> {openQuiz.expectedAnswer}
+                      <strong>Подсказка проверяющему:</strong>{" "}
+                      {openQuiz.expectedAnswer}
                     </p>
                   ) : (
                     <p className="body-2 muted m-0">
@@ -374,9 +376,14 @@ export default async function AdminQuestionsPage({
               </CardContent>
             </Card>
           ) : (
-            activeSection.items.map((question, index) =>
-              renderQuestionCard(question, `${index + 1}`, tracksForForms),
-            )
+            <SortableQuestionList
+              key={activeSection.items.map((question) => question.id).join("|")}
+              questionIds={activeSection.items.map((question) => question.id)}
+            >
+              {activeSection.items.map((question, index) =>
+                renderQuestionCard(question, `${index + 1}`, tracksForForms),
+              )}
+            </SortableQuestionList>
           )}
         </div>
       </section>

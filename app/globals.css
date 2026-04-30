@@ -1022,6 +1022,60 @@ button {
   padding: 20px;
 }
 
+.question-dnd-list {
+  display: grid;
+  gap: 12px;
+}
+
+.question-dnd-list.is-saving {
+  cursor: progress;
+}
+
+.question-dnd-item {
+  position: relative;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.question-dnd-item.is-dragging {
+  opacity: 0.62;
+  transform: scale(0.995);
+}
+
+.question-dnd-item.is-over .question-bank-card {
+  border-color: color-mix(in srgb, var(--primary) 44%, var(--surface-border));
+  box-shadow:
+    var(--surface-shadow),
+    inset 3px 0 0 var(--primary);
+}
+
+.question-dnd-handle {
+  position: absolute;
+  top: 22px;
+  left: -14px;
+  z-index: 2;
+  display: grid;
+  width: 28px;
+  min-height: 36px;
+  place-items: center;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: grab;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.question-dnd-handle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.question-dnd-handle:active {
+  cursor: grabbing;
+}
+
 .question-index {
   display: grid;
   width: 36px;
