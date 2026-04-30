@@ -3,6 +3,7 @@ import { revokeInvitationAction } from "@/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { formatPercent } from "@/lib/utils";
 import { InvitationForm } from "@/components/admin/invitation-form";
+import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,9 +32,8 @@ export default async function AdminInternsPage() {
       include: {
         profile: true,
         attempts: {
-          where: { status: { not: "IN_PROGRESS" } },
-          orderBy: { submittedAt: "desc" },
-          take: 1,
+          orderBy: { startedAt: "desc" },
+          take: 10,
         },
       },
     }),
@@ -71,7 +71,12 @@ export default async function AdminInternsPage() {
                 </thead>
                 <tbody>
                   {interns.map((intern) => {
-                    const latest = intern.attempts[0];
+                    const latest = intern.attempts.find(
+                      (attempt) => attempt.status !== "IN_PROGRESS",
+                    );
+                    const activeAttempt = intern.attempts.find(
+                      (attempt) => attempt.status === "IN_PROGRESS",
+                    );
                     return (
                       <tr key={intern.id}>
                         <td>{intern.fullName}</td>
@@ -83,13 +88,19 @@ export default async function AdminInternsPage() {
                             : "нет попыток"}
                         </td>
                         <td>
-                          {latest ? (
-                            <Button size="sm" variant="outline" asChild>
-                              <Link href={`/admin/attempts/${latest.id}`}>
-                                Результат
-                              </Link>
-                            </Button>
-                          ) : null}
+                          <div className="nav-row">
+                            {latest ? (
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={`/admin/attempts/${latest.id}`}>
+                                  Результат
+                                </Link>
+                              </Button>
+                            ) : null}
+                            <RetakeInvitationForm internProfileId={intern.id} />
+                            {activeAttempt ? (
+                              <Badge variant="warning">идёт попытка</Badge>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     );

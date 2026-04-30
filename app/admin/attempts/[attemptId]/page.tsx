@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Clock3, Route, TimerReset } from "lucide-react";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
 import { ReportPrintButton } from "@/components/admin/report-print-button";
@@ -148,6 +149,13 @@ export default async function AttemptDetailsPage({
                             </pre>
                           ) : null}
                         </div>
+                      ) : getOpenQuizConfig(answer.question.apiConfig) ? (
+                        (
+                          answer.apiRequest as
+                            | { answerText?: string }
+                            | null
+                            | undefined
+                        )?.answerText ?? "не заполнен"
                       ) : (
                         answer.selectedOption?.text ?? "не выбран"
                       )}
