@@ -11,7 +11,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
-import { getOpenQuizConfig, normalizeOpenQuizAnswer } from "@/lib/open-quiz";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,
@@ -234,11 +234,6 @@ export async function submitOpenQuizAnswerAction(input: {
     return { ok: false, expired: false };
   }
 
-  const expected = normalizeOpenQuizAnswer(config.expectedAnswer);
-  const actual = normalizeOpenQuizAnswer(input.answerText);
-  const isCorrect =
-    actual.length > 0 && actual.toLowerCase() === expected.toLowerCase();
-
   await prisma.assessmentAnswer.update({
     where: {
       attemptId_questionId: {
@@ -252,7 +247,7 @@ export async function submitOpenQuizAnswerAction(input: {
         answerText: input.answerText,
       },
       selectedOptionId: null,
-      isCorrect,
+      isCorrect: false,
       answeredAt: new Date(),
       submissionCount: {
         increment: 1,
@@ -264,7 +259,7 @@ export async function submitOpenQuizAnswerAction(input: {
   });
 
   revalidatePath("/intern/test");
-  return { ok: true, expired: false, correct: isCorrect };
+  return { ok: true, expired: false };
 }
 
 export async function selectAnswerAction(input: {

@@ -142,9 +142,15 @@ function renderQuestionCard(
                   {openQuiz.answerLabel ? (
                     <p className="body-2 muted m-0">{openQuiz.answerLabel}</p>
                   ) : null}
-                  <p className="body-2 m-0">
-                    <strong>Эталонный ответ:</strong> {openQuiz.expectedAnswer}
-                  </p>
+                  {openQuiz.expectedAnswer ? (
+                    <p className="body-2 m-0">
+                      <strong>Подсказка проверяющему:</strong> {openQuiz.expectedAnswer}
+                    </p>
+                  ) : (
+                    <p className="body-2 muted m-0">
+                      Подсказка для проверяющего не указана.
+                    </p>
+                  )}
                 </div>
               );
             }

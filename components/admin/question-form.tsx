@@ -274,8 +274,7 @@ export function QuestionForm({
                   id="openExpectedAnswer"
                   name="openExpectedAnswer"
                   defaultValue={openQuizConfig?.expectedAnswer ?? ""}
-                  placeholder="Например: smoke testing — быстрая проверка критичного функционала после сборки"
-                  required
+                  placeholder="Необязательно. Можно оставить подсказку для проверяющего."
                 />
               </div>
               <div className="grid-2">
