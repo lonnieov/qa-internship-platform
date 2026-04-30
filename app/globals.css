@@ -1011,8 +1011,8 @@ button {
 }
 
 .track-modal {
-  width: min(460px, calc(100vw - 32px));
-  max-height: min(720px, calc(100vh - 32px));
+  width: min(500px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
   overflow: auto;
 }
 
@@ -1028,7 +1028,7 @@ button {
 }
 
 .track-modal .modal-header {
-  padding: 20px 20px 16px;
+  padding: 24px 24px 18px;
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -1041,11 +1041,16 @@ button {
 
 .track-modal-body {
   display: grid;
-  gap: 16px;
-  padding: 20px;
+  gap: 20px;
+  padding: 24px;
 }
 
 .track-modal-form {
+  display: grid;
+  gap: 18px;
+}
+
+.track-modal-fields {
   display: grid;
   gap: 14px;
 }
@@ -1058,9 +1063,25 @@ button {
 
 .track-modal-danger-zone {
   display: grid;
-  gap: 12px;
-  border-top: 1px solid var(--surface-border);
-  padding-top: 16px;
+  gap: 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--destructive) 22%, var(--surface-border));
+  border-radius: var(--radius-garden);
+  padding: 16px;
+  background: color-mix(in srgb, var(--destructive) 6%, transparent);
+}
+
+.track-modal-danger-zone strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.track-modal-danger-zone .track-modal-actions {
+  justify-content: flex-start;
+}
+
+.track-modal-danger-zone .track-modal-actions form {
+  min-width: 0;
 }
 
 .question-list-panel {
@@ -1854,6 +1875,18 @@ button {
 
   .report-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .track-modal .modal-header,
+  .track-modal-body {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .track-modal-actions,
+  .track-modal-actions form,
+  .track-modal-actions button {
+    width: 100%;
   }
 }
 

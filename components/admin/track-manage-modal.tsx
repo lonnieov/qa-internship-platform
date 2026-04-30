@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, X } from "lucide-react";
+import { Eye, EyeOff, MoreHorizontal, Trash2, X } from "lucide-react";
 import {
   deleteTrackAction,
   toggleTrackAction,
@@ -69,35 +69,37 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
             <div className="track-modal-body">
               <form action={updateTrackAction} className="track-modal-form">
                 <input type="hidden" name="trackId" value={track.id ?? ""} />
-                <div className="form-field">
-                  <label
-                    className="body-2 muted"
-                    htmlFor={`track-name-${track.id}`}
-                  >
-                    Название
-                  </label>
-                  <Input
-                    id={`track-name-${track.id}`}
-                    name="name"
-                    defaultValue={track.name}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label
-                    className="body-2 muted"
-                    htmlFor={`track-order-${track.id}`}
-                  >
-                    Порядок
-                  </label>
-                  <Input
-                    id={`track-order-${track.id}`}
-                    name="order"
-                    type="number"
-                    min="0"
-                    defaultValue={track.order ?? 0}
-                    required
-                  />
+                <div className="track-modal-fields">
+                  <div className="form-field">
+                    <label
+                      className="body-2 muted"
+                      htmlFor={`track-name-${track.id}`}
+                    >
+                      Название
+                    </label>
+                    <Input
+                      id={`track-name-${track.id}`}
+                      name="name"
+                      defaultValue={track.name}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label
+                      className="body-2 muted"
+                      htmlFor={`track-order-${track.id}`}
+                    >
+                      Порядок
+                    </label>
+                    <Input
+                      id={`track-order-${track.id}`}
+                      name="order"
+                      type="number"
+                      min="0"
+                      defaultValue={track.order ?? 0}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="modal-actions">
                   <Button type="submit">Сохранить</Button>
@@ -124,6 +126,11 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                       value={String(track.isActive)}
                     />
                     <Button type="submit" variant="secondary">
+                      {track.isActive ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
                       {track.isActive ? "Скрыть" : "Активировать"}
                     </Button>
                   </form>
@@ -143,18 +150,18 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                           : "Сначала переместите или удалите вопросы"
                       }
                     >
+                      <Trash2 size={16} />
                       Удалить
                     </Button>
                   </form>
                 </div>
+                {!canDelete ? (
+                  <p className="body-2 muted m-0">
+                    Трек можно удалить только после переноса или удаления всех
+                    вопросов.
+                  </p>
+                ) : null}
               </div>
-
-              {!canDelete ? (
-                <p className="body-2 muted m-0">
-                  Трек можно удалить только после переноса или удаления всех
-                  вопросов.
-                </p>
-              ) : null}
             </div>
           </div>
         </div>
