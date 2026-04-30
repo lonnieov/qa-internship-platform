@@ -1,6 +1,6 @@
 export type OpenQuizConfig = {
   mode: "OPEN_TEXT";
-  expectedAnswer: string;
+  expectedAnswer?: string;
   answerLabel?: string;
   placeholder?: string;
 };
@@ -17,14 +17,9 @@ export function getOpenQuizConfig(input: unknown): OpenQuizConfig | null {
     return null;
   }
 
-  const expectedAnswer = String(draft.expectedAnswer ?? "").trim();
-  if (!expectedAnswer) {
-    return null;
-  }
-
   return {
     mode: "OPEN_TEXT",
-    expectedAnswer,
+    expectedAnswer: String(draft.expectedAnswer ?? "").trim() || undefined,
     answerLabel: String(draft.answerLabel ?? "").trim() || undefined,
     placeholder: String(draft.placeholder ?? "").trim() || undefined,
   };

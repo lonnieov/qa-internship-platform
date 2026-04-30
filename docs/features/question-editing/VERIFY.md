@@ -21,8 +21,10 @@
 - Edit a Quiz question text, one answer option, and the correct radio option.
 - Click `Сохранить изменения`.
 - Expected: the card displays the new text and correct option border moves to the selected option.
-- Switch a Quiz question to `Открытый ответ`, fill `Эталонный ответ`, and save.
-- Expected: the card shows that the question is open-answer and displays the expected answer.
+- Switch a Quiz question to `Открытый ответ`, leave `Эталонный ответ` empty, and save.
+- Expected: the question is saved successfully and the card still marks it as an open question.
+- Fill `Эталонный ответ` for the same question and save again.
+- Expected: the card shows the hint as reviewer guidance, not as an auto-check rule.
 - Edit an API Sandbox question response body with valid JSON.
 - Expected: the JSON preview in the card updates after saving.
 - Edit a DevTools Sandbox expected answer.
@@ -42,4 +44,4 @@
 - Delete a disposable question.
 - Pass a multiple-choice quiz question in the intern flow.
 - Pass an open-answer quiz question in the intern flow.
-- Expected: create, toggle, delete, choice quiz, and open-answer quiz still work.
+- Expected: the answer is saved, the attempt report shows `без оценки` for that question, and the final score is calculated only from auto-graded questions.

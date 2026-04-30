@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 
 export async function getSettings() {
   return prisma.assessmentSettings.upsert({
@@ -14,10 +15,25 @@ export async function getSettings() {
 export async function calculateAttemptScore(attemptId: string) {
   const answers = await prisma.assessmentAnswer.findMany({
     where: { attemptId },
+    include: {
+      question: {
+        select: {
+          type: true,
+          apiConfig: true,
+        },
+      },
+    },
+  });
+  const scoredAnswers = answers.filter((answer) => {
+    if (answer.question.type !== "QUIZ") {
+      return true;
+    }
+
+    return !getOpenQuizConfig(answer.question.apiConfig);
   });
 
-  const questionCount = answers.length;
-  const correctCount = answers.filter((answer) => answer.isCorrect).length;
+  const questionCount = scoredAnswers.length;
+  const correctCount = scoredAnswers.filter((answer) => answer.isCorrect).length;
   const scorePercent =
     questionCount === 0 ? 0 : (correctCount / questionCount) * 100;
 
