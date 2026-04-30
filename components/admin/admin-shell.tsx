@@ -41,7 +41,7 @@ export function AdminShell({
           <ServiceLogo />
           <span>
             <strong>Click Assessment</strong>
-            <small>Assessment</small>
+            <small>Never gonna give you up</small>
           </span>
         </Link>
 
