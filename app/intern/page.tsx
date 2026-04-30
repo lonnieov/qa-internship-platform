@@ -10,23 +10,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function InternHomePage() {
   const profile = await requireIntern();
-  const [settings, activeQuestionCount, latestAttempt, inProgress] = await Promise.all([
-    getSettings(),
-    prisma.question.count({ where: { isActive: true } }),
-    prisma.assessmentAttempt.findFirst({
-      where: { internProfileId: profile.internProfile.id },
-      orderBy: { startedAt: "desc" },
-    }),
-    prisma.assessmentAttempt.findFirst({
-      where: {
-        internProfileId: profile.internProfile.id,
-        status: "IN_PROGRESS",
-      },
-      orderBy: { startedAt: "desc" },
-    }),
-  ]);
+  const [settings, activeQuestionCount, latestAttempt, inProgress, invitation] =
+    await Promise.all([
+      getSettings(),
+      prisma.question.count({ where: { isActive: true } }),
+      prisma.assessmentAttempt.findFirst({
+        where: { internProfileId: profile.internProfile.id },
+        orderBy: { startedAt: "desc" },
+      }),
+      prisma.assessmentAttempt.findFirst({
+        where: {
+          internProfileId: profile.internProfile.id,
+          status: "IN_PROGRESS",
+        },
+        orderBy: { startedAt: "desc" },
+      }),
+      profile.internProfile.invitationId
+        ? prisma.invitation.findUnique({
+            where: { id: profile.internProfile.invitationId },
+            select: { status: true },
+          })
+        : null,
+    ]);
+  const currentInvitationStatus = invitation?.status;
 
-  if (latestAttempt && latestAttempt.status !== "IN_PROGRESS") {
+  if (
+    latestAttempt &&
+    latestAttempt.status !== "IN_PROGRESS" &&
+    currentInvitationStatus === "COMPLETED"
+  ) {
     redirect(`/intern/finish?attempt=${latestAttempt.id}`);
   }
 

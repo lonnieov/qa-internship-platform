@@ -71,6 +71,19 @@ export default async function InternTestPage({
       text: answer.question.text,
       explanation: answer.question.explanation,
       selectedOptionId: answer.selectedOptionId,
+      textAnswer:
+        answer.apiRequest &&
+        typeof answer.apiRequest === "object" &&
+        !Array.isArray(answer.apiRequest) &&
+        "answerText" in answer.apiRequest
+          ? String(
+              (
+                answer.apiRequest as {
+                  answerText?: unknown;
+                }
+              ).answerText ?? "",
+            )
+          : "",
       timeSpentMs: answer.timeSpentMs,
       submissionCount: answer.submissionCount,
       apiConfig: answer.question.apiConfig,

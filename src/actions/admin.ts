@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
@@ -22,8 +24,32 @@ async function resolveQuestionTrack(formData: FormData) {
 
   return {
     trackId: track?.id ?? null,
+    trackSlug: track?.slug ?? "all",
     trackName: track?.name ?? normalizeLegacyTrack(String(formData.get("track") ?? "")),
   };
+}
+
+function questionRedirectUrl(
+  questionType: string,
+  trackSlug: string,
+  created = false,
+) {
+  const params = new URLSearchParams({
+    type:
+      questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX"
+        ? questionType
+        : "QUIZ",
+  });
+
+  if (trackSlug && trackSlug !== "all") {
+    params.set("track", trackSlug);
+  }
+
+  if (created) {
+    params.set("created", "1");
+  }
+
+  return `/admin/questions?${params.toString()}`;
 }
 
 export async function createInvitationAction(
@@ -103,6 +129,7 @@ export async function updateSettingsAction(formData: FormData) {
 export async function createQuestionAction(formData: FormData) {
   const admin = await requireAdmin();
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
@@ -190,6 +217,40 @@ export async function createQuestionAction(formData: FormData) {
       },
     });
   } else {
+    if (quizMode === "OPEN_TEXT") {
+      const expectedAnswer = String(
+        formData.get("openExpectedAnswer") ?? "",
+      ).trim();
+      const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
+      const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
+
+      if (!text || !expectedAnswer) {
+        return;
+      }
+
+      await prisma.question.create({
+        data: {
+          type: "QUIZ",
+          text,
+          track: track.trackName,
+          trackId: track.trackId,
+          explanation: explanation || null,
+          order: (lastQuestion?.order ?? 0) + 1,
+          createdById: admin.id,
+          apiConfig: {
+            mode: "OPEN_TEXT",
+            expectedAnswer,
+            ...(answerLabel ? { answerLabel } : {}),
+            ...(placeholder ? { placeholder } : {}),
+          },
+        },
+      });
+
+      revalidatePath("/admin/questions");
+      revalidatePath("/admin");
+      redirect(questionRedirectUrl(questionType, track.trackSlug, true));
+    }
+
     const correctIndex = Number(formData.get("correctOption"));
     const options = [0, 1, 2, 3].map((index) =>
       String(formData.get(`option-${index}`) ?? "").trim(),
@@ -226,12 +287,14 @@ export async function createQuestionAction(formData: FormData) {
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
+  redirect(questionRedirectUrl(questionType, track.trackSlug, true));
 }
 
 export async function updateQuestionAction(formData: FormData) {
   await requireAdmin();
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "QUIZ");
+  const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
   const text = String(formData.get("text") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
@@ -325,6 +388,37 @@ export async function updateQuestionAction(formData: FormData) {
         apiConfig,
       },
     });
+  } else if (quizMode === "OPEN_TEXT") {
+    const expectedAnswer = String(
+      formData.get("openExpectedAnswer") ?? "",
+    ).trim();
+    const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
+    const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
+
+    if (!expectedAnswer) {
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.question.update({
+        where: { id: questionId },
+        data: {
+          text,
+          track: track.trackName,
+          trackId: track.trackId,
+          explanation: explanation || null,
+          apiConfig: {
+            mode: "OPEN_TEXT",
+            expectedAnswer,
+            ...(answerLabel ? { answerLabel } : {}),
+            ...(placeholder ? { placeholder } : {}),
+          },
+        },
+      }),
+      prisma.questionOption.deleteMany({
+        where: { questionId },
+      }),
+    ]);
   } else {
     const correctIndex = Number(formData.get("correctOption"));
     const options = [0, 1, 2, 3].map((index) => ({
@@ -352,6 +446,7 @@ export async function updateQuestionAction(formData: FormData) {
           track: track.trackName,
           trackId: track.trackId,
           explanation: explanation || null,
+          apiConfig: Prisma.JsonNull,
         },
       }),
       ...options.map((option) =>
@@ -477,4 +572,80 @@ export async function deleteTrackAction(formData: FormData) {
   await prisma.track.delete({ where: { id: trackId } });
 
   revalidatePath("/admin/questions");
+}
+
+export async function createRetakeInvitationAction(
+  _prevState: InvitationState,
+  formData: FormData,
+): Promise<InvitationState> {
+  const admin = await requireAdmin();
+  const internProfileId = String(formData.get("internProfileId") ?? "");
+  const expiresInDays = Number(formData.get("expiresInDays") ?? 14);
+
+  if (!internProfileId) {
+    return { ok: false, message: "Не удалось определить стажёра." };
+  }
+
+  const intern = await prisma.internProfile.findUnique({
+    where: { id: internProfileId },
+    include: {
+      profile: true,
+      attempts: {
+        orderBy: { startedAt: "desc" },
+        take: 1,
+      },
+      invitation: true,
+    },
+  });
+
+  if (!intern) {
+    return { ok: false, message: "Профиль стажёра не найден." };
+  }
+
+  if (intern.attempts[0]?.status === "IN_PROGRESS") {
+    return {
+      ok: false,
+      message: "Нельзя выдать повторный доступ, пока текущая попытка не завершена.",
+    };
+  }
+
+  const inviteCode = generateInviteCode();
+  const expiresAt = Number.isFinite(expiresInDays)
+    ? new Date(Date.now() + Math.max(1, expiresInDays) * 24 * 60 * 60 * 1000)
+    : null;
+
+  await prisma.$transaction(async (tx) => {
+    const invitation = await tx.invitation.create({
+      data: {
+        candidateName: intern.fullName,
+        inviteCodeHash: hashInviteCode(inviteCode),
+        expiresAt,
+        createdById: admin.id,
+      },
+    });
+
+    if (intern.invitationId) {
+      await tx.invitation.update({
+        where: { id: intern.invitationId },
+        data: {
+          acceptedByProfileId: null,
+        },
+      });
+    }
+
+    await tx.internProfile.update({
+      where: { id: intern.id },
+      data: {
+        invitationId: invitation.id,
+      },
+    });
+  });
+
+  revalidatePath("/admin/interns");
+
+  return {
+    ok: true,
+    message: "Новый токен для повторного прохождения создан.",
+    inviteCode,
+  };
 }

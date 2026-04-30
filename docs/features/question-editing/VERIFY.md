@@ -9,6 +9,8 @@
 ## Smoke Check
 
 - Open `Банк вопросов`.
+- Create a new question in any section.
+- Expected: after submit the page stays in the same section and shows a short success popup.
 - Expected: every existing question has a `Редактировать` expandable panel.
 - Expand the panel.
 - Expected: fields are prefilled with the current question values.
@@ -19,6 +21,8 @@
 - Edit a Quiz question text, one answer option, and the correct radio option.
 - Click `Сохранить изменения`.
 - Expected: the card displays the new text and correct option border moves to the selected option.
+- Switch a Quiz question to `Открытый ответ`, fill `Эталонный ответ`, and save.
+- Expected: the card shows that the question is open-answer and displays the expected answer.
 - Edit an API Sandbox question response body with valid JSON.
 - Expected: the JSON preview in the card updates after saving.
 - Edit a DevTools Sandbox expected answer.
@@ -36,4 +40,6 @@
 - Create a new question with the existing `Новый вопрос` form.
 - Toggle an existing question active/hidden.
 - Delete a disposable question.
-- Expected: create, toggle, and delete still work.
+- Pass a multiple-choice quiz question in the intern flow.
+- Pass an open-answer quiz question in the intern flow.
+- Expected: create, toggle, delete, choice quiz, and open-answer quiz still work.
