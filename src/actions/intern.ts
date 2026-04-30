@@ -10,7 +10,11 @@ import {
 } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
-import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
+import {
+  expireAttemptIfNeeded,
+  finalizeAttempt,
+  getSettings,
+} from "@/lib/assessment";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { hashInviteCode } from "@/lib/security";
 import {
@@ -80,7 +84,10 @@ export async function loginInternByTokenAction(
     }
 
     if (invitation.status === "PENDING") {
-      if (invitation.acceptedByProfileId && invitation.acceptedByProfileId !== profile.id) {
+      if (
+        invitation.acceptedByProfileId &&
+        invitation.acceptedByProfileId !== profile.id
+      ) {
         return { ok: false, message: "Токен уже привязан к другому профилю." };
       }
 
@@ -419,7 +426,11 @@ export async function submitApiSandboxAction(input: {
     },
   });
 
-  if (!answer || answer.question.type !== "API_SANDBOX" || !answer.question.apiConfig) {
+  if (
+    !answer ||
+    answer.question.type !== "API_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
     return { ok: false, expired: false };
   }
 
@@ -509,7 +520,9 @@ export async function submitDevtoolsAnswerAction(input: {
   const expectedFromPath = normalizeAnswerValue(
     getJsonPathValue(config.successBody, config.answerPath),
   );
-  const expected = normalizeAnswerValue(config.expectedAnswer ?? expectedFromPath);
+  const expected = normalizeAnswerValue(
+    config.expectedAnswer ?? expectedFromPath,
+  );
   const actual = normalizeAnswerValue(input.answerText);
   const isCorrect = actual.toLowerCase() === expected.toLowerCase();
 
@@ -533,9 +546,9 @@ export async function submitDevtoolsAnswerAction(input: {
       },
       isCorrect,
       answeredAt: new Date(),
-      submissionCount: {
-        increment: 1,
-      },
+      submissionCount: input.answerText.trim()
+        ? Math.max(1, answer.submissionCount)
+        : 0,
       timeSpentMs: {
         increment: Math.max(0, Math.round(input.timeSpentMs)),
       },
@@ -543,5 +556,5 @@ export async function submitDevtoolsAnswerAction(input: {
   });
 
   revalidatePath("/intern/test");
-  return { ok: true, expired: false, correct: isCorrect };
+  return { ok: true, expired: false };
 }

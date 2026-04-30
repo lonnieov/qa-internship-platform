@@ -25,7 +25,8 @@ async function resolveQuestionTrack(formData: FormData) {
   return {
     trackId: track?.id ?? null,
     trackSlug: track?.slug ?? "all",
-    trackName: track?.name ?? normalizeLegacyTrack(String(formData.get("track") ?? "")),
+    trackName:
+      track?.name ?? normalizeLegacyTrack(String(formData.get("track") ?? "")),
   };
 }
 
@@ -218,7 +219,9 @@ export async function createQuestionAction(formData: FormData) {
     });
   } else {
     if (quizMode === "OPEN_TEXT") {
-      const expectedAnswer = String(formData.get("openExpectedAnswer") ?? "").trim();
+      const expectedAnswer = String(
+        formData.get("openExpectedAnswer") ?? "",
+      ).trim();
       const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
       const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
 
@@ -387,7 +390,9 @@ export async function updateQuestionAction(formData: FormData) {
       },
     });
   } else if (quizMode === "OPEN_TEXT") {
-    const expectedAnswer = String(formData.get("openExpectedAnswer") ?? "").trim();
+    const expectedAnswer = String(
+      formData.get("openExpectedAnswer") ?? "",
+    ).trim();
     const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
     const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
 
@@ -480,6 +485,32 @@ export async function toggleQuestionAction(formData: FormData) {
     where: { id: questionId },
     data: { isActive: !isActive },
   });
+
+  revalidatePath("/admin/questions");
+  revalidatePath("/admin");
+}
+
+export async function reorderQuestionsAction(questionIds: string[]) {
+  await requireAdmin();
+  const uniqueQuestionIds = [...new Set(questionIds)].filter(Boolean);
+
+  if (uniqueQuestionIds.length < 2) return;
+
+  const existingQuestions = await prisma.question.findMany({
+    where: { id: { in: uniqueQuestionIds } },
+    select: { id: true },
+  });
+
+  if (existingQuestions.length !== uniqueQuestionIds.length) return;
+
+  await prisma.$transaction(
+    uniqueQuestionIds.map((questionId, index) =>
+      prisma.question.update({
+        where: { id: questionId },
+        data: { order: index + 1 },
+      }),
+    ),
+  );
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
@@ -597,7 +628,8 @@ export async function createRetakeInvitationAction(
   if (intern.attempts[0]?.status === "IN_PROGRESS") {
     return {
       ok: false,
-      message: "Нельзя выдать повторный доступ, пока текущая попытка не завершена.",
+      message:
+        "Нельзя выдать повторный доступ, пока текущая попытка не завершена.",
     };
   }
 
