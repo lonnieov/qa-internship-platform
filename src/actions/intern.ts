@@ -10,7 +10,11 @@ import {
 } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
-import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
+import {
+  expireAttemptIfNeeded,
+  finalizeAttempt,
+  getSettings,
+} from "@/lib/assessment";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,
@@ -36,6 +40,15 @@ export async function loginInternByTokenAction(
   _prevState: InternTokenLoginState,
   formData: FormData,
 ): Promise<InternTokenLoginState> {
+  const personalDataConsent = formData.get("personalDataConsent") === "on";
+
+  if (!personalDataConsent) {
+    return {
+      ok: false,
+      message: "Подтвердите согласие на обработку персональных данных.",
+    };
+  }
+
   const token = String(formData.get("token") ?? "");
   const invitation = await prisma.invitation.findUnique({
     where: { inviteCodeHash: hashInviteCode(token) },
@@ -329,7 +342,11 @@ export async function submitApiSandboxAction(input: {
     },
   });
 
-  if (!answer || answer.question.type !== "API_SANDBOX" || !answer.question.apiConfig) {
+  if (
+    !answer ||
+    answer.question.type !== "API_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
     return { ok: false, expired: false };
   }
 
@@ -419,7 +436,9 @@ export async function submitDevtoolsAnswerAction(input: {
   const expectedFromPath = normalizeAnswerValue(
     getJsonPathValue(config.successBody, config.answerPath),
   );
-  const expected = normalizeAnswerValue(config.expectedAnswer ?? expectedFromPath);
+  const expected = normalizeAnswerValue(
+    config.expectedAnswer ?? expectedFromPath,
+  );
   const actual = normalizeAnswerValue(input.answerText);
   const isCorrect = actual.toLowerCase() === expected.toLowerCase();
 

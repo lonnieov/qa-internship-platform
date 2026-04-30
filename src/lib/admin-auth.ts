@@ -43,7 +43,12 @@ export function verifyPassword(password: string, stored: string | null) {
   if (!stored) return false;
 
   const [algorithm, iterationsRaw, salt, expectedHash] = stored.split(":");
-  if (algorithm !== "pbkdf2_sha256" || !iterationsRaw || !salt || !expectedHash) {
+  if (
+    algorithm !== "pbkdf2_sha256" ||
+    !iterationsRaw ||
+    !salt ||
+    !expectedHash
+  ) {
     return false;
   }
 
@@ -113,12 +118,4 @@ export async function getAdminSessionProfile() {
   if (session.profile.role !== "ADMIN") return null;
 
   return session.profile;
-}
-
-export async function canRegisterAdmin() {
-  const adminCount = await prisma.profile.count({
-    where: { role: "ADMIN", passwordHash: { not: null } },
-  });
-
-  return adminCount === 0 || Boolean(process.env.ADMIN_REGISTRATION_CODE);
 }

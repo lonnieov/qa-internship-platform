@@ -33,7 +33,7 @@ export default function AdminSignInPage() {
             </div>
           </div>
         </div>
-        <small>© 2026 Coin · Внутренняя HR-платформа</small>
+        <small>© 2026 Click Assessment · Внутренняя QA платформа</small>
       </section>
 
       <section className="auth-form-panel">
@@ -54,9 +54,6 @@ export default function AdminSignInPage() {
             <span className="active">Администратор</span>
           </div>
           <AdminLoginForm />
-          <p className="body-2 muted m-0">
-            Нет аккаунта? <Link href="/sign-up/admin">Зарегистрироваться</Link>
-          </p>
         </div>
       </section>
     </main>

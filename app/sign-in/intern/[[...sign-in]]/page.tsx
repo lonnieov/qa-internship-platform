@@ -10,7 +10,7 @@ export default function InternSignInPage() {
       <section className="auth-brand-panel">
         <div className="auth-brand">
           <ServiceLogo />
-          <strong>Coin</strong>
+          <strong>Click Assessment</strong>
         </div>
         <div>
           <h1>Платформа отбора стажёров</h1>
@@ -19,10 +19,6 @@ export default function InternSignInPage() {
             будущих инженеров команды Coin.
           </p>
           <div className="auth-stats">
-            <div>
-              <strong>%</strong>
-              <span>итоговый результат</span>
-            </div>
             <div>
               <strong>3</strong>
               <span>типа вопросов</span>
@@ -33,7 +29,7 @@ export default function InternSignInPage() {
             </div>
           </div>
         </div>
-        <small>© 2026 Coin · Внутренняя HR-платформа</small>
+        <small>© 2026 Click Assessment · Внутренняя QA платформа</small>
       </section>
 
       <section className="auth-form-panel">

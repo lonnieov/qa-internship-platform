@@ -6,9 +6,9 @@ Authenticate administrators with local database credentials and remove Clerk fro
 
 ## Scope
 
-- Admins register at `/sign-up/admin`.
 - Admins sign in at `/sign-in/admin` with email and password.
 - Signed-in admins can create other admin accounts from `/admin/settings`.
+- Public admin registration is disabled; `/sign-up/admin` redirects to `/sign-in/admin`.
 - Signed-in admins can edit or soft-delete non-seed admin accounts.
 - The admin sidebar shows the current admin name and email.
 - Seed admin is hidden from the admin management list.
@@ -25,8 +25,6 @@ Authenticate administrators with local database credentials and remove Clerk fro
 
 ## Main Flow
 
-- First admin opens `/sign-up/admin` and creates an account.
-- Later admin registrations require `ADMIN_REGISTRATION_CODE` when it is set.
 - Admin opens `/sign-in/admin`, enters email and password, and receives a DB-backed session.
 - Signed-in admin opens `/admin/settings` and creates another admin with email and password.
 - Signed-in admin edits another admin from the admin list modal.
@@ -49,7 +47,6 @@ Authenticate administrators with local database credentials and remove Clerk fro
 - `app/sign-in/admin/[[...sign-in]]/page.tsx`
 - `app/sign-up/admin/[[...sign-up]]/page.tsx`
 - `components/admin/admin-login-form.tsx`
-- `components/admin/admin-register-form.tsx`
 - `components/admin/admin-create-form.tsx`
 - `components/admin/admin-manage-modal.tsx`
 - `components/admin/admin-shell.tsx`
@@ -58,5 +55,6 @@ Authenticate administrators with local database credentials and remove Clerk fro
 ## Constraints
 
 - Clerk package, provider, middleware, and user button are removed.
+- New admin accounts can only be created by signed-in admins from `/admin/settings`.
 - Intern token auth remains cookie-based and unchanged at the user-facing level.
 - Existing admin accounts without `passwordHash` cannot sign in until a DB password is registered.

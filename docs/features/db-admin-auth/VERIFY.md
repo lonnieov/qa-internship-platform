@@ -11,20 +11,20 @@
 - Open `/sign-in/admin`.
 - Expected: email/password admin login form is visible.
 - Open `/sign-up/admin`.
-- Expected: admin registration form is visible when registration is available.
+- Expected: user is redirected to `/sign-in/admin`.
 - Open `/sign-in/intern`.
 - Expected: token login form is still visible.
 
 ## Positive Case
 
-- Open `/sign-up/admin`.
-- Enter `Admin`, `User`, `admin@example.com`, and `password123`.
+- Run `npm run db:seed`.
+- Open `/sign-in/admin`.
+- Enter `admin@resting.chat` and `RESTingChat`.
+- Expected: user is redirected to `/admin`.
+- Open `/admin/settings`.
+- In `Администраторы`, enter `Admin`, `User`, `admin@example.com`, and `password123`.
 - Submit the form.
-- Expected: user is redirected to `/admin`.
-- Click `Выйти` in the admin sidebar.
-- Expected: user is redirected to `/sign-in/admin`.
-- Enter `admin@example.com` and `password123`.
-- Expected: user is redirected to `/admin`.
+- Expected: success message appears and `admin@example.com` appears in the admin list.
 
 ## Seeded Admin Case
 
@@ -62,10 +62,8 @@
 - Open `/sign-in/admin`.
 - Enter `admin@example.com` and `wrong-password`.
 - Expected: login is rejected with `Неверный email или пароль.`
-- Open `/sign-up/admin` after an admin exists and no `ADMIN_REGISTRATION_CODE` is set.
-- Expected: registration is closed.
-- If `ADMIN_REGISTRATION_CODE` is set, enter a wrong code during registration.
-- Expected: registration is rejected with `Неверный код регистрации.`
+- Open `/sign-up/admin`.
+- Expected: public registration is not available and user is redirected to `/sign-in/admin`.
 
 ## Regression Check
 
