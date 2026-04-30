@@ -5,6 +5,7 @@ import { loginAdminAction, type AdminAuthState } from "@/actions/admin-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const initialState: AdminAuthState = {
   ok: false,
@@ -25,10 +26,9 @@ export function AdminLoginForm() {
       </div>
       <div className="form-grid">
         <Label htmlFor="password">Пароль</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
         />
       </div>

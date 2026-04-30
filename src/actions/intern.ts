@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import { expireAttemptIfNeeded, finalizeAttempt, getSettings } from "@/lib/assessment";
+import { getOpenQuizConfig, normalizeOpenQuizAnswer } from "@/lib/open-quiz";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,
@@ -65,19 +66,32 @@ export async function loginInternByTokenAction(
   }
 
   if (profile && invitation.internProfile) {
-    const previousAttempt = await prisma.assessmentAttempt.findFirst({
+    const activeAttempt = await prisma.assessmentAttempt.findFirst({
       where: {
         internProfileId: invitation.internProfile.id,
-        status: { not: "IN_PROGRESS" },
+        status: "IN_PROGRESS",
       },
     });
 
-    if (previousAttempt) {
+    if (activeAttempt) {
+      await createInternSession(profile.id);
+      revalidatePath("/intern");
+      redirect("/intern");
+    }
+
+    if (invitation.status === "PENDING") {
+      if (invitation.acceptedByProfileId && invitation.acceptedByProfileId !== profile.id) {
+        return { ok: false, message: "Токен уже привязан к другому профилю." };
+      }
+
       await prisma.invitation.update({
         where: { id: invitation.id },
-        data: { status: "COMPLETED" },
+        data: {
+          status: "ACCEPTED",
+          acceptedAt: new Date(),
+          acceptedByProfileId: profile.id,
+        },
       });
-      return { ok: false, message: "Тест по этому токену уже завершён." };
     }
   }
 
@@ -132,7 +146,13 @@ export async function startAttemptAction() {
     redirect(`/intern/test?attempt=${existing.id}`);
   }
 
-  if (existing) {
+  const invitation = profile.internProfile.invitationId
+    ? await prisma.invitation.findUnique({
+        where: { id: profile.internProfile.invitationId },
+      })
+    : null;
+
+  if (existing && invitation?.status === "COMPLETED") {
     const ticket = await createResultSession(existing.id);
     await clearInternSession();
     redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
@@ -170,6 +190,81 @@ export async function startAttemptAction() {
   });
 
   redirect(`/intern/test?attempt=${attempt.id}`);
+}
+
+export async function submitOpenQuizAnswerAction(input: {
+  attemptId: string;
+  questionId: string;
+  answerText: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (!answer || answer.question.type !== "QUIZ") {
+    return { ok: false, expired: false };
+  }
+
+  const config = getOpenQuizConfig(answer.question.apiConfig);
+  if (!config) {
+    return { ok: false, expired: false };
+  }
+
+  const expected = normalizeOpenQuizAnswer(config.expectedAnswer);
+  const actual = normalizeOpenQuizAnswer(input.answerText);
+  const isCorrect =
+    actual.length > 0 && actual.toLowerCase() === expected.toLowerCase();
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: {
+        mode: "OPEN_TEXT",
+        answerText: input.answerText,
+      },
+      selectedOptionId: null,
+      isCorrect,
+      answeredAt: new Date(),
+      submissionCount: {
+        increment: 1,
+      },
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return { ok: true, expired: false, correct: isCorrect };
 }
 
 export async function selectAnswerAction(input: {

@@ -14,6 +14,7 @@ import {
   getTrackDisplayName,
   type TrackSummary,
 } from "@/lib/question-classification";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 
 type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
 type JsonRecord = Record<string, unknown>;
@@ -91,6 +92,9 @@ export function QuestionForm({
   const [draftType, setDraftType] = useState<QuestionType>(
     question?.type ?? initialType,
   );
+  const [draftQuizMode, setDraftQuizMode] = useState<"CHOICE" | "OPEN_TEXT">(
+    getOpenQuizConfig(question?.apiConfig) ? "OPEN_TEXT" : "CHOICE",
+  );
   const activeTracks = tracks.filter((track) => track.isActive !== false);
   const selectableTracks = question?.trackRef
     ? [
@@ -105,6 +109,8 @@ export function QuestionForm({
   const draftTrack =
     tracks.find((track) => track.id === draftTrackId) ?? fallbackTrack;
   const questionType = question?.type ?? draftType;
+  const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
+  const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
   const config = getConfig(question);
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
@@ -120,6 +126,7 @@ export function QuestionForm({
         <input type="hidden" name="questionId" value={question.id} />
       ) : null}
       <input type="hidden" name="questionType" value={questionType} />
+      <input type="hidden" name="quizMode" value={quizMode} />
       <input type="hidden" name="trackId" value={draftTrackId} />
       <input
         type="hidden"
@@ -212,50 +219,135 @@ export function QuestionForm({
       </div>
 
       {questionType === "QUIZ" ? (
-        <div className="grid-2">
-          {[0, 1, 2, 3].map((index) => {
-            const option = sortedOptions[index];
-
-            return (
-              <div className="form-grid" key={option?.id ?? index}>
-                {option ? (
-                  <input
-                    type="hidden"
-                    name={`optionId-${index}`}
-                    value={option.id}
-                  />
-                ) : null}
-                <Label htmlFor={`option-${index}`}>
-                  Вариант {String.fromCharCode(65 + index)}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id={`option-${index}`}
-                    name={`option-${index}`}
-                    defaultValue={
-                      option?.text ??
-                      [
-                        "Быстрая проверка критичного функционала после сборки",
-                        "Полная проверка всех требований проекта",
-                        "Проверка только визуального слоя интерфейса",
-                        "Нагрузочное тестирование API",
-                      ][index]
-                    }
-                    required
-                  />
-                  <label className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--muted)] px-3 text-[12.5px] font-semibold">
+        <div className="stack">
+          {!isEditing ? (
+            <div className="form-grid">
+              <Label>Формат Quiz-вопроса</Label>
+              <div className="question-form-choice-grid">
+                {[
+                  ["CHOICE", "С вариантами"],
+                  ["OPEN_TEXT", "Открытый ответ"],
+                ].map(([value, label]) => (
+                  <label className="question-form-choice" key={value}>
                     <input
-                      name="correctOption"
+                      checked={quizMode === value}
+                      name="quizModeChoice"
+                      onChange={() =>
+                        setDraftQuizMode(value as "CHOICE" | "OPEN_TEXT")
+                      }
                       type="radio"
-                      value={index}
-                      defaultChecked={option?.isCorrect ?? index === 0}
                     />
-                    верный
+                    {label}
                   </label>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="form-grid">
+              <Label>Формат Quiz-вопроса</Label>
+              <div className="question-form-choice-grid">
+                {[
+                  ["CHOICE", "С вариантами"],
+                  ["OPEN_TEXT", "Открытый ответ"],
+                ].map(([value, label]) => (
+                  <label className="question-form-choice" key={value}>
+                    <input
+                      checked={quizMode === value}
+                      name="quizModeChoice"
+                      onChange={() =>
+                        setDraftQuizMode(value as "CHOICE" | "OPEN_TEXT")
+                      }
+                      type="radio"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {quizMode === "OPEN_TEXT" ? (
+            <div className="stack">
+              <div className="form-grid">
+                <Label htmlFor="openExpectedAnswer">Эталонный ответ</Label>
+                <Textarea
+                  id="openExpectedAnswer"
+                  name="openExpectedAnswer"
+                  defaultValue={openQuizConfig?.expectedAnswer ?? ""}
+                  placeholder="Например: smoke testing — быстрая проверка критичного функционала после сборки"
+                  required
+                />
+              </div>
+              <div className="grid-2">
+                <div className="form-grid">
+                  <Label htmlFor="openAnswerLabel">
+                    Подпись поля для стажёра
+                  </Label>
+                  <Input
+                    id="openAnswerLabel"
+                    name="openAnswerLabel"
+                    defaultValue={openQuizConfig?.answerLabel ?? ""}
+                    placeholder="Опишите ответ своими словами"
+                  />
+                </div>
+                <div className="form-grid">
+                  <Label htmlFor="openPlaceholder">Placeholder</Label>
+                  <Input
+                    id="openPlaceholder"
+                    name="openPlaceholder"
+                    defaultValue={openQuizConfig?.placeholder ?? ""}
+                    placeholder="Введите ответ"
+                  />
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <div className="grid-2">
+              {[0, 1, 2, 3].map((index) => {
+                const option = sortedOptions[index];
+
+                return (
+                  <div className="form-grid" key={option?.id ?? index}>
+                    {option ? (
+                      <input
+                        type="hidden"
+                        name={`optionId-${index}`}
+                        value={option.id}
+                      />
+                    ) : null}
+                    <Label htmlFor={`option-${index}`}>
+                      Вариант {String.fromCharCode(65 + index)}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`option-${index}`}
+                        name={`option-${index}`}
+                        defaultValue={
+                          option?.text ??
+                          [
+                            "Быстрая проверка критичного функционала после сборки",
+                            "Полная проверка всех требований проекта",
+                            "Проверка только визуального слоя интерфейса",
+                            "Нагрузочное тестирование API",
+                          ][index]
+                        }
+                        required={quizMode === "CHOICE"}
+                      />
+                      <label className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--muted)] px-3 text-[12.5px] font-semibold">
+                        <input
+                          name="correctOption"
+                          type="radio"
+                          value={index}
+                          defaultChecked={option?.isCorrect ?? index === 0}
+                        />
+                        верный
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : questionType === "API_SANDBOX" ? (
         <div className="stack">
