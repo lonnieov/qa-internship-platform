@@ -40,7 +40,7 @@ export function AdminShell({
         <Link className="admin-sidebar-brand" href="/admin">
           <ServiceLogo />
           <span>
-            <strong>Coin</strong>
+            <strong>Click Assessment</strong>
             <small>Assessment</small>
           </span>
         </Link>
