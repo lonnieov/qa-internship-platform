@@ -1168,6 +1168,19 @@ button {
   align-items: center;
 }
 
+.test-question-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.test-inline-finish {
+  min-width: 150px;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
 .copy-token {
   display: inline-flex;
   align-items: center;

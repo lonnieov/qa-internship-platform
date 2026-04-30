@@ -10,7 +10,7 @@
 
 - Open the test page.
 - Expected: `Завершить` is visible in the top-right header area near the timer.
-- Expected: the question card footer only contains `Назад` and `Далее`.
+- Expected: before all questions are answered, the question card footer only contains `Назад` and `Далее`.
 
 ## Positive Case
 
@@ -21,6 +21,11 @@
 - Expected: the dialog closes and the test is still active.
 - Click `Завершить` again, then click `Продолжить`.
 - Expected: the attempt is submitted and the result flow opens.
+- Start another attempt.
+- Answer every question and navigate to the last question.
+- Expected: an additional `Завершить` button appears on the right side of the question card footer.
+- Click the footer `Завершить`.
+- Expected: the same confirmation dialog opens.
 
 ## Negative Cases
 

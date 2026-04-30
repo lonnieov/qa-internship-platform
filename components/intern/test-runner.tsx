@@ -76,6 +76,7 @@ type ApiDraft = {
   requestSent: boolean;
   submissionCount: number;
   isCorrect: boolean;
+  answerSaveStatus: "idle" | "saving" | "saved";
 };
 
 type DevtoolsConfig = {
@@ -134,6 +135,7 @@ function createInitialApiDraft(question: Question): ApiDraft {
     requestSent: Boolean(question.apiResponse),
     submissionCount: question.submissionCount,
     isCorrect: question.isCorrect,
+    answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
   };
 }
 
@@ -211,6 +213,7 @@ export function TestRunner({
   const [isPending, startTransition] = useTransition();
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
+  const devtoolsAutosaveRef = useRef<number | null>(null);
   const currentQuestion = questions[currentIndex];
   const currentTrack = getQuestionTrackMeta(currentQuestion?.track);
   const answeredCount = questions.filter((question) => {
@@ -229,6 +232,10 @@ export function TestRunner({
   }).length;
   const progress =
     questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
+  const allQuestionsAnswered =
+    questions.length > 0 && answeredCount === questions.length;
+  const isLastQuestion = currentIndex === questions.length - 1;
+  const showInlineFinish = allQuestionsAnswered && isLastQuestion;
   const flaggedCount = questions.filter((question) =>
     flaggedQuestions.has(question.id),
   ).length;
@@ -252,6 +259,9 @@ export function TestRunner({
       return;
     if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
       saveOpenAnswer(currentQuestion);
+    }
+    if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
+      saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     setCurrentIndex(index);
@@ -399,31 +409,69 @@ export function TestRunner({
     });
   }
 
-  function submitDevtoolsAnswer() {
+  function updateDevtoolsAnswer(value: string) {
     if (currentQuestion.type !== "DEVTOOLS_SANDBOX") return;
 
-    const draft =
-      apiDrafts.get(currentQuestion.id) ??
-      createInitialApiDraft(currentQuestion);
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    updateApiDraft({
+      devtoolsAnswer: value,
+      answerSaveStatus: value.trim() ? "saving" : "idle",
+    });
+
+    if (devtoolsAutosaveRef.current) {
+      window.clearTimeout(devtoolsAutosaveRef.current);
+    }
+
+    if (!value.trim()) return;
+
+    const question = currentQuestion;
+    devtoolsAutosaveRef.current = window.setTimeout(() => {
+      saveDevtoolsAnswer(question, { answerText: value, timeSpentMs: 0 });
+    }, 650);
+  }
+
+  function saveDevtoolsAnswer(
+    question = currentQuestion,
+    options: { answerText?: string; timeSpentMs?: number } = {},
+  ) {
+    if (question.type !== "DEVTOOLS_SANDBOX") return;
+
+    const draft = apiDrafts.get(question.id) ?? createInitialApiDraft(question);
+    const answerText = options.answerText ?? draft.devtoolsAnswer;
+    if (!answerText.trim()) return;
+
+    const timeSpentMs =
+      typeof options.timeSpentMs === "number"
+        ? options.timeSpentMs
+        : Date.now() - enteredAtRef.current;
+
+    if (typeof options.timeSpentMs !== "number") {
+      enteredAtRef.current = Date.now();
+    }
+
+    setApiDrafts((prev) => {
+      const next = new Map(prev);
+      const current = next.get(question.id) ?? draft;
+      next.set(question.id, { ...current, answerSaveStatus: "saving" });
+      return next;
+    });
 
     startTransition(() => {
       void submitDevtoolsAnswerAction({
         attemptId,
-        questionId: currentQuestion.id,
-        answerText: draft.devtoolsAnswer,
+        questionId: question.id,
+        answerText,
         timeSpentMs,
       }).then((result) => {
         if (!result?.ok) return;
 
         setApiDrafts((prev) => {
           const next = new Map(prev);
-          const current = next.get(currentQuestion.id) ?? draft;
-          next.set(currentQuestion.id, {
+          const current = next.get(question.id) ?? draft;
+          next.set(question.id, {
             ...current,
-            submissionCount: current.submissionCount + 1,
-            isCorrect: Boolean(result.correct),
+            devtoolsAnswer: answerText,
+            submissionCount: Math.max(1, current.submissionCount),
+            answerSaveStatus: "saved",
           });
           return next;
         });
@@ -445,7 +493,7 @@ export function TestRunner({
     const nextValue =
       input.value.slice(0, start) + pastedText + input.value.slice(end);
 
-    updateApiDraft({ devtoolsAnswer: nextValue });
+    updateDevtoolsAnswer(nextValue);
 
     window.setTimeout(() => {
       const cursor = start + pastedText.length;
@@ -460,6 +508,9 @@ export function TestRunner({
     if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
       saveOpenAnswer(currentQuestion);
     }
+    if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
+      saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
     flushCurrentTime();
     startTransition(() => {
       void submitAttemptAction({ attemptId, auto });
@@ -470,6 +521,9 @@ export function TestRunner({
     if (submittedRef.current || isPending) return;
     if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
       saveOpenAnswer(currentQuestion);
+    }
+    if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
+      saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     setIsSubmitDialogOpen(true);
   }
@@ -510,6 +564,14 @@ export function TestRunner({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (devtoolsAutosaveRef.current) {
+        window.clearTimeout(devtoolsAutosaveRef.current);
+      }
+    };
+  }, []);
 
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
@@ -608,8 +670,8 @@ export function TestRunner({
                   <div className="stack">
                     <div className="form-grid">
                       <LabelLike>
-                        {getOpenQuizConfig(currentQuestion.apiConfig)?.answerLabel ||
-                          "Введите ответ"}
+                        {getOpenQuizConfig(currentQuestion.apiConfig)
+                          ?.answerLabel || "Введите ответ"}
                       </LabelLike>
                       <Textarea
                         data-track="open-quiz-answer"
@@ -618,8 +680,8 @@ export function TestRunner({
                           updateOpenAnswer(event.target.value)
                         }
                         placeholder={
-                          getOpenQuizConfig(currentQuestion.apiConfig)?.placeholder ||
-                          "Опишите ответ своими словами"
+                          getOpenQuizConfig(currentQuestion.apiConfig)
+                            ?.placeholder || "Опишите ответ своими словами"
                         }
                         value={textAnswers.get(currentQuestion.id) ?? ""}
                       />
@@ -712,7 +774,7 @@ export function TestRunner({
                   <Input
                     data-track="devtools-answer"
                     onChange={(event) =>
-                      updateApiDraft({ devtoolsAnswer: event.target.value })
+                      updateDevtoolsAnswer(event.target.value)
                     }
                     onPaste={pasteDevtoolsAnswer}
                     placeholder={currentDevtoolsConfig.answerPath || "message"}
@@ -724,26 +786,13 @@ export function TestRunner({
                   className="nav-row"
                   style={{ justifyContent: "space-between" }}
                 >
-                  <Button
-                    disabled={
-                      isPending || !currentApiDraft.devtoolsAnswer.trim()
-                    }
-                    onClick={submitDevtoolsAnswer}
-                    type="button"
-                  >
-                    Проверить ответ
-                  </Button>
-                  {currentApiDraft.submissionCount > 0 ? (
-                    <Badge
-                      variant={
-                        currentApiDraft.isCorrect ? "success" : "warning"
-                      }
-                    >
-                      {currentApiDraft.isCorrect
-                        ? "зачтено"
-                        : "ответ не совпал"}
-                    </Badge>
-                  ) : null}
+                  <Badge variant="muted">
+                    {currentApiDraft.answerSaveStatus === "saving"
+                      ? "сохраняем ответ"
+                      : currentApiDraft.submissionCount > 0
+                        ? "ответ сохранён"
+                        : "ответ сохранится автоматически"}
+                  </Badge>
                 </div>
               </div>
             ) : currentApiDraft ? (
@@ -871,25 +920,39 @@ export function TestRunner({
               </div>
             ) : null}
 
-            <div className="nav-row">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => goTo(currentIndex - 1)}
-                disabled={currentIndex === 0}
-              >
-                <ArrowLeft size={18} />
-                Назад
-              </Button>
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => goTo(currentIndex + 1)}
-                disabled={currentIndex === questions.length - 1}
-              >
-                Далее
-                <ArrowRight size={18} />
-              </Button>
+            <div className="test-question-footer">
+              <div className="nav-row">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => goTo(currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                >
+                  <ArrowLeft size={18} />
+                  Назад
+                </Button>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => goTo(currentIndex + 1)}
+                  disabled={isLastQuestion}
+                >
+                  Далее
+                  <ArrowRight size={18} />
+                </Button>
+              </div>
+
+              {showInlineFinish ? (
+                <Button
+                  type="button"
+                  onClick={requestManualSubmit}
+                  disabled={isPending}
+                  className="test-inline-finish"
+                >
+                  <Send size={18} />
+                  Завершить
+                </Button>
+              ) : null}
             </div>
           </CardContent>
         </Card>
