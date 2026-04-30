@@ -9,6 +9,11 @@ import { requireAdmin } from "@/lib/auth";
 import { normalizeLegacyTrack } from "@/lib/question-classification";
 import { generateInviteCode, hashInviteCode } from "@/lib/security";
 import { nextTrackOrder, uniqueTrackSlug } from "@/lib/tracks";
+import {
+  clickSuperAppClickAvtoPresetConfig,
+  manualQaPresetOptions,
+  type ManualQaKnownBug,
+} from "@/lib/manual-qa-sandbox";
 
 export type InvitationState = {
   ok: boolean;
@@ -37,7 +42,9 @@ function questionRedirectUrl(
 ) {
   const params = new URLSearchParams({
     type:
-      questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX"
+      questionType === "API_SANDBOX" ||
+      questionType === "DEVTOOLS_SANDBOX" ||
+      questionType === "MANUAL_QA_SANDBOX"
         ? questionType
         : "QUIZ",
   });
@@ -51,6 +58,77 @@ function questionRedirectUrl(
   }
 
   return `/admin/questions?${params.toString()}`;
+}
+
+function readManualQaSandboxConfig(formData: FormData, text: string) {
+  const presetId = String(
+    formData.get("manualQaPreset") ??
+      clickSuperAppClickAvtoPresetConfig.appPreset,
+  );
+  const preset =
+    manualQaPresetOptions.find((option) => option.value === presetId)?.config ??
+    clickSuperAppClickAvtoPresetConfig;
+  const scenarioTitle = String(
+    formData.get("manualQaScenarioTitle") ?? preset.scenarioTitle,
+  ).trim();
+  const viewportWidth = Number(formData.get("manualQaViewportWidth"));
+  const viewportHeight = Number(formData.get("manualQaViewportHeight"));
+  const timeHintMinutes = Number(formData.get("manualQaTimeHintMinutes"));
+  const categories = String(formData.get("manualQaCategories") ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const knownBugsText = String(formData.get("manualQaKnownBugs") ?? "").trim();
+
+  let knownBugs: ManualQaKnownBug[] = preset.knownBugs;
+  if (knownBugsText) {
+    const parsed = JSON.parse(knownBugsText);
+    if (!Array.isArray(parsed)) {
+      throw new Error("Known bugs must be an array.");
+    }
+
+    knownBugs = parsed
+      .filter(
+        (item): item is Partial<ManualQaKnownBug> =>
+          Boolean(item) && typeof item === "object" && !Array.isArray(item),
+      )
+      .map((item) => ({
+        id: String(item.id ?? "").trim(),
+        title: String(item.title ?? "").trim(),
+        severity:
+          item.severity === "blocker" ||
+          item.severity === "critical" ||
+          item.severity === "major" ||
+          item.severity === "minor" ||
+          item.severity === "trivial"
+            ? item.severity
+            : "major",
+        matchKeywords: Array.isArray(item.matchKeywords)
+          ? item.matchKeywords.map((keyword) => String(keyword)).filter(Boolean)
+          : [],
+      }))
+      .filter((item) => item.id && item.title);
+  }
+
+  return {
+    mode: "MANUAL_QA_SANDBOX" as const,
+    scenarioTitle: scenarioTitle || preset.scenarioTitle,
+    mission: text || preset.mission,
+    appPreset: preset.appPreset,
+    viewport: {
+      width: Number.isFinite(viewportWidth)
+        ? Math.min(Math.max(Math.round(viewportWidth), 320), 520)
+        : preset.viewport.width,
+      height: Number.isFinite(viewportHeight)
+        ? Math.min(Math.max(Math.round(viewportHeight), 568), 980)
+        : preset.viewport.height,
+    },
+    timeHintMinutes: Number.isFinite(timeHintMinutes)
+      ? Math.min(Math.max(Math.round(timeHintMinutes), 1), 60)
+      : preset.timeHintMinutes,
+    bugCategories: categories.length > 0 ? categories : preset.bugCategories,
+    knownBugs,
+  };
 }
 
 export async function createInvitationAction(
@@ -139,7 +217,34 @@ export async function createQuestionAction(formData: FormData) {
     orderBy: { order: "desc" },
   });
 
-  if (questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX") {
+  if (questionType === "MANUAL_QA_SANDBOX") {
+    if (!text) {
+      return;
+    }
+
+    let apiConfig;
+    try {
+      apiConfig = readManualQaSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.create({
+      data: {
+        type: "MANUAL_QA_SANDBOX",
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        order: (lastQuestion?.order ?? 0) + 1,
+        createdById: admin.id,
+        apiConfig,
+      },
+    });
+  } else if (
+    questionType === "API_SANDBOX" ||
+    questionType === "DEVTOOLS_SANDBOX"
+  ) {
     const method = String(formData.get("apiMethod") ?? "GET")
       .trim()
       .toUpperCase();
@@ -313,7 +418,28 @@ export async function updateQuestionAction(formData: FormData) {
     return;
   }
 
-  if (questionType === "API_SANDBOX" || questionType === "DEVTOOLS_SANDBOX") {
+  if (questionType === "MANUAL_QA_SANDBOX") {
+    let apiConfig;
+    try {
+      apiConfig = readManualQaSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        apiConfig,
+      },
+    });
+  } else if (
+    questionType === "API_SANDBOX" ||
+    questionType === "DEVTOOLS_SANDBOX"
+  ) {
     const method = String(formData.get("apiMethod") ?? "GET")
       .trim()
       .toUpperCase();

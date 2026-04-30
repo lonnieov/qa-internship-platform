@@ -30,6 +30,7 @@ enum QuestionType {
   QUIZ
   API_SANDBOX
   DEVTOOLS_SANDBOX
+  MANUAL_QA_SANDBOX
 }
 
 enum TrackingEventType {

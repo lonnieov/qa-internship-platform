@@ -6,11 +6,16 @@ import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
 import type { TrackSummary } from "@/lib/question-classification";
 
-type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+type QuestionType =
+  | "QUIZ"
+  | "API_SANDBOX"
+  | "DEVTOOLS_SANDBOX"
+  | "MANUAL_QA_SANDBOX";
 
 function typeLabel(type: QuestionType) {
   if (type === "API_SANDBOX") return "API Sandbox";
   if (type === "DEVTOOLS_SANDBOX") return "DevTools Sandbox";
+  if (type === "MANUAL_QA_SANDBOX") return "Manual QA Sandbox";
   return "Quiz";
 }
 

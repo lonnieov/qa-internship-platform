@@ -8,10 +8,13 @@ import {
   ArrowRight,
   Clock3,
   Info,
+  Plus,
   Send,
+  Trash2,
 } from "lucide-react";
 import {
   selectAnswerAction,
+  submitManualQaAnswerAction,
   submitOpenQuizAnswerAction,
   submitDevtoolsAnswerAction,
   spendQuestionTimeAction,
@@ -27,6 +30,12 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
+import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
+import {
+  getManualQaAnswerPayload,
+  getManualQaSandboxConfig,
+  type ManualQaBugReport,
+} from "@/lib/manual-qa-sandbox";
 
 type JsonValue =
   | null
@@ -51,7 +60,7 @@ type ResponseSnapshot = {
 
 type Question = {
   id: string;
-  type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+  type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX" | "MANUAL_QA_SANDBOX";
   track: string;
   text: string;
   explanation: string | null;
@@ -88,6 +97,13 @@ type DevtoolsConfig = {
   buttonLabel?: string;
   answerLabel?: string;
   answerPath?: string;
+};
+
+type ManualQaDraft = {
+  reports: ManualQaBugReport[];
+  noBugsFound: boolean;
+  submissionCount: number;
+  answerSaveStatus: "idle" | "saving" | "saved";
 };
 
 function stringifyJson(value: JsonValue | null | undefined) {
@@ -150,6 +166,43 @@ function getDevtoolsConfig(question: Question) {
   return config?.mode === "DEVTOOLS_RESPONSE" ? config : null;
 }
 
+function createEmptyManualQaReport(index: number): ManualQaBugReport {
+  return {
+    id: `report-${Date.now()}-${index}`,
+    title: "",
+    severity: "major",
+    category: "functional",
+    steps: "",
+    actual: "",
+    expected: "",
+    note: "",
+  };
+}
+
+function createInitialManualQaDraft(question: Question): ManualQaDraft {
+  const payload = getManualQaAnswerPayload(question.apiRequest);
+
+  return {
+    reports: payload?.reports ?? [],
+    noBugsFound: payload?.noBugsFound ?? false,
+    submissionCount: question.submissionCount,
+    answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
+  };
+}
+
+function hasCompleteManualQaAnswer(draft: ManualQaDraft | undefined) {
+  if (!draft) return false;
+  if (draft.noBugsFound) return true;
+
+  return draft.reports.some(
+    (report) =>
+      report.title.trim() &&
+      report.steps.trim() &&
+      report.actual.trim() &&
+      report.expected.trim(),
+  );
+}
+
 function buildDevtoolsEndpoint(
   attemptId: string,
   question: Question,
@@ -206,6 +259,17 @@ export function TestRunner({
           .map((question) => [question.id, createInitialApiDraft(question)]),
       ),
   );
+  const [manualQaDrafts, setManualQaDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "MANUAL_QA_SANDBOX")
+          .map((question) => [
+            question.id,
+            createInitialManualQaDraft(question),
+          ]),
+      ),
+  );
   const [remainingMs, setRemainingMs] = useState(
     Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
   );
@@ -224,6 +288,10 @@ export function TestRunner({
       return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
     }
 
+    if (question.type === "MANUAL_QA_SANDBOX") {
+      return hasCompleteManualQaAnswer(manualQaDrafts.get(question.id));
+    }
+
     if (getOpenQuizConfig(question.apiConfig)) {
       return Boolean(textAnswers.get(question.id)?.trim());
     }
@@ -232,10 +300,7 @@ export function TestRunner({
   }).length;
   const progress =
     questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
-  const allQuestionsAnswered =
-    questions.length > 0 && answeredCount === questions.length;
   const isLastQuestion = currentIndex === questions.length - 1;
-  const showInlineFinish = allQuestionsAnswered && isLastQuestion;
   const flaggedCount = questions.filter((question) =>
     flaggedQuestions.has(question.id),
   ).length;
@@ -262,6 +327,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     setCurrentIndex(index);
@@ -501,6 +569,128 @@ export function TestRunner({
     }, 0);
   }
 
+  function updateManualQaDraft(questionId: string, patch: Partial<ManualQaDraft>) {
+    setManualQaDrafts((prev) => {
+      const next = new Map(prev);
+      const question = questions.find((item) => item.id === questionId);
+      const current =
+        next.get(questionId) ??
+        (question ? createInitialManualQaDraft(question) : null);
+      if (!current) return prev;
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function addManualQaReport() {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: [
+        ...draft.reports,
+        createEmptyManualQaReport(draft.reports.length + 1),
+      ],
+      noBugsFound: false,
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function updateManualQaReport(
+    reportId: string,
+    patch: Partial<ManualQaBugReport>,
+  ) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: draft.reports.map((report) =>
+        report.id === reportId ? { ...report, ...patch } : report,
+      ),
+      noBugsFound: false,
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function removeManualQaReport(reportId: string) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: draft.reports.filter((report) => report.id !== reportId),
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function toggleManualQaNoBugs(value: boolean) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    updateManualQaDraft(currentQuestion.id, {
+      noBugsFound: value,
+      reports: value ? [] : manualQaDrafts.get(currentQuestion.id)?.reports ?? [],
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function saveManualQaAnswer(
+    question = currentQuestion,
+    options: { timeSpentMs?: number } = {},
+  ) {
+    if (question.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(question.id) ?? createInitialManualQaDraft(question);
+    const timeSpentMs =
+      typeof options.timeSpentMs === "number"
+        ? options.timeSpentMs
+        : Date.now() - enteredAtRef.current;
+
+    if (typeof options.timeSpentMs !== "number") {
+      enteredAtRef.current = Date.now();
+    }
+
+    setManualQaDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(question.id, { ...draft, answerSaveStatus: "saving" });
+      return next;
+    });
+
+    startTransition(() => {
+      void submitManualQaAnswerAction({
+        attemptId,
+        questionId: question.id,
+        reports: draft.reports,
+        noBugsFound: draft.noBugsFound,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setManualQaDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(question.id) ?? draft;
+          const hasAnswer = hasCompleteManualQaAnswer(current);
+          next.set(question.id, {
+            ...current,
+            submissionCount: hasAnswer
+              ? Math.max(1, current.submissionCount)
+              : 0,
+            answerSaveStatus: "saved",
+          });
+          return next;
+        });
+      });
+    });
+  }
+
   function submit(auto = false) {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -510,6 +700,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     startTransition(() => {
@@ -524,6 +717,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     setIsSubmitDialogOpen(true);
   }
@@ -575,11 +771,21 @@ export function TestRunner({
 
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
+
   const currentApiDraft =
     currentQuestion.type === "API_SANDBOX" ||
     currentQuestion.type === "DEVTOOLS_SANDBOX"
       ? (apiDrafts.get(currentQuestion.id) ??
         createInitialApiDraft(currentQuestion))
+      : null;
+  const currentManualQaDraft =
+    currentQuestion.type === "MANUAL_QA_SANDBOX"
+      ? (manualQaDrafts.get(currentQuestion.id) ??
+        createInitialManualQaDraft(currentQuestion))
+      : null;
+  const currentManualQaConfig =
+    currentQuestion.type === "MANUAL_QA_SANDBOX"
+      ? getManualQaSandboxConfig(currentQuestion.apiConfig)
       : null;
   const currentDevtoolsConfig =
     currentQuestion.type === "DEVTOOLS_SANDBOX"
@@ -587,42 +793,10 @@ export function TestRunner({
       : null;
 
   return (
-    <main className="page stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Тестирование</h1>
-          <p className="body-1 muted m-0">
-            Вопрос {currentIndex + 1} из {questions.length}. Можно возвращаться
-            к вопросам до истечения общего времени.
-          </p>
-          <Progress value={progress} className="mt-4 max-w-[280px]" />
-        </div>
-        <div className="test-header-actions">
-          <div className="test-submit-control">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={requestManualSubmit}
-              disabled={isPending}
-            >
-              <Send size={18} />
-              Завершить
-            </Button>
-            <div className="submit-info-bubble" role="note">
-              <Info size={16} />
-              <span>Неотвеченные вопросы будут засчитаны как fail.</span>
-            </div>
-          </div>
-          <span className="timer-pill">
-            <Clock3 size={18} />
-            {minutes}:{seconds.toString().padStart(2, "0")}
-          </span>
-        </div>
-      </div>
-
+    <main className="page test-page-compact stack-lg">
       <section className="grid-2">
         <Card>
-          <CardHeader>
+          <CardHeader className="test-card-header">
             <div
               className="nav-row"
               style={{ justifyContent: "space-between" }}
@@ -636,7 +810,9 @@ export function TestRunner({
                     ? "DevTools"
                     : currentQuestion.type === "API_SANDBOX"
                       ? "API Sandbox"
-                      : "Quiz"}
+                      : currentQuestion.type === "MANUAL_QA_SANDBOX"
+                        ? "Manual QA"
+                        : "Quiz"}
                 </span>
               </div>
               <Button
@@ -656,7 +832,7 @@ export function TestRunner({
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="stack">
+          <CardContent className="test-card-content stack">
             <CardTitle>
               {currentIndex + 1}. {currentQuestion.text}
             </CardTitle>
@@ -729,6 +905,203 @@ export function TestRunner({
                   </div>
                 )}
               </>
+            ) : currentManualQaDraft && currentManualQaConfig ? (
+              <div className="manual-qa-task-layout">
+                <div className="manual-qa-task-app">
+                  <ClickSuperAppClickAvtoPreset />
+                </div>
+
+                <div className="manual-qa-report-panel">
+                  <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                    <div>
+                      <strong>Баг-репорты</strong>
+                      <p className="body-2 muted m-0">
+                        Заполняйте только дефекты, которые смогли
+                        воспроизвести в miniapp.
+                      </p>
+                    </div>
+                    <Badge variant="muted">
+                      {currentManualQaDraft.reports.length}
+                    </Badge>
+                  </div>
+
+                  <label className="manual-qa-no-bugs">
+                    <input
+                      checked={currentManualQaDraft.noBugsFound}
+                      onChange={(event) =>
+                        toggleManualQaNoBugs(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>Баги не найдены</strong>
+                      <small>
+                        Используйте только если осознанно завершили проверку
+                        без дефектов.
+                      </small>
+                    </span>
+                  </label>
+
+                  {!currentManualQaDraft.noBugsFound ? (
+                    <div className="stack">
+                      {currentManualQaDraft.reports.map((report, index) => (
+                        <div className="manual-qa-report-card" key={report.id}>
+                          <div
+                            className="nav-row"
+                            style={{ justifyContent: "space-between" }}
+                          >
+                            <strong>Баг {index + 1}</strong>
+                            <Button
+                              aria-label="Удалить баг-репорт"
+                              onClick={() => removeManualQaReport(report.id)}
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>Название</LabelLike>
+                            <Input
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  title: event.target.value,
+                                })
+                              }
+                              placeholder="Например: промокод применяется повторно"
+                              value={report.title}
+                            />
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-grid">
+                              <LabelLike>Severity</LabelLike>
+                              <Select
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    severity: event.target
+                                      .value as ManualQaBugReport["severity"],
+                                  })
+                                }
+                                value={report.severity}
+                              >
+                                <option value="blocker">blocker</option>
+                                <option value="critical">critical</option>
+                                <option value="major">major</option>
+                                <option value="minor">minor</option>
+                                <option value="trivial">trivial</option>
+                              </Select>
+                            </div>
+                            <div className="form-grid">
+                              <LabelLike>Category</LabelLike>
+                              <Select
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    category: event.target.value,
+                                  })
+                                }
+                                value={report.category}
+                              >
+                                {currentManualQaConfig.bugCategories.map(
+                                  (category) => (
+                                    <option key={category} value={category}>
+                                      {category}
+                                    </option>
+                                  ),
+                                )}
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>Steps to reproduce</LabelLike>
+                            <Textarea
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  steps: event.target.value,
+                                })
+                              }
+                              placeholder={"1. Открыть ClickAvto\n2. ..."}
+                              value={report.steps}
+                            />
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-grid">
+                              <LabelLike>Actual result</LabelLike>
+                              <Textarea
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    actual: event.target.value,
+                                  })
+                                }
+                                placeholder="Что произошло фактически"
+                                value={report.actual}
+                              />
+                            </div>
+                            <div className="form-grid">
+                              <LabelLike>Expected result</LabelLike>
+                              <Textarea
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    expected: event.target.value,
+                                  })
+                                }
+                                placeholder="Как должно быть"
+                                value={report.expected}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>Note</LabelLike>
+                            <Input
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  note: event.target.value,
+                                })
+                              }
+                              placeholder="Необязательно: устройство, сеть, доп. контекст"
+                              value={report.note ?? ""}
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        onClick={addManualQaReport}
+                        type="button"
+                        variant="secondary"
+                      >
+                        <Plus size={18} />
+                        Добавить баг
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <Badge variant="muted">
+                      {currentManualQaDraft.answerSaveStatus === "saving"
+                        ? "сохраняем"
+                        : currentManualQaDraft.answerSaveStatus === "saved"
+                          ? "ответ сохранён"
+                          : "есть несохранённые изменения"}
+                    </Badge>
+                    <Button
+                      disabled={isPending}
+                      onClick={() => saveManualQaAnswer()}
+                      type="button"
+                    >
+                      Сохранить ответ
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : currentApiDraft && currentDevtoolsConfig ? (
               <div className="stack">
                 <div className="soft-panel stack">
@@ -942,34 +1315,44 @@ export function TestRunner({
                 </Button>
               </div>
 
-              {showInlineFinish ? (
-                <Button
-                  type="button"
-                  onClick={requestManualSubmit}
-                  disabled={isPending}
-                  className="test-inline-finish"
-                >
-                  <Send size={18} />
-                  Завершить
-                </Button>
-              ) : null}
             </div>
           </CardContent>
         </Card>
 
         <div className="stack">
           <Card>
-            <CardHeader>
-              <CardTitle>Навигация</CardTitle>
+            <CardHeader className="test-card-header">
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <CardTitle>Навигация</CardTitle>
+                <span className="timer-pill compact" suppressHydrationWarning>
+                  <Clock3 size={16} />
+                  {minutes}:{seconds.toString().padStart(2, "0")}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent className="stack">
-              <Progress value={progress} />
+            <CardContent className="test-card-content stack">
+              <div className="test-nav-summary">
+                <div>
+                  <strong>
+                    Вопрос {currentIndex + 1} из {questions.length}
+                  </strong>
+                  <span>Можно возвращаться до истечения времени.</span>
+                </div>
+                <Progress value={progress} />
+              </div>
               <div className="question-grid">
                 {questions.map((question, index) => {
                   const done =
                     question.type === "API_SANDBOX" ||
                     question.type === "DEVTOOLS_SANDBOX"
                       ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                      : question.type === "MANUAL_QA_SANDBOX"
+                        ? hasCompleteManualQaAnswer(
+                            manualQaDrafts.get(question.id),
+                          )
                       : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
                   const flagged = flaggedQuestions.has(question.id);
@@ -1004,6 +1387,22 @@ export function TestRunner({
                   <i className="legend-dot empty" />
                   Без ответа · {questions.length - answeredCount}
                 </span>
+              </div>
+              <div className="test-submit-control compact">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={requestManualSubmit}
+                  disabled={isPending}
+                  className="test-nav-submit"
+                >
+                  <Send size={18} />
+                  Завершить
+                </Button>
+                <div className="submit-info-bubble compact" role="note">
+                  <Info size={16} />
+                  <span>Неотвеченные вопросы будут засчитаны как fail.</span>
+                </div>
               </div>
             </CardContent>
           </Card>

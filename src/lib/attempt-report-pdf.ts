@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
+import { getManualQaAnswerPayload } from "@/lib/manual-qa-sandbox";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
@@ -38,6 +39,23 @@ function getAnswerText(
     Awaited<ReturnType<typeof getAttemptReportData>>
   >["answers"][number],
 ) {
+  if (answer.question.type === "MANUAL_QA_SANDBOX") {
+    const payload = getManualQaAnswerPayload(answer.apiRequest);
+    if (!payload) return "не заполнен";
+    if (payload.noBugsFound) return "Баги не найдены";
+
+    return payload.reports
+      .map(
+        (report, index) =>
+          `${index + 1}. [${report.severity}/${report.category}] ${
+            report.title
+          }\nSteps: ${report.steps}\nActual: ${report.actual}\nExpected: ${
+            report.expected
+          }${report.note ? `\nNote: ${report.note}` : ""}`,
+      )
+      .join("\n\n");
+  }
+
   if (
     answer.question.type === "API_SANDBOX" ||
     answer.question.type === "DEVTOOLS_SANDBOX"
@@ -233,11 +251,14 @@ export async function generateAttemptReportPdf(attemptId: string) {
 
     attempt.answers.forEach((answer, index) => {
       const isOpenQuiz = Boolean(getOpenQuizConfig(answer.question.apiConfig));
-      const resultText = isOpenQuiz
-        ? "без оценки"
-        : answer.isCorrect
-          ? "верно"
-          : "0 баллов";
+      const resultText =
+        answer.question.type === "MANUAL_QA_SANDBOX"
+          ? "ручная проверка"
+          : isOpenQuiz
+            ? "без оценки"
+            : answer.isCorrect
+              ? "верно"
+              : "0 баллов";
       const answerText = getAnswerText(answer);
       const top = doc.y;
       const estimatedHeight =

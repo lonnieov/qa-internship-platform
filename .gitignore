@@ -12,3 +12,4 @@ src/generated/prisma
 # clerk configuration (can include secrets)
 /.clerk/
 .codex
+.vscode/

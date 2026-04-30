@@ -1,9 +1,14 @@
-type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+type QuestionType =
+  | "QUIZ"
+  | "API_SANDBOX"
+  | "DEVTOOLS_SANDBOX"
+  | "MANUAL_QA_SANDBOX";
 
 const questionTypePriority: Record<QuestionType, number> = {
   QUIZ: 0,
   API_SANDBOX: 1,
   DEVTOOLS_SANDBOX: 2,
+  MANUAL_QA_SANDBOX: 3,
 };
 
 type OrderedQuestionLike = {

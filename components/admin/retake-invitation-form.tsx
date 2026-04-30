@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { RotateCcw } from "lucide-react";
+import { CheckCircle2, Clock3, RotateCcw } from "lucide-react";
 import {
   createRetakeInvitationAction,
   type InvitationState,
@@ -25,7 +25,7 @@ export function RetakeInvitationForm({
   );
 
   return (
-    <div className="retake-action">
+    <div className="retake-action" aria-live="polite">
       <form action={action}>
         <input type="hidden" name="internProfileId" value={internProfileId} />
         <input type="hidden" name="expiresInDays" value="14" />
@@ -37,13 +37,31 @@ export function RetakeInvitationForm({
           disabled={isPending}
         >
           <RotateCcw size={15} />
-          Перепройти
+          {state.inviteCode ? "Выдать новый" : "Перепройти"}
         </Button>
       </form>
       {state.message ? (
-        <div className="retake-token-panel">
-          <p className="body-2 m-0">{state.message}</p>
-          {state.inviteCode ? <CopyableToken token={state.inviteCode} /> : null}
+        <div
+          className={`retake-token-panel ${state.ok ? "success" : "danger"}`}
+        >
+          <div className="retake-token-header">
+            <span className="retake-token-icon">
+              {state.ok ? <CheckCircle2 size={16} /> : <RotateCcw size={16} />}
+            </span>
+            <div>
+              <strong>{state.ok ? "Доступ обновлён" : "Не удалось"}</strong>
+              <p className="body-2 muted m-0">{state.message}</p>
+            </div>
+          </div>
+          {state.inviteCode ? (
+            <>
+              <CopyableToken token={state.inviteCode} />
+              <div className="retake-token-meta">
+                <Clock3 size={14} />
+                <span>Действует 14 дней. Старый доступ отвязан.</span>
+              </div>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

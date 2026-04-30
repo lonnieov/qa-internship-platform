@@ -15,8 +15,17 @@ import {
   type TrackSummary,
 } from "@/lib/question-classification";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
+import {
+  clickSuperAppClickAvtoPresetConfig,
+  getManualQaSandboxConfig,
+  manualQaPresetOptions,
+} from "@/lib/manual-qa-sandbox";
 
-type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+type QuestionType =
+  | "QUIZ"
+  | "API_SANDBOX"
+  | "DEVTOOLS_SANDBOX"
+  | "MANUAL_QA_SANDBOX";
 type JsonRecord = Record<string, unknown>;
 type EditableQuestion = {
   id: string;
@@ -112,6 +121,9 @@ export function QuestionForm({
   const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
   const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
   const config = getConfig(question);
+  const manualQaConfig =
+    getManualQaSandboxConfig(question?.apiConfig) ??
+    clickSuperAppClickAvtoPresetConfig;
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
     (left, right) => left.order - right.order,
@@ -145,6 +157,7 @@ export function QuestionForm({
               ["QUIZ", "Quiz"],
               ["API_SANDBOX", "API Sandbox"],
               ["DEVTOOLS_SANDBOX", "DevTools"],
+              ["MANUAL_QA_SANDBOX", "Manual QA"],
             ].map(([value, label]) => (
               <label className="question-form-choice" key={value}>
                 <input
@@ -166,7 +179,9 @@ export function QuestionForm({
               ? "DevTools"
               : questionType === "API_SANDBOX"
                 ? "API Sandbox"
-                : "Quiz"}
+                : questionType === "MANUAL_QA_SANDBOX"
+                  ? "Manual QA"
+                  : "Quiz"}
           </span>
         </div>
       )}
@@ -200,7 +215,11 @@ export function QuestionForm({
 
       <div className="form-grid">
         <Label htmlFor="text">
-          {questionType === "QUIZ" ? "Текст вопроса" : "Описание API-задачи"}
+          {questionType === "QUIZ"
+            ? "Текст вопроса"
+            : questionType === "MANUAL_QA_SANDBOX"
+              ? "Миссия для стажёра"
+              : "Описание API-задачи"}
         </Label>
         <Textarea
           id="text"
@@ -212,7 +231,9 @@ export function QuestionForm({
               ? "Что проверяет smoke testing?"
               : questionType === "API_SANDBOX"
                 ? "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201."
-                : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response.")
+                : questionType === "MANUAL_QA_SANDBOX"
+                  ? clickSuperAppClickAvtoPresetConfig.mission
+                  : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response.")
           }
           required
         />
@@ -434,6 +455,110 @@ export function QuestionForm({
                 '{\n  "id": 101,\n  "name": "Ali Valiyev"\n}',
               )}
             />
+          </div>
+        </div>
+      ) : questionType === "MANUAL_QA_SANDBOX" ? (
+        <div className="stack">
+          <div className="form-grid">
+            <Label htmlFor="manualQaPreset">Preset приложения</Label>
+            <Select
+              id="manualQaPreset"
+              name="manualQaPreset"
+              defaultValue={manualQaConfig.appPreset}
+            >
+              {manualQaPresetOptions.map((preset) => (
+                <option key={preset.value} value={preset.value}>
+                  {preset.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="form-grid">
+            <Label htmlFor="manualQaScenarioTitle">Название сценария</Label>
+            <Input
+              id="manualQaScenarioTitle"
+              name="manualQaScenarioTitle"
+              defaultValue={manualQaConfig.scenarioTitle}
+              required
+            />
+          </div>
+
+          <div className="grid-2">
+            <div className="form-grid">
+              <Label htmlFor="manualQaViewportWidth">Viewport width</Label>
+              <Input
+                id="manualQaViewportWidth"
+                name="manualQaViewportWidth"
+                type="number"
+                min="320"
+                max="520"
+                defaultValue={manualQaConfig.viewport.width}
+                required
+              />
+            </div>
+            <div className="form-grid">
+              <Label htmlFor="manualQaViewportHeight">Viewport height</Label>
+              <Input
+                id="manualQaViewportHeight"
+                name="manualQaViewportHeight"
+                type="number"
+                min="568"
+                max="980"
+                defaultValue={manualQaConfig.viewport.height}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="form-grid">
+              <Label htmlFor="manualQaTimeHintMinutes">Рекоменд. минуты</Label>
+              <Input
+                id="manualQaTimeHintMinutes"
+                name="manualQaTimeHintMinutes"
+                type="number"
+                min="1"
+                max="60"
+                defaultValue={manualQaConfig.timeHintMinutes}
+                required
+              />
+            </div>
+            <div className="form-grid">
+              <Label htmlFor="manualQaCategories">
+                Категории через запятую
+              </Label>
+              <Input
+                id="manualQaCategories"
+                name="manualQaCategories"
+                defaultValue={manualQaConfig.bugCategories.join(", ")}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-grid">
+            <Label htmlFor="manualQaKnownBugs">Known bugs rubric</Label>
+            <JsonEditor
+              id="manualQaKnownBugs"
+              name="manualQaKnownBugs"
+              defaultValue={stringifyJson(
+                manualQaConfig.knownBugs,
+                stringifyJson(
+                  clickSuperAppClickAvtoPresetConfig.knownBugs,
+                  "[]",
+                ),
+              )}
+            />
+          </div>
+
+          <div className="soft-panel stack">
+            <strong>Этот тип требует ручной проверки</strong>
+            <p className="body-2 muted m-0">
+              Стажёр будет искать баги в miniapp и оформлять баг-репорты.
+              Known bugs нужны для рубрики проверяющего и будущей
+              полуавтоматической оценки.
+            </p>
           </div>
         </div>
       ) : (

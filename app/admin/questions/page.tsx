@@ -9,6 +9,7 @@ import {
 } from "@/lib/question-classification";
 import { ensureTracks } from "@/lib/tracks";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
+import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
@@ -21,7 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { TrackManageModal } from "@/components/admin/track-manage-modal";
 
-type QuestionType = "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+type QuestionType =
+  | "QUIZ"
+  | "API_SANDBOX"
+  | "DEVTOOLS_SANDBOX"
+  | "MANUAL_QA_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
 async function getQuestions() {
@@ -53,6 +58,13 @@ function sectionMeta(type: QuestionType) {
         title: "DevTools Sandbox",
         description: "Задачи на работу с Network и ответами из DevTools.",
       };
+    case "MANUAL_QA_SANDBOX":
+      return {
+        id: "manual-qa-sandbox",
+        title: "Manual QA",
+        description:
+          "Практические задания на поиск и оформление багов в mobile/webview miniapp.",
+      };
     default:
       return {
         id: "quiz",
@@ -65,6 +77,7 @@ function sectionMeta(type: QuestionType) {
 function typeLabel(type: QuestionType) {
   if (type === "API_SANDBOX") return "API Sandbox";
   if (type === "DEVTOOLS_SANDBOX") return "DevTools";
+  if (type === "MANUAL_QA_SANDBOX") return "Manual QA";
   return "Quiz";
 }
 
@@ -100,6 +113,7 @@ function renderQuestionCard(
 ) {
   const track = getQuestionTrackMeta(question.trackRef ?? question.track);
   const summary = apiSummary(question);
+  const manualQaConfig = getManualQaSandboxConfig(question.apiConfig);
 
   return (
     <Card className="question-bank-card" key={question.id}>
@@ -118,8 +132,25 @@ function renderQuestionCard(
             <p className="body-2 muted m-0">{question.explanation}</p>
           ) : null}
         </div>
-        {question.type === "API_SANDBOX" ||
-        question.type === "DEVTOOLS_SANDBOX" ? (
+        {question.type === "MANUAL_QA_SANDBOX" && manualQaConfig ? (
+          <div className="stack">
+            <div className="nav-row">
+              <code className="type-chip">{manualQaConfig.appPreset}</code>
+              <code className="type-chip">
+                {manualQaConfig.viewport.width}x
+                {manualQaConfig.viewport.height}
+              </code>
+              <code className="type-chip">
+                {manualQaConfig.knownBugs.length} known bugs
+              </code>
+            </div>
+            <div className="soft-panel stack">
+              <strong>{manualQaConfig.scenarioTitle}</strong>
+              <p className="body-2 muted m-0">{manualQaConfig.mission}</p>
+            </div>
+          </div>
+        ) : question.type === "API_SANDBOX" ||
+          question.type === "DEVTOOLS_SANDBOX" ? (
           <div className="stack">
             <div className="nav-row">
               <code className="type-chip">{summary.method}</code>
@@ -225,6 +256,7 @@ export default async function AdminQuestionsPage({
   const selectedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
     resolvedSearchParams.type === "DEVTOOLS_SANDBOX" ||
+    resolvedSearchParams.type === "MANUAL_QA_SANDBOX" ||
     resolvedSearchParams.type === "QUIZ"
       ? resolvedSearchParams.type
       : "QUIZ";
@@ -251,10 +283,14 @@ export default async function AdminQuestionsPage({
   const devtoolsSandboxQuestions = filteredByTrack.filter(
     (question) => question.type === "DEVTOOLS_SANDBOX",
   );
+  const manualQaSandboxQuestions = filteredByTrack.filter(
+    (question) => question.type === "MANUAL_QA_SANDBOX",
+  );
   const sections: Array<{ type: QuestionType; items: AdminQuestion[] }> = [
     { type: "QUIZ" as const, items: quizQuestions },
     { type: "API_SANDBOX" as const, items: apiSandboxQuestions },
     { type: "DEVTOOLS_SANDBOX" as const, items: devtoolsSandboxQuestions },
+    { type: "MANUAL_QA_SANDBOX" as const, items: manualQaSandboxQuestions },
   ];
   const activeSection =
     sections.find((section) => section.type === selectedType) ?? sections[0];

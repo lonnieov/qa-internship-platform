@@ -16,6 +16,11 @@ import {
   getSettings,
 } from "@/lib/assessment";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
+import {
+  getManualQaSandboxConfig,
+  normalizeManualQaReports,
+  summarizeManualQaAnswer,
+} from "@/lib/manual-qa-sandbox";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,
@@ -557,4 +562,79 @@ export async function submitDevtoolsAnswerAction(input: {
 
   revalidatePath("/intern/test");
   return { ok: true, expired: false };
+}
+
+export async function submitManualQaAnswerAction(input: {
+  attemptId: string;
+  questionId: string;
+  reports: unknown;
+  noBugsFound: boolean;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (
+    !answer ||
+    answer.question.type !== "MANUAL_QA_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
+    return { ok: false, expired: false };
+  }
+
+  const config = getManualQaSandboxConfig(answer.question.apiConfig);
+  const reports = normalizeManualQaReports(input.reports);
+  const noBugsFound = input.noBugsFound && reports.length === 0;
+  const summary = summarizeManualQaAnswer(reports, config);
+  const hasAnswer = reports.length > 0 || noBugsFound;
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: {
+        mode: "MANUAL_QA_SANDBOX",
+        reports,
+        noBugsFound,
+      },
+      apiResponse: summary,
+      isCorrect: false,
+      answeredAt: hasAnswer ? new Date() : null,
+      submissionCount: hasAnswer ? Math.max(1, answer.submissionCount) : 0,
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return { ok: true, expired: false, summary };
 }
