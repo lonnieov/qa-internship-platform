@@ -1182,8 +1182,46 @@ button {
 
 .interns-table th:last-child,
 .interns-table td:last-child {
-  width: 128px;
-  white-space: nowrap;
+  width: 290px;
+}
+
+.intern-actions-cell {
+  text-align: right;
+}
+
+.intern-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.intern-actions-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.intern-action-button {
+  min-width: 118px;
+}
+
+.retake-action {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.retake-token-panel {
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100vw - 48px));
+  padding: 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  background: var(--coin-code-bg);
+  text-align: left;
+  white-space: normal;
 }
 
 .admins-table {

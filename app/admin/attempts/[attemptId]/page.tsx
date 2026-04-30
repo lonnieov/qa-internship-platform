@@ -41,10 +41,13 @@ export default async function AttemptDetailsPage({
       ? attempt.totalTimeSeconds * 1000
       : Math.max(
           0,
-          (attempt.submittedAt?.getTime() ?? Date.now()) - attempt.startedAt.getTime(),
+          (attempt.submittedAt?.getTime() ?? Date.now()) -
+            attempt.startedAt.getTime(),
         );
   const averageQuestionTimeMs =
-    attempt.questionCount > 0 ? Math.round(answerTimeMs / attempt.questionCount) : 0;
+    attempt.questionCount > 0
+      ? Math.round(answerTimeMs / attempt.questionCount)
+      : 0;
 
   return (
     <main className="page stack-lg report-print-area">
@@ -59,7 +62,7 @@ export default async function AttemptDetailsPage({
           <Badge variant={score >= 100 ? "success" : "danger"}>
             {formatPercent(score)}
           </Badge>
-          <ReportPrintButton />
+          <ReportPrintButton attemptId={attempt.id} />
         </div>
       </div>
 
@@ -136,7 +139,8 @@ export default async function AttemptDetailsPage({
                       answer.question.type === "DEVTOOLS_SANDBOX" ? (
                         <div className="stack">
                           <strong>
-                            {answer.apiResponse && typeof answer.apiResponse === "object"
+                            {answer.apiResponse &&
+                            typeof answer.apiResponse === "object"
                               ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
                               : "API request"}
                           </strong>
@@ -150,14 +154,14 @@ export default async function AttemptDetailsPage({
                           ) : null}
                         </div>
                       ) : getOpenQuizConfig(answer.question.apiConfig) ? (
-                        (
+                        ((
                           answer.apiRequest as
                             | { answerText?: string }
                             | null
                             | undefined
-                        )?.answerText ?? "не заполнен"
+                        )?.answerText ?? "не заполнен")
                       ) : (
-                        answer.selectedOption?.text ?? "не выбран"
+                        (answer.selectedOption?.text ?? "не выбран")
                       )}
                     </td>
                     <td>{formatDuration(answer.timeSpentMs)}</td>
@@ -165,7 +169,9 @@ export default async function AttemptDetailsPage({
                       {getOpenQuizConfig(answer.question.apiConfig) ? (
                         <Badge variant="muted">без оценки</Badge>
                       ) : (
-                        <Badge variant={answer.isCorrect ? "success" : "danger"}>
+                        <Badge
+                          variant={answer.isCorrect ? "success" : "danger"}
+                        >
                           {answer.isCorrect ? "верно" : "0 баллов"}
                         </Badge>
                       )}
