@@ -1192,24 +1192,52 @@ button {
 .intern-actions {
   display: grid;
   justify-items: end;
-  gap: 8px;
+  gap: 12px;
 }
 
 .intern-actions-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: grid;
+  justify-items: stretch;
+  gap: 12px;
+  width: 176px;
 }
 
 .intern-action-button {
-  min-width: 118px;
+  width: 100%;
+  min-width: 0;
+  border-width: 1.5px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.intern-action-result {
+  border-color: color-mix(in srgb, var(--primary) 48%, transparent);
+  background: var(--coin-blue-12);
+  color: var(--primary);
+}
+
+.intern-action-result:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+
+.intern-action-retake {
+  border-color: color-mix(in srgb, var(--warning) 48%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: var(--warning);
+}
+
+.intern-action-retake:hover {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: var(--warning);
 }
 
 .retake-action {
   display: grid;
   justify-items: end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .retake-token-panel {

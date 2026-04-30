@@ -30,7 +30,7 @@ export function RetakeInvitationForm({
         <input type="hidden" name="internProfileId" value={internProfileId} />
         <input type="hidden" name="expiresInDays" value="14" />
         <Button
-          className="intern-action-button"
+          className="intern-action-button intern-action-retake"
           size="sm"
           type="submit"
           variant="outline"

@@ -125,7 +125,6 @@ export default async function AdminInternsPage() {
               <thead>
                 <tr>
                   <th>Стажёр</th>
-                  <th>Зарегистрирован</th>
                   <th>Прошёл тест</th>
                   <th>Итоговый результат</th>
                   <th />
@@ -142,7 +141,6 @@ export default async function AdminInternsPage() {
                   return (
                     <tr key={intern.id}>
                       <td>{intern.fullName}</td>
-                      <td>{formatDateTime(intern.createdAt)}</td>
                       <td>{formatDateTime(latest?.submittedAt)}</td>
                       <td>
                         {latest
@@ -154,7 +152,7 @@ export default async function AdminInternsPage() {
                           <div className="intern-actions-buttons">
                             {latest ? (
                               <Button
-                                className="intern-action-button"
+                                className="intern-action-button intern-action-result"
                                 size="sm"
                                 variant="outline"
                                 asChild
