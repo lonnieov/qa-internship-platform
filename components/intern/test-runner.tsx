@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   selectAnswerAction,
+  submitOpenQuizAnswerAction,
   submitDevtoolsAnswerAction,
   spendQuestionTimeAction,
   submitApiSandboxAction,
@@ -24,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
 
 type JsonValue =
@@ -55,6 +57,7 @@ type Question = {
   explanation: string | null;
   options: Option[];
   selectedOptionId: string | null;
+  textAnswer: string;
   timeSpentMs: number;
   submissionCount: number;
   apiConfig: unknown;
@@ -181,6 +184,14 @@ export function TestRunner({
           .map((question) => [question.id, question.selectedOptionId]),
       ),
   );
+  const [textAnswers, setTextAnswers] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "QUIZ")
+          .map((question) => [question.id, question.textAnswer]),
+      ),
+  );
   const [apiDrafts, setApiDrafts] = useState(
     () =>
       new Map(
@@ -210,6 +221,10 @@ export function TestRunner({
       return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
     }
 
+    if (getOpenQuizConfig(question.apiConfig)) {
+      return Boolean(textAnswers.get(question.id)?.trim());
+    }
+
     return Boolean(answers.get(question.id));
   }).length;
   const progress =
@@ -235,6 +250,9 @@ export function TestRunner({
   function goTo(index: number) {
     if (index < 0 || index >= questions.length || index === currentIndex)
       return;
+    if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
+      saveOpenAnswer(currentQuestion);
+    }
     flushCurrentTime();
     setCurrentIndex(index);
   }
@@ -252,6 +270,31 @@ export function TestRunner({
         attemptId,
         questionId,
         optionId,
+        timeSpentMs,
+      });
+    });
+  }
+
+  function updateOpenAnswer(value: string) {
+    if (currentQuestion.type !== "QUIZ") return;
+    setTextAnswers((prev) => new Map(prev).set(currentQuestion.id, value));
+  }
+
+  function saveOpenAnswer(question = currentQuestion) {
+    if (question.type !== "QUIZ") return;
+
+    const config = getOpenQuizConfig(question.apiConfig);
+    if (!config) return;
+
+    const answerText = textAnswers.get(question.id) ?? "";
+    const timeSpentMs = Date.now() - enteredAtRef.current;
+    enteredAtRef.current = Date.now();
+
+    startTransition(() => {
+      void submitOpenQuizAnswerAction({
+        attemptId,
+        questionId: question.id,
+        answerText,
         timeSpentMs,
       });
     });
@@ -414,6 +457,9 @@ export function TestRunner({
     if (submittedRef.current) return;
     submittedRef.current = true;
     setIsSubmitDialogOpen(false);
+    if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
+      saveOpenAnswer(currentQuestion);
+    }
     flushCurrentTime();
     startTransition(() => {
       void submitAttemptAction({ attemptId, auto });
@@ -422,6 +468,9 @@ export function TestRunner({
 
   function requestManualSubmit() {
     if (submittedRef.current || isPending) return;
+    if (currentQuestion && getOpenQuizConfig(currentQuestion.apiConfig)) {
+      saveOpenAnswer(currentQuestion);
+    }
     setIsSubmitDialogOpen(true);
   }
 
@@ -555,27 +604,68 @@ export function TestRunner({
 
             {currentQuestion.type === "QUIZ" ? (
               <>
-                <div className="stack">
-                  {currentQuestion.options.map((option) => {
-                    const selected =
-                      answers.get(currentQuestion.id) === option.id;
-                    return (
-                      <button
-                        className={`test-answer-option ${selected ? "selected" : ""}`}
-                        data-track={`answer-${option.label}`}
-                        key={option.id}
-                        onClick={() => selectOption(option.id)}
+                {getOpenQuizConfig(currentQuestion.apiConfig) ? (
+                  <div className="stack">
+                    <div className="form-grid">
+                      <LabelLike>
+                        {getOpenQuizConfig(currentQuestion.apiConfig)?.answerLabel ||
+                          "Введите ответ"}
+                      </LabelLike>
+                      <Textarea
+                        data-track="open-quiz-answer"
+                        onBlur={() => saveOpenAnswer()}
+                        onChange={(event) =>
+                          updateOpenAnswer(event.target.value)
+                        }
+                        placeholder={
+                          getOpenQuizConfig(currentQuestion.apiConfig)?.placeholder ||
+                          "Опишите ответ своими словами"
+                        }
+                        value={textAnswers.get(currentQuestion.id) ?? ""}
+                      />
+                    </div>
+                    <div
+                      className="nav-row"
+                      style={{ justifyContent: "space-between" }}
+                    >
+                      <Button
+                        disabled={
+                          isPending ||
+                          !(textAnswers.get(currentQuestion.id) ?? "").trim()
+                        }
+                        onClick={() => saveOpenAnswer()}
                         type="button"
                       >
-                        <span className="test-answer-radio" />
-                        <span>
-                          <strong>{option.label}.</strong> {option.text}
-                        </span>
-                        <small>{option.label}</small>
-                      </button>
-                    );
-                  })}
-                </div>
+                        Сохранить ответ
+                      </Button>
+                      {(textAnswers.get(currentQuestion.id) ?? "").trim() ? (
+                        <Badge variant="muted">ответ заполнен</Badge>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="stack">
+                    {currentQuestion.options.map((option) => {
+                      const selected =
+                        answers.get(currentQuestion.id) === option.id;
+                      return (
+                        <button
+                          className={`test-answer-option ${selected ? "selected" : ""}`}
+                          data-track={`answer-${option.label}`}
+                          key={option.id}
+                          onClick={() => selectOption(option.id)}
+                          type="button"
+                        >
+                          <span className="test-answer-radio" />
+                          <span>
+                            <strong>{option.label}.</strong> {option.text}
+                          </span>
+                          <small>{option.label}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             ) : currentApiDraft && currentDevtoolsConfig ? (
               <div className="stack">

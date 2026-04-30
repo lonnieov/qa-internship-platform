@@ -37,7 +37,7 @@ export default async function AdminSignUpPage() {
             </div>
           </div>
         </div>
-        <small>© 2026 Coin · Внутренняя HR-платформа</small>
+        <small>© 2026 Coin · Внутренняя QA-платформа</small>
       </section>
 
       <section className="auth-form-panel">

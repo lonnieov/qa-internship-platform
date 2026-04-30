@@ -8,7 +8,9 @@ import {
   type TrackSummary,
 } from "@/lib/question-classification";
 import { ensureTracks } from "@/lib/tracks";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
+import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,21 +132,41 @@ function renderQuestionCard(
             </div>
           </div>
         ) : (
-          <div className="question-option-grid">
-            {question.options.map((option) => (
-              <div
-                className={`question-option-preview ${option.isCorrect ? "correct" : ""}`}
-                key={option.id}
-              >
-                <span className="question-option-marker">
-                  {option.isCorrect ? "✓" : ""}
-                </span>
-                <span>
-                  <strong>{option.label}.</strong> {option.text}
-                </span>
+          (() => {
+            const openQuiz = getOpenQuizConfig(question.apiConfig);
+
+            if (openQuiz) {
+              return (
+                <div className="soft-panel stack">
+                  <Badge variant="muted">Открытый вопрос</Badge>
+                  {openQuiz.answerLabel ? (
+                    <p className="body-2 muted m-0">{openQuiz.answerLabel}</p>
+                  ) : null}
+                  <p className="body-2 m-0">
+                    <strong>Эталонный ответ:</strong> {openQuiz.expectedAnswer}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="question-option-grid">
+                {question.options.map((option) => (
+                  <div
+                    className={`question-option-preview ${option.isCorrect ? "correct" : ""}`}
+                    key={option.id}
+                  >
+                    <span className="question-option-marker">
+                      {option.isCorrect ? "✓" : ""}
+                    </span>
+                    <span>
+                      <strong>{option.label}.</strong> {option.text}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()
         )}
         <details className="edit-question-panel">
           <summary>Редактировать</summary>
@@ -187,7 +209,7 @@ function renderQuestionCard(
 export default async function AdminQuestionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; track?: string }>;
+  searchParams: Promise<{ type?: string; track?: string; created?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
   const tracks = await ensureTracks();
@@ -248,6 +270,7 @@ export default async function AdminQuestionsPage({
 
   return (
     <main className="page stack-lg">
+      {resolvedSearchParams.created === "1" ? <QuestionCreatedToast /> : null}
       <div className="page-header">
         <div>
           <h1 className="head-1">Банк вопросов</h1>
