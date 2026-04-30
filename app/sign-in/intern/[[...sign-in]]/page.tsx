@@ -20,10 +20,6 @@ export default function InternSignInPage() {
           </p>
           <div className="auth-stats">
             <div>
-              <strong>%</strong>
-              <span>итоговый результат</span>
-            </div>
-            <div>
               <strong>3</strong>
               <span>типа вопросов</span>
             </div>
