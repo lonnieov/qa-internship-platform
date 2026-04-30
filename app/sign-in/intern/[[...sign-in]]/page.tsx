@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AuthRoleTabs } from "@/components/auth-role-tabs";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TokenLoginForm } from "@/components/intern/token-login-form";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function InternSignInPage() {
   return (
-    <main className="auth-shell">
+    <main className="auth-shell" data-auth-role="intern">
       <section className="auth-brand-panel">
         <div className="auth-brand">
           <ServiceLogo />
@@ -44,10 +44,7 @@ export default function InternSignInPage() {
               Введите токен, который выдал администратор.
             </p>
           </div>
-          <div className="auth-tabs">
-            <span className="active">Стажёр</span>
-            <Link href="/sign-in/admin">Администратор</Link>
-          </div>
+          <AuthRoleTabs activeRole="intern" />
           <TokenLoginForm />
         </div>
       </section>

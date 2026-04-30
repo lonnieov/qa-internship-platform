@@ -1,12 +1,12 @@
-import Link from "next/link";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
+import { AuthRoleTabs } from "@/components/auth-role-tabs";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminSignInPage() {
   return (
-    <main className="auth-shell">
+    <main className="auth-shell" data-auth-role="admin">
       <section className="auth-brand-panel">
         <div className="auth-brand">
           <ServiceLogo />
@@ -49,10 +49,7 @@ export default function AdminSignInPage() {
               пересекается со входом стажёра по токену.
             </p>
           </div>
-          <div className="auth-tabs">
-            <Link href="/sign-in/intern">Стажёр</Link>
-            <span className="active">Администратор</span>
-          </div>
+          <AuthRoleTabs activeRole="admin" />
           <AdminLoginForm />
         </div>
       </section>
