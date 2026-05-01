@@ -76,8 +76,8 @@
 1. Finish the intern attempt.
 2. Open the attempt from `/admin/interns`.
 3. Expected result: the Manual QA row shows bug count, severity, category, steps, actual, expected, and `ручная проверка`.
-4. Download PDF.
-5. Expected result: PDF includes the Manual QA bug report text.
+4. Download Markdown.
+5. Expected result: Markdown includes the Manual QA bug report text.
 
 ## Negative Cases
 

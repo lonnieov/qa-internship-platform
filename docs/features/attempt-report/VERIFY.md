@@ -9,22 +9,23 @@
 ## Smoke Check
 
 - Open `/admin/attempts/<attemptId>`.
-- Click `Скачать PDF`.
-- Expected: browser downloads a `.pdf` file without opening the print dialog.
+- Click `Скачать MD`.
+- Expected: browser downloads a `.md` file without opening the print dialog.
 
 ## Positive Case
 
-- Open the downloaded PDF.
-- Expected: PDF contains candidate name, score, total time, average question time, and question answer rows.
+- Open the downloaded Markdown file.
+- Expected: file contains `# Assessment Attempt Report`, candidate name, score, total time, and average question time.
+- Expected: file contains `## Machine Summary JSON` and `## Questions`.
 - Expected: Russian text is readable.
 
 ## Negative Cases
 
 - Log out from admin.
-- Open `/admin/attempts/<attemptId>/pdf`.
+- Open `/admin/attempts/<attemptId>/md`.
 - Expected: user is redirected to admin sign-in or blocked by auth flow.
 
 ## Regression Check
 
-- Open the attempt details page after PDF download.
+- Open the attempt details page after Markdown download.
 - Expected: on-page report still renders normally.

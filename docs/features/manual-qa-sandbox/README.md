@@ -12,7 +12,7 @@ Adds an admin workflow for creating manual functional QA tasks based on a mobile
 - Intern test runner renders the selected miniapp preset and a bug-report form.
 - Presets include `ClickSuperApp / ClickAvto` and `ClickSuperApp / Рассрочка`.
 - Manual QA test pages use an expanded work area and compact preset styling so embedded mobile screens fit inside the assessment viewport.
-- Intern bug reports are saved and shown in the admin attempt report and PDF.
+- Intern bug reports are saved and shown in the admin attempt report and Markdown export.
 - Manual QA questions are excluded from automatic score calculation.
 
 ## Data Model
@@ -42,7 +42,7 @@ Adds an admin workflow for creating manual functional QA tasks based on a mobile
 - `src/actions/intern.ts`
 - `src/lib/manual-qa-sandbox.ts`
 - `src/lib/assessment.ts`
-- `src/lib/attempt-report-pdf.ts`
+- `src/lib/attempt-report-md.ts`
 - `src/lib/question-order.ts`
 - `app/admin/questions/page.tsx`
 - `components/admin/question-form.tsx`

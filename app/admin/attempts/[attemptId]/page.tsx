@@ -9,7 +9,7 @@ import {
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
-import { ReportPrintButton } from "@/components/admin/report-print-button";
+import { ReportDownloadButton } from "@/components/admin/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -67,7 +67,7 @@ export default async function AttemptDetailsPage({
           <Badge variant={score >= 100 ? "success" : "danger"}>
             {formatPercent(score)}
           </Badge>
-          <ReportPrintButton attemptId={attempt.id} />
+          <ReportDownloadButton attemptId={attempt.id} />
         </div>
       </div>
 
@@ -148,116 +148,115 @@ export default async function AttemptDetailsPage({
                         return (
                           <div className="stack">
                             <div>
-                              {answer.question.type === "MANUAL_QA_SANDBOX"
-                                ? (() => {
-                                    const payload = getManualQaAnswerPayload(
-                                      answer.apiRequest,
-                                    );
-                                    const config = getManualQaSandboxConfig(
-                                      answer.question.apiConfig,
-                                    );
-                                    const summary =
-                                      answer.apiResponse &&
-                                      typeof answer.apiResponse === "object" &&
-                                      !Array.isArray(answer.apiResponse)
-                                        ? (answer.apiResponse as {
-                                            matchedKnownBugIds?: string[];
-                                          })
-                                        : null;
+                              {answer.question.type === "MANUAL_QA_SANDBOX" ? (
+                                (() => {
+                                  const payload = getManualQaAnswerPayload(
+                                    answer.apiRequest,
+                                  );
+                                  const config = getManualQaSandboxConfig(
+                                    answer.question.apiConfig,
+                                  );
+                                  const summary =
+                                    answer.apiResponse &&
+                                    typeof answer.apiResponse === "object" &&
+                                    !Array.isArray(answer.apiResponse)
+                                      ? (answer.apiResponse as {
+                                          matchedKnownBugIds?: string[];
+                                        })
+                                      : null;
 
-                                    if (!payload) {
-                                      return "не заполнен";
-                                    }
+                                  if (!payload) {
+                                    return "не заполнен";
+                                  }
 
-                                    return (
-                                      <div className="manual-qa-report-summary">
-                                        <div className="nav-row">
-                                          <Badge variant="muted">
-                                            {payload.reports.length} багов
+                                  return (
+                                    <div className="manual-qa-report-summary">
+                                      <div className="nav-row">
+                                        <Badge variant="muted">
+                                          {payload.reports.length} багов
+                                        </Badge>
+                                        {payload.noBugsFound ? (
+                                          <Badge variant="warning">
+                                            баги не найдены
                                           </Badge>
-                                          {payload.noBugsFound ? (
-                                            <Badge variant="warning">
-                                              баги не найдены
-                                            </Badge>
-                                          ) : null}
-                                          <Badge variant="muted">
-                                            {summary?.matchedKnownBugIds
-                                              ?.length ?? 0}
-                                            /{config?.knownBugs.length ?? 0} known
-                                          </Badge>
-                                        </div>
-                                        {payload.reports.map(
-                                          (report, reportIndex) => (
-                                            <div
-                                              className="manual-qa-report-result"
-                                              key={report.id}
-                                            >
-                                              <div className="nav-row">
-                                                <strong>
-                                                  {reportIndex + 1}.{" "}
-                                                  {report.title}
-                                                </strong>
-                                                <Badge variant="muted">
-                                                  {report.severity}
-                                                </Badge>
-                                                <Badge variant="muted">
-                                                  {report.category}
-                                                </Badge>
-                                              </div>
-                                              <p className="body-2 m-0">
-                                                <strong>Steps:</strong>{" "}
-                                                {report.steps}
-                                              </p>
-                                              <p className="body-2 m-0">
-                                                <strong>Actual:</strong>{" "}
-                                                {report.actual}
-                                              </p>
-                                              <p className="body-2 m-0">
-                                                <strong>Expected:</strong>{" "}
-                                                {report.expected}
-                                              </p>
-                                              {report.note ? (
-                                                <p className="body-2 muted m-0">
-                                                  {report.note}
-                                                </p>
-                                              ) : null}
-                                            </div>
-                                          ),
-                                        )}
-                                      </div>
-                                    );
-                                  })()
-                                : answer.question.type === "API_SANDBOX" ||
-                                    answer.question.type ===
-                                      "DEVTOOLS_SANDBOX"
-                                  ? (
-                                      <div className="stack">
-                                        <strong>
-                                          {answer.apiResponse &&
-                                          typeof answer.apiResponse === "object"
-                                            ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
-                                            : "API request"}
-                                        </strong>
-                                        <span className="body-2 muted">
-                                          отправок: {answer.submissionCount}
-                                        </span>
-                                        {answer.apiRequest ? (
-                                          <pre className="body-2 m-0 whitespace-pre-wrap">
-                                            {stringifyPrettyJson(
-                                              answer.apiRequest,
-                                            )}
-                                          </pre>
                                         ) : null}
+                                        <Badge variant="muted">
+                                          {summary?.matchedKnownBugIds
+                                            ?.length ?? 0}
+                                          /{config?.knownBugs.length ?? 0} known
+                                        </Badge>
                                       </div>
-                                    )
-                                  : getOpenQuizConfig(answer.question.apiConfig)
-                                    ? ((answer.apiRequest as
-                                        | { answerText?: string }
-                                        | null
-                                        | undefined)?.answerText ??
-                                      "не заполнен")
-                                    : (answer.selectedOption?.text ??
-                                      "не выбран")}
+                                      {payload.reports.map(
+                                        (report, reportIndex) => (
+                                          <div
+                                            className="manual-qa-report-result"
+                                            key={report.id}
+                                          >
+                                            <div className="nav-row">
+                                              <strong>
+                                                {reportIndex + 1}.{" "}
+                                                {report.title}
+                                              </strong>
+                                              <Badge variant="muted">
+                                                {report.severity}
+                                              </Badge>
+                                              <Badge variant="muted">
+                                                {report.category}
+                                              </Badge>
+                                            </div>
+                                            <p className="body-2 m-0">
+                                              <strong>Steps:</strong>{" "}
+                                              {report.steps}
+                                            </p>
+                                            <p className="body-2 m-0">
+                                              <strong>Actual:</strong>{" "}
+                                              {report.actual}
+                                            </p>
+                                            <p className="body-2 m-0">
+                                              <strong>Expected:</strong>{" "}
+                                              {report.expected}
+                                            </p>
+                                            {report.note ? (
+                                              <p className="body-2 muted m-0">
+                                                {report.note}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              ) : answer.question.type === "API_SANDBOX" ||
+                                answer.question.type === "DEVTOOLS_SANDBOX" ? (
+                                <div className="stack">
+                                  <strong>
+                                    {answer.apiResponse &&
+                                    typeof answer.apiResponse === "object"
+                                      ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
+                                      : "API request"}
+                                  </strong>
+                                  <span className="body-2 muted">
+                                    отправок: {answer.submissionCount}
+                                  </span>
+                                  {answer.apiRequest ? (
+                                    <pre className="body-2 m-0 whitespace-pre-wrap">
+                                      {stringifyPrettyJson(answer.apiRequest)}
+                                    </pre>
+                                  ) : null}
+                                </div>
+                              ) : getOpenQuizConfig(
+                                  answer.question.apiConfig,
+                                ) ? (
+                                ((
+                                  answer.apiRequest as
+                                    | { answerText?: string }
+                                    | null
+                                    | undefined
+                                )?.answerText ?? "не заполнен")
+                              ) : (
+                                (answer.selectedOption?.text ?? "не выбран")
+                              )}
                             </div>
                             {internComment ? (
                               <div className="intern-comment-result">

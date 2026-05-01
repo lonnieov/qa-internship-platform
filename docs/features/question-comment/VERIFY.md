@@ -21,7 +21,7 @@
 - Expected: the saved text is still in the comment dialog.
 - Finish the test and open the admin attempt report.
 - Expected: that question shows `Комментарий стажёра` with the exact saved text.
-- Download the PDF report.
+- Download the Markdown report.
 - Expected: the same comment appears in the answer text for that question.
 
 ## Negative Cases
@@ -37,4 +37,3 @@
 - Expected: selected answer remains saved and the comment remains visible in the admin report.
 - For Manual QA, add a bug report after saving a comment.
 - Expected: bug reports and `Комментарий стажёра` both appear in the admin report.
-

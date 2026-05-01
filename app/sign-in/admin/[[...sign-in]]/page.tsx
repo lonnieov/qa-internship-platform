@@ -24,8 +24,8 @@ export default function AdminSignInPage() {
               <span>банк вопросов</span>
             </div>
             <div>
-              <strong>PDF</strong>
-              <span>отчёты</span>
+              <strong>MD</strong>
+              <span>AI-отчёты</span>
             </div>
             <div>
               <strong>Token</strong>

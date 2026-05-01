@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import { generateAttemptReportPdf } from "@/lib/attempt-report-pdf";
+import { generateAttemptReportMarkdown } from "@/lib/attempt-report-md";
 
 export const runtime = "nodejs";
 
@@ -11,16 +11,16 @@ export async function GET(
   await requireAdmin();
 
   const { attemptId } = await params;
-  const report = await generateAttemptReportPdf(attemptId);
+  const report = await generateAttemptReportMarkdown(attemptId);
 
   if (!report) notFound();
 
   const encodedFilename = encodeURIComponent(report.filename);
 
-  return new Response(new Uint8Array(report.buffer), {
+  return new Response(report.content, {
     headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="assessment-report.pdf"; filename*=UTF-8''${encodedFilename}`,
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Content-Disposition": `attachment; filename="assessment-report.md"; filename*=UTF-8''${encodedFilename}`,
       "Cache-Control": "no-store",
     },
   });

@@ -8,7 +8,7 @@ Allow interns to leave a reviewer-facing comment on any question before the test
 
 - Intern test header opens a comment dialog instead of local-only flagging.
 - Comments are saved per question and can be edited while the attempt is in progress.
-- Admin attempt report and PDF include the intern comment under the matching question.
+- Admin attempt report and Markdown export include the intern comment under the matching question.
 
 ## Data Model
 
@@ -30,7 +30,7 @@ Allow interns to leave a reviewer-facing comment on any question before the test
 - `app/admin/attempts/[attemptId]/page.tsx`
 - `src/actions/intern.ts`
 - `src/lib/answer-comment.ts`
-- `src/lib/attempt-report-pdf.ts`
+- `src/lib/attempt-report-md.ts`
 - `app/globals.css`
 
 ## Constraints
@@ -38,4 +38,3 @@ Allow interns to leave a reviewer-facing comment on any question before the test
 - Comments are editable only while the attempt is `IN_PROGRESS`.
 - Maximum stored comment length is 1000 characters.
 - Comments do not affect scoring or answered progress.
-
