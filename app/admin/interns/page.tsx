@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { FileText, Search } from "lucide-react";
-import { revokeInvitationAction } from "@/actions/admin";
+import { Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { decryptInviteCode } from "@/lib/security";
 import { formatPercent } from "@/lib/utils";
+import {
+  InternCandidateTable,
+  type CandidateRow,
+} from "@/components/admin/intern-candidate-table";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
-import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,10 @@ function formatDateTime(value: Date | null | undefined) {
   });
 }
 
+function normalizeName(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export default async function AdminInternsPage({
   searchParams,
 }: {
@@ -33,7 +39,7 @@ export default async function AdminInternsPage({
   const [invitations, interns] = await Promise.all([
     prisma.invitation.findMany({
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 200,
       include: { acceptedByProfile: true },
     }),
     prisma.internProfile.findMany({
@@ -56,6 +62,113 @@ export default async function AdminInternsPage({
     }),
   ]);
 
+  const matchedInvitationIds = new Set<string>();
+  const rows: CandidateRow[] = interns.map((intern) => {
+    const normalizedFullName = normalizeName(intern.fullName);
+    const internInvitations = invitations.filter((invitation) => {
+      return (
+        invitation.id === intern.invitationId ||
+        invitation.acceptedByProfileId === intern.profileId ||
+        normalizeName(invitation.candidateName) === normalizedFullName
+      );
+    });
+
+    internInvitations.forEach((invitation) =>
+      matchedInvitationIds.add(invitation.id),
+    );
+
+    const latest = intern.attempts.find(
+      (attempt) => attempt.status !== "IN_PROGRESS",
+    );
+    const activeAttempt = intern.attempts.find(
+      (attempt) => attempt.status === "IN_PROGRESS",
+    );
+    const latestInvitation = internInvitations[0];
+
+    return {
+      id: `profile-${intern.id}`,
+      name: intern.fullName,
+      kind: "profile",
+      internProfileId: intern.id,
+      accessLabel: activeAttempt
+        ? "идёт попытка"
+        : (latestInvitation?.status ?? "профиль"),
+      attemptLabel: activeAttempt
+        ? "идёт попытка"
+        : formatDateTime(latest?.submittedAt),
+      resultLabel: latest ? formatPercent(latest.scorePercent) : "нет попыток",
+      badgeVariant: activeAttempt ? "warning" : "success",
+      invitations: internInvitations.map((invitation) => ({
+        id: invitation.id,
+        candidateName: invitation.candidateName,
+        inviteCodeMask: invitation.inviteCodeMask ?? "••••",
+        inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
+        status: invitation.status,
+        createdAt: formatDateTime(invitation.createdAt),
+        acceptedAt: formatDateTime(invitation.acceptedAt),
+        canRevoke: invitation.status === "PENDING",
+      })),
+      attempts: intern.attempts.map((attempt) => ({
+        id: attempt.id,
+        status: attempt.status,
+        startedAt: formatDateTime(attempt.startedAt),
+        submittedAt: formatDateTime(attempt.submittedAt),
+        scorePercent:
+          attempt.status === "IN_PROGRESS"
+            ? "—"
+            : formatPercent(attempt.scorePercent),
+        hasResult: attempt.status !== "IN_PROGRESS",
+      })),
+    };
+  });
+
+  const pendingInvitationGroups = new Map<string, typeof invitations>();
+  invitations
+    .filter((invitation) => !matchedInvitationIds.has(invitation.id))
+    .filter((invitation) =>
+      internSearch
+        ? normalizeName(invitation.candidateName).includes(
+            normalizeName(internSearch),
+          )
+        : true,
+    )
+    .forEach((invitation) => {
+      const key = normalizeName(invitation.candidateName);
+      const group = pendingInvitationGroups.get(key) ?? [];
+      group.push(invitation);
+      pendingInvitationGroups.set(key, group);
+    });
+
+  for (const [name, group] of pendingInvitationGroups) {
+    const latestInvitation = group[0];
+    rows.push({
+      id: `invitation-${name}`,
+      name: latestInvitation.candidateName,
+      kind: "invitation",
+      internProfileId: null,
+      accessLabel: latestInvitation.status,
+      attemptLabel: "профиль не создан",
+      resultLabel: "—",
+      badgeVariant:
+        latestInvitation.status === "REVOKED"
+          ? "danger"
+          : latestInvitation.status === "PENDING"
+            ? "default"
+            : "success",
+      invitations: group.map((invitation) => ({
+        id: invitation.id,
+        candidateName: invitation.candidateName,
+        inviteCodeMask: invitation.inviteCodeMask ?? "••••",
+        inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
+        status: invitation.status,
+        createdAt: formatDateTime(invitation.createdAt),
+        acceptedAt: formatDateTime(invitation.acceptedAt),
+        canRevoke: invitation.status === "PENDING",
+      })),
+      attempts: [],
+    });
+  }
+
   return (
     <main className="page stack-lg">
       <div className="page-header">
@@ -68,76 +181,14 @@ export default async function AdminInternsPage({
         <InvitationCreateModal />
       </div>
 
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>Последние токены</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Кандидат</th>
-                    <th>Статус</th>
-                    <th>Действует до</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {invitations.map((invitation) => (
-                    <tr key={invitation.id}>
-                      <td>{invitation.candidateName}</td>
-                      <td>
-                        <Badge
-                          variant={
-                            invitation.status === "ACCEPTED" ||
-                            invitation.status === "COMPLETED"
-                              ? "success"
-                              : invitation.status === "REVOKED"
-                                ? "danger"
-                                : "default"
-                          }
-                        >
-                          {invitation.status}
-                        </Badge>
-                      </td>
-                      <td>
-                        {invitation.expiresAt
-                          ? invitation.expiresAt.toLocaleDateString("ru-RU")
-                          : "без срока"}
-                      </td>
-                      <td>
-                        {invitation.status === "PENDING" ? (
-                          <form action={revokeInvitationAction}>
-                            <input
-                              type="hidden"
-                              name="invitationId"
-                              value={invitation.id}
-                            />
-                            <Button size="sm" variant="outline" type="submit">
-                              Отозвать
-                            </Button>
-                          </form>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
       <Card>
         <CardHeader className="intern-profiles-header">
           <div>
-            <CardTitle>Профили стажёров</CardTitle>
+            <CardTitle>Список стажёров</CardTitle>
             <p className="body-2 muted m-0">
               {internSearch
                 ? `Поиск по ФИО: ${internSearch}`
-                : "Поиск работает по полному имени стажёра."}
+                : "Новые стажёры появляются здесь сразу после создания."}
             </p>
           </div>
           <form className="intern-search-form" action="/admin/interns">
@@ -160,73 +211,7 @@ export default async function AdminInternsPage({
           </form>
         </CardHeader>
         <CardContent>
-          {interns.length > 0 ? (
-            <div className="table-wrap">
-              <table className="table interns-table">
-                <thead>
-                  <tr>
-                    <th>Стажёр</th>
-                    <th>Прошёл тест</th>
-                    <th>Итоговый результат</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {interns.map((intern) => {
-                    const latest = intern.attempts.find(
-                      (attempt) => attempt.status !== "IN_PROGRESS",
-                    );
-                    const activeAttempt = intern.attempts.find(
-                      (attempt) => attempt.status === "IN_PROGRESS",
-                    );
-                    return (
-                      <tr key={intern.id}>
-                        <td>{intern.fullName}</td>
-                        <td>{formatDateTime(latest?.submittedAt)}</td>
-                        <td>
-                          {latest
-                            ? formatPercent(latest.scorePercent)
-                            : "нет попыток"}
-                        </td>
-                        <td className="intern-actions-cell">
-                          <div className="intern-actions">
-                            <div className="intern-actions-buttons">
-                              {latest ? (
-                                <Button
-                                  className="intern-action-button intern-action-result"
-                                  size="sm"
-                                  variant="outline"
-                                  asChild
-                                >
-                                  <Link href={`/admin/attempts/${latest.id}`}>
-                                    <FileText size={15} />
-                                    Результат
-                                  </Link>
-                                </Button>
-                              ) : null}
-                              <RetakeInvitationForm
-                                internProfileId={intern.id}
-                              />
-                            </div>
-                            {activeAttempt ? (
-                              <Badge variant="warning">идёт попытка</Badge>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <strong>Стажёры не найдены</strong>
-              <p className="body-2 muted m-0">
-                Попробуйте изменить ФИО или сбросить поиск.
-              </p>
-            </div>
-          )}
+          <InternCandidateTable rows={rows} />
         </CardContent>
       </Card>
     </main>

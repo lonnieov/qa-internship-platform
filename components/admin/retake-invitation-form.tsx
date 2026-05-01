@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { CheckCircle2, Clock3, RotateCcw } from "lucide-react";
 import {
   createRetakeInvitationAction,
@@ -16,19 +16,34 @@ const initialState: InvitationState = {
 
 export function RetakeInvitationForm({
   internProfileId,
+  buttonLabel = "Перепройти",
+  issuedButtonLabel = "Выдать новый",
+  onCreated,
 }: {
   internProfileId: string;
+  buttonLabel?: string;
+  issuedButtonLabel?: string;
+  onCreated?: (invitation: NonNullable<InvitationState["invitation"]>) => void;
 }) {
   const [state, action, isPending] = useActionState(
     createRetakeInvitationAction,
     initialState,
   );
+  const lastInvitationId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!state.invitation || state.invitation.id === lastInvitationId.current) {
+      return;
+    }
+
+    lastInvitationId.current = state.invitation.id;
+    onCreated?.(state.invitation);
+  }, [onCreated, state.invitation]);
 
   return (
     <div className="retake-action" aria-live="polite">
       <form action={action}>
         <input type="hidden" name="internProfileId" value={internProfileId} />
-        <input type="hidden" name="expiresInDays" value="14" />
         <Button
           className="intern-action-button intern-action-retake"
           size="sm"
@@ -37,7 +52,7 @@ export function RetakeInvitationForm({
           disabled={isPending}
         >
           <RotateCcw size={15} />
-          {state.inviteCode ? "Выдать новый" : "Перепройти"}
+          {state.inviteCode ? issuedButtonLabel : buttonLabel}
         </Button>
       </form>
       {state.message ? (
@@ -58,7 +73,7 @@ export function RetakeInvitationForm({
               <CopyableToken token={state.inviteCode} />
               <div className="retake-token-meta">
                 <Clock3 size={14} />
-                <span>Действует 14 дней. Старый доступ отвязан.</span>
+                <span>Новый токен показан один раз. Старый доступ отвязан.</span>
               </div>
             </>
           ) : null}

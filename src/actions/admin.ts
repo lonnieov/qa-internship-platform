@@ -7,7 +7,12 @@ import { prisma } from "@/lib/prisma";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeLegacyTrack } from "@/lib/question-classification";
-import { generateInviteCode, hashInviteCode } from "@/lib/security";
+import {
+  encryptInviteCode,
+  generateInviteCode,
+  hashInviteCode,
+  maskInviteCode,
+} from "@/lib/security";
 import { nextTrackOrder, uniqueTrackSlug } from "@/lib/tracks";
 import {
   clickSuperAppClickAvtoPresetConfig,
@@ -19,11 +24,51 @@ import {
   sampleSqlSandboxConfig,
 } from "@/lib/sql-sandbox";
 
+const defaultInvitationExpiryDays = 14;
+
 export type InvitationState = {
   ok: boolean;
   message: string;
   inviteCode?: string;
+  invitation?: {
+    id: string;
+    candidateName: string;
+    inviteCodeMask: string;
+    inviteCodeCopyValue?: string;
+    status: string;
+    createdAt: string;
+    acceptedAt: string;
+    canRevoke: boolean;
+  };
 };
+
+function getInvitationExpiryDays() {
+  const value = Number(process.env.INTERN_INVITATION_EXPIRES_IN_DAYS);
+
+  if (!Number.isFinite(value)) {
+    return defaultInvitationExpiryDays;
+  }
+
+  return Math.max(1, Math.round(value));
+}
+
+function getInvitationExpiresAt() {
+  return new Date(
+    Date.now() + getInvitationExpiryDays() * 24 * 60 * 60 * 1000,
+  );
+}
+
+function formatInvitationDateTime(value: Date | null | undefined) {
+  if (!value) return "—";
+
+  return value.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 async function resolveQuestionTrack(formData: FormData) {
   const trackId = String(formData.get("trackId") ?? "");
@@ -167,21 +212,22 @@ export async function createInvitationAction(
 ): Promise<InvitationState> {
   const admin = await requireAdmin();
   const candidateName = String(formData.get("candidateName") ?? "").trim();
-  const expiresInDays = Number(formData.get("expiresInDays") ?? 14);
 
   if (!candidateName) {
     return { ok: false, message: "Укажите имя и фамилию кандидата." };
   }
 
   const inviteCode = generateInviteCode();
-  const expiresAt = Number.isFinite(expiresInDays)
-    ? new Date(Date.now() + Math.max(1, expiresInDays) * 24 * 60 * 60 * 1000)
-    : null;
+  const inviteCodeMask = maskInviteCode(inviteCode);
+  const inviteCodeEncrypted = encryptInviteCode(inviteCode);
+  const expiresAt = getInvitationExpiresAt();
 
-  await prisma.invitation.create({
+  const invitation = await prisma.invitation.create({
     data: {
       candidateName,
       inviteCodeHash: hashInviteCode(inviteCode),
+      inviteCodeMask,
+      inviteCodeEncrypted,
       expiresAt,
       createdById: admin.id,
     },
@@ -193,6 +239,16 @@ export async function createInvitationAction(
     ok: true,
     message: "Токен создан. Он показывается только сейчас.",
     inviteCode,
+    invitation: {
+      id: invitation.id,
+      candidateName: invitation.candidateName,
+      inviteCodeMask: invitation.inviteCodeMask ?? "••••",
+      inviteCodeCopyValue: inviteCode,
+      status: invitation.status,
+      createdAt: formatInvitationDateTime(invitation.createdAt),
+      acceptedAt: formatInvitationDateTime(invitation.acceptedAt),
+      canRevoke: invitation.status === "PENDING",
+    },
   };
 }
 
@@ -801,7 +857,6 @@ export async function createRetakeInvitationAction(
 ): Promise<InvitationState> {
   const admin = await requireAdmin();
   const internProfileId = String(formData.get("internProfileId") ?? "");
-  const expiresInDays = Number(formData.get("expiresInDays") ?? 14);
 
   if (!internProfileId) {
     return { ok: false, message: "Не удалось определить стажёра." };
@@ -832,15 +887,17 @@ export async function createRetakeInvitationAction(
   }
 
   const inviteCode = generateInviteCode();
-  const expiresAt = Number.isFinite(expiresInDays)
-    ? new Date(Date.now() + Math.max(1, expiresInDays) * 24 * 60 * 60 * 1000)
-    : null;
+  const inviteCodeMask = maskInviteCode(inviteCode);
+  const inviteCodeEncrypted = encryptInviteCode(inviteCode);
+  const expiresAt = getInvitationExpiresAt();
 
-  await prisma.$transaction(async (tx) => {
+  const createdInvitation = await prisma.$transaction(async (tx) => {
     const invitation = await tx.invitation.create({
       data: {
         candidateName: intern.fullName,
         inviteCodeHash: hashInviteCode(inviteCode),
+        inviteCodeMask,
+        inviteCodeEncrypted,
         expiresAt,
         createdById: admin.id,
       },
@@ -861,6 +918,8 @@ export async function createRetakeInvitationAction(
         invitationId: invitation.id,
       },
     });
+
+    return invitation;
   });
 
   revalidatePath("/admin/interns");
@@ -869,5 +928,15 @@ export async function createRetakeInvitationAction(
     ok: true,
     message: "Новый токен для повторного прохождения создан.",
     inviteCode,
+    invitation: {
+      id: createdInvitation.id,
+      candidateName: createdInvitation.candidateName,
+      inviteCodeMask: createdInvitation.inviteCodeMask ?? "••••",
+      inviteCodeCopyValue: inviteCode,
+      status: createdInvitation.status,
+      createdAt: formatInvitationDateTime(createdInvitation.createdAt),
+      acceptedAt: formatInvitationDateTime(createdInvitation.acceptedAt),
+      canRevoke: createdInvitation.status === "PENDING",
+    },
   };
 }

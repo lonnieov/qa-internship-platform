@@ -5,8 +5,8 @@ import { createInvitationAction, type InvitationState } from "@/actions/admin";
 import { CopyableToken } from "@/components/admin/copyable-token";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const initialState: InvitationState = {
   ok: false,
@@ -34,19 +34,8 @@ export function InvitationForm({ embedded = false }: InvitationFormProps) {
             placeholder="Алина Каримова"
           />
         </div>
-        <div className="form-grid">
-          <Label htmlFor="expiresInDays">Срок действия, дней</Label>
-          <Input
-            id="expiresInDays"
-            name="expiresInDays"
-            type="number"
-            min="1"
-            max="90"
-            defaultValue="14"
-          />
-        </div>
         <Button disabled={isPending} type="submit">
-          Создать токен
+          Создать стажёра
         </Button>
       </form>
       {state.message ? (
@@ -65,7 +54,7 @@ export function InvitationForm({ embedded = false }: InvitationFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Выдать доступ стажёру</CardTitle>
+        <CardTitle>Создать стажёра</CardTitle>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>
