@@ -578,9 +578,18 @@ button {
   padding: 16px 0 20px;
 }
 
+.test-page-compact.manual-qa-test-page {
+  width: min(1480px, calc(100% - 24px));
+  padding-top: 10px;
+}
+
 .test-page-compact > .grid-2 {
   grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
+}
+
+.test-page-compact.manual-qa-test-page > .grid-2 {
+  grid-template-columns: minmax(0, 1fr) 320px;
 }
 
 .test-page-compact.stack-lg {
@@ -1486,7 +1495,11 @@ button {
 }
 
 .retake-token-panel.danger {
-  border-color: color-mix(in srgb, var(--destructive) 36%, var(--surface-border));
+  border-color: color-mix(
+    in srgb,
+    var(--destructive) 36%,
+    var(--surface-border)
+  );
   background: color-mix(in srgb, var(--destructive) 8%, var(--card));
 }
 
@@ -2175,6 +2188,573 @@ button {
   padding: 14px;
 }
 
+.installment-phone {
+  position: relative;
+  grid-template-rows: auto auto 1fr;
+  border-color: #050506;
+  background: #111111;
+  color: #ffffff;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.installment-statusbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 20px 2px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.installment-statusbar strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #3478f6;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+
+.installment-statusbar span:last-child {
+  justify-self: end;
+  padding: 1px 5px;
+  border-radius: 7px;
+  background: #5dbd68;
+  font-size: 11px;
+}
+
+.installment-appbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 58px;
+  padding: 4px 20px 10px;
+  color: #ffffff;
+}
+
+.installment-appbar strong {
+  grid-column: 2;
+  justify-self: center;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 26px;
+}
+
+.installment-back {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+}
+
+.installment-screen {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  padding: 18px 20px 24px;
+  overflow-y: auto;
+  background: #111111;
+}
+
+.installment-confirm-screen {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+  align-content: stretch;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.installment-confirm-screen::-webkit-scrollbar {
+  display: none;
+}
+
+.installment-amount-screen {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.installment-merchant {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.installment-merchant-logo {
+  display: grid;
+  width: 88px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  background: #050505;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.installment-merchant strong,
+.installment-merchant span {
+  display: block;
+}
+
+.installment-merchant strong {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.installment-merchant span {
+  width: fit-content;
+  margin-top: 20px;
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 10px;
+  background: #3478f6;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.installment-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  color: #ffffff;
+  font-size: 17px;
+}
+
+.installment-field input {
+  width: 100%;
+  min-height: 56px;
+  border: 1.5px solid #3478f6;
+  border-radius: 10px;
+  background: #282a2b;
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 21px;
+  font-weight: 700;
+  outline: 0;
+}
+
+.installment-field input::placeholder {
+  color: #a4a4aa;
+}
+
+.installment-primary {
+  min-height: 48px;
+  border-radius: 12px;
+  background: #3478f6;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.installment-details {
+  display: grid;
+  gap: 14px;
+}
+
+.installment-details > strong {
+  font-size: 17px;
+}
+
+.installment-details dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.installment-details dl div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  color: #f7f7f8;
+  font-size: 16px;
+}
+
+.installment-details dt,
+.installment-details dd {
+  margin: 0;
+}
+
+.installment-premium-banner {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 30px;
+  gap: 10px;
+  align-items: center;
+  padding: 11px;
+  border-radius: 14px;
+  background: #282a2b;
+}
+
+.installment-premium-banner > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffe875, #b28322);
+  color: #202020;
+}
+
+.installment-premium-banner strong,
+.installment-premium-banner small {
+  display: block;
+}
+
+.installment-premium-banner small {
+  color: #9b9ba3;
+}
+
+.installment-premium-banner button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #7d7f8d;
+  color: #24252b;
+}
+
+.installment-spacer {
+  min-height: 150px;
+}
+
+.installment-widget {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #282a2b;
+}
+
+.installment-widget-header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 34px 56px;
+  gap: 10px;
+  align-items: center;
+}
+
+.installment-brand-mark,
+.installment-sheet-logo {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 45% 55% 52% 48%;
+  background:
+    radial-gradient(circle at 62% 50%, #282a2b 0 30%, transparent 31%),
+    linear-gradient(135deg, #ff2b75, #ff8b2f);
+}
+
+.installment-widget-header strong,
+.installment-widget-header small {
+  display: block;
+}
+
+.installment-widget-header strong {
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.installment-widget-header small {
+  color: #9b9ba3;
+  font-size: 14px;
+}
+
+.installment-help {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #6f737a;
+}
+
+.installment-switch {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 34px;
+}
+
+.installment-switch input {
+  position: absolute;
+  opacity: 0;
+}
+
+.installment-switch span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: #48494f;
+  transition: background 160ms ease;
+}
+
+.installment-switch span::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffffff;
+  content: "";
+  transition: transform 160ms ease;
+}
+
+.installment-switch input:checked + span {
+  background: #3478f6;
+}
+
+.installment-switch input:checked + span::before {
+  transform: translateX(22px);
+}
+
+.installment-blue-note {
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(52, 120, 246, 0.16);
+  color: #3478f6;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.installment-timeline {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.installment-timeline div:last-child {
+  text-align: right;
+}
+
+.installment-timeline span,
+.installment-timeline strong {
+  display: block;
+}
+
+.installment-timeline span {
+  color: #9b9ba3;
+  font-size: 12px;
+}
+
+.installment-timeline strong {
+  font-size: 19px;
+}
+
+.installment-range {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: #5b5d62;
+}
+
+.installment-range span {
+  position: absolute;
+  top: -3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #73757b;
+}
+
+.installment-range span:first-child {
+  left: 0;
+}
+
+.installment-range span:last-child {
+  right: 0;
+}
+
+.installment-card-block {
+  display: grid;
+  gap: 10px;
+}
+
+.installment-card-block h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.installment-card-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 12px;
+  align-items: center;
+}
+
+.installment-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 74px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #282a2b;
+}
+
+.installment-card svg {
+  color: #ffdb42;
+}
+
+.installment-card strong,
+.installment-card small {
+  display: block;
+}
+
+.installment-card small {
+  color: #a4a4aa;
+}
+
+.installment-card-row button {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 22px;
+  text-align: left;
+}
+
+.installment-agreement {
+  margin: 0;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 19px;
+  text-align: center;
+}
+
+.installment-agreement span {
+  color: #3478f6;
+}
+
+.installment-success {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: #111111;
+  text-align: center;
+}
+
+.installment-success svg {
+  color: #21c768;
+}
+
+.installment-success strong {
+  font-size: 22px;
+}
+
+.installment-bottom-sheet {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-items: end;
+  width: 100%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.56);
+  color: inherit;
+  cursor: default;
+  z-index: 5;
+}
+
+.installment-bottom-sheet-panel {
+  display: grid;
+  gap: 10px;
+  max-height: 88%;
+  overflow: hidden;
+  padding: 10px 16px 14px;
+  border-radius: 30px 30px 0 0;
+  background: #111111;
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.34);
+  text-align: left;
+}
+
+.installment-sheet-handle {
+  justify-self: center;
+  width: 54px;
+  height: 6px;
+  border-radius: 999px;
+  background: #3478f6;
+}
+
+.installment-sheet-logo {
+  width: 52px;
+  height: 52px;
+}
+
+.installment-bottom-sheet h2,
+.installment-bottom-sheet p {
+  margin: 0;
+}
+
+.installment-bottom-sheet h2 {
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.installment-bottom-sheet p {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.installment-info-card {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: #282a2b;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.installment-info-card svg {
+  color: #3478f6;
+}
+
+.installment-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.installment-info-grid div {
+  min-height: 62px;
+  padding: 9px;
+  border-radius: 14px;
+  background: #282a2b;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .manual-qa-task-layout {
   display: grid;
   grid-template-columns: minmax(300px, 390px) minmax(360px, 1fr);
@@ -2233,20 +2813,265 @@ button {
 }
 
 .test-page-compact .manual-qa-task-layout {
-  grid-template-columns: minmax(280px, 360px) minmax(320px, 1fr);
+  grid-template-columns: minmax(260px, 330px) minmax(320px, 1fr);
+}
+
+.manual-qa-test-page .manual-qa-task-layout {
+  grid-template-columns: minmax(280px, 360px) minmax(420px, 1fr);
+  gap: 20px;
+}
+
+.manual-qa-test-page .test-card-header {
+  padding-top: 14px;
+}
+
+.manual-qa-test-page .test-card-content {
+  gap: 14px;
 }
 
 .test-page-compact .manual-qa-phone {
-  height: clamp(430px, calc(100vh - 300px), 580px);
+  height: clamp(560px, calc(100vh - 190px), 720px);
   min-height: 0;
 }
 
+.manual-qa-test-page .manual-qa-phone {
+  height: clamp(620px, calc(100vh - 160px), 760px);
+}
+
 .test-page-compact .manual-qa-report-panel {
-  max-height: clamp(430px, calc(100vh - 300px), 580px);
+  max-height: clamp(560px, calc(100vh - 190px), 720px);
+}
+
+.manual-qa-test-page .manual-qa-report-panel {
+  max-height: clamp(620px, calc(100vh - 160px), 760px);
 }
 
 .test-page-compact .manual-qa-report-card textarea {
   min-height: 86px;
+}
+
+.manual-qa-test-page .installment-screen {
+  gap: 12px;
+  padding: 14px 16px 18px;
+}
+
+.manual-qa-test-page .installment-confirm-screen {
+  gap: 6px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+  padding: 8px 12px 10px;
+  overflow: hidden;
+}
+
+.manual-qa-test-page .installment-statusbar {
+  min-height: 32px;
+  padding: 6px 18px 0;
+}
+
+.manual-qa-test-page .installment-appbar {
+  min-height: 48px;
+  padding: 2px 16px 8px;
+}
+
+.manual-qa-test-page .installment-merchant {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+
+.manual-qa-test-page .installment-merchant-logo {
+  width: 76px;
+  font-size: 13px;
+}
+
+.manual-qa-test-page .installment-merchant strong {
+  font-size: 16px;
+  line-height: 21px;
+}
+
+.manual-qa-test-page .installment-merchant span {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.manual-qa-test-page .installment-field {
+  font-size: 15px;
+}
+
+.manual-qa-test-page .installment-field input {
+  min-height: 48px;
+  font-size: 18px;
+}
+
+.manual-qa-test-page .installment-primary {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.manual-qa-test-page .installment-details {
+  gap: 6px;
+}
+
+.manual-qa-test-page .installment-details > strong {
+  font-size: 15px;
+  line-height: 19px;
+}
+
+.manual-qa-test-page .installment-details dl {
+  gap: 4px;
+}
+
+.manual-qa-test-page .installment-details dl div {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.manual-qa-test-page .installment-premium-banner {
+  grid-template-columns: 32px minmax(0, 1fr) 24px;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 12px;
+}
+
+.manual-qa-test-page .installment-premium-banner > span {
+  width: 28px;
+  height: 28px;
+}
+
+.manual-qa-test-page .installment-premium-banner strong {
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.manual-qa-test-page .installment-premium-banner small {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.manual-qa-test-page .installment-premium-banner button {
+  width: 22px;
+  height: 22px;
+}
+
+.manual-qa-test-page .installment-spacer {
+  min-height: 0;
+}
+
+.manual-qa-test-page .installment-widget {
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.manual-qa-test-page .installment-widget-header {
+  grid-template-columns: 30px minmax(0, 1fr) 28px 46px;
+  gap: 8px;
+}
+
+.manual-qa-test-page .installment-brand-mark,
+.manual-qa-test-page .installment-sheet-logo {
+  width: 28px;
+  height: 28px;
+}
+
+.manual-qa-test-page .installment-widget-header strong {
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.manual-qa-test-page .installment-widget-header small,
+.manual-qa-test-page .installment-blue-note {
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.manual-qa-test-page .installment-blue-note {
+  padding: 6px 7px;
+}
+
+.manual-qa-test-page .installment-switch {
+  width: 44px;
+  height: 26px;
+}
+
+.manual-qa-test-page .installment-switch span::before {
+  width: 20px;
+  height: 20px;
+}
+
+.manual-qa-test-page .installment-switch input:checked + span::before {
+  transform: translateX(18px);
+}
+
+.manual-qa-test-page .installment-timeline {
+  gap: 8px;
+}
+
+.manual-qa-test-page .installment-timeline span {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.manual-qa-test-page .installment-timeline strong {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.manual-qa-test-page .installment-range {
+  height: 6px;
+}
+
+.manual-qa-test-page .installment-range span {
+  top: -3px;
+  width: 12px;
+  height: 12px;
+}
+
+.manual-qa-test-page .installment-card-block {
+  gap: 6px;
+}
+
+.manual-qa-test-page .installment-card-block h3 {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.manual-qa-test-page .installment-card-row {
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 8px;
+}
+
+.manual-qa-test-page .installment-card {
+  min-height: 48px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 8px;
+}
+
+.manual-qa-test-page .installment-card svg {
+  width: 24px;
+  height: 24px;
+}
+
+.manual-qa-test-page .installment-card strong {
+  font-size: 13px;
+  line-height: 17px;
+}
+
+.manual-qa-test-page .installment-card small {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.manual-qa-test-page .installment-card-row button {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.manual-qa-test-page .installment-agreement {
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.manual-qa-test-page .installment-confirm-screen .installment-primary {
+  min-height: 34px;
 }
 
 .manual-qa-report-summary {

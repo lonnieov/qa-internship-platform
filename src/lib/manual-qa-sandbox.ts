@@ -98,32 +98,123 @@ export const clickSuperAppClickAvtoPresetConfig = {
   ],
 } satisfies ManualQaSandboxConfig;
 
+export const clickSuperAppInstallmentWidgetPresetConfig = {
+  mode: "MANUAL_QA_SANDBOX",
+  scenarioTitle: "ClickSuperApp: installment payment widget",
+  mission:
+    "Проверьте payment flow Shishka в ClickSuperApp: ввод суммы, экран подтверждения, доступность виджета рассрочки, активацию/деактивацию и bottom sheet по кнопке с вопросом.",
+  appPreset: "click-super-app-installment-widget-v1",
+  viewport: { width: 390, height: 844 },
+  timeHintMinutes: 14,
+  bugCategories: [
+    "functional",
+    "validation",
+    "boundary",
+    "state",
+    "modal",
+    "payment",
+    "mobile-ui",
+  ],
+  knownBugs: [
+    {
+      id: "installment-max-boundary-hidden",
+      title: "Виджет рассрочки не отображается для валидной суммы 200000 UZS",
+      severity: "critical",
+      matchKeywords: [
+        "200000",
+        "200 000",
+        "max",
+        "maximum",
+        "boundary",
+        "границ",
+        "виджет",
+      ],
+    },
+    {
+      id: "installment-active-state-survives-invalid-amount",
+      title:
+        "После активации рассрочки можно вернуться, ввести сумму вне диапазона и сохранить deferred payment state",
+      severity: "critical",
+      matchKeywords: [
+        "500",
+        "invalid",
+        "range",
+        "диапазон",
+        "deferred",
+        "active",
+        "state",
+      ],
+    },
+    {
+      id: "installment-card-label-sticky-after-disable",
+      title:
+        "После деактивации рассрочки подпись карты остаётся в режиме automatic debiting",
+      severity: "major",
+      matchKeywords: [
+        "deactivate",
+        "disable",
+        "выключ",
+        "automatically",
+        "debiting",
+        "card",
+        "карта",
+      ],
+    },
+    {
+      id: "installment-bottom-sheet-period-mismatch",
+      title:
+        "Bottom sheet по кнопке ? показывает срок 30 дней вместо 10 дней из виджета",
+      severity: "major",
+      matchKeywords: ["bottom", "sheet", "30", "10", "period", "срок", "дней"],
+    },
+    {
+      id: "installment-bottom-sheet-ignores-got-it",
+      title: "Кнопка Got it в bottom sheet не закрывает информационный экран",
+      severity: "minor",
+      matchKeywords: ["got it", "close", "закры", "bottom", "sheet", "modal"],
+    },
+  ],
+} satisfies ManualQaSandboxConfig;
+
 export const manualQaPresetOptions = [
   {
     value: clickSuperAppClickAvtoPresetConfig.appPreset,
     label: "ClickSuperApp / ClickAvto",
     config: clickSuperAppClickAvtoPresetConfig,
   },
+  {
+    value: clickSuperAppInstallmentWidgetPresetConfig.appPreset,
+    label: "ClickSuperApp / Рассрочка",
+    config: clickSuperAppInstallmentWidgetPresetConfig,
+  },
 ] as const;
+
+export function getManualQaPresetConfig(appPreset: string | undefined) {
+  return (
+    manualQaPresetOptions.find((option) => option.value === appPreset)
+      ?.config ?? clickSuperAppClickAvtoPresetConfig
+  );
+}
 
 export function getManualQaSandboxConfig(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
   const config = value as Partial<ManualQaSandboxConfig>;
   if (config.mode !== "MANUAL_QA_SANDBOX") return null;
+  const presetConfig = getManualQaPresetConfig(config.appPreset);
 
   return {
-    ...clickSuperAppClickAvtoPresetConfig,
+    ...presetConfig,
     ...config,
     viewport: {
-      ...clickSuperAppClickAvtoPresetConfig.viewport,
+      ...presetConfig.viewport,
       ...(config.viewport && typeof config.viewport === "object"
         ? config.viewport
         : {}),
     },
     bugCategories: Array.isArray(config.bugCategories)
       ? config.bugCategories.filter((item) => typeof item === "string")
-      : clickSuperAppClickAvtoPresetConfig.bugCategories,
+      : presetConfig.bugCategories,
     knownBugs: Array.isArray(config.knownBugs)
       ? config.knownBugs.filter(
           (item): item is ManualQaKnownBug =>
@@ -133,7 +224,7 @@ export function getManualQaSandboxConfig(value: unknown) {
             typeof (item as ManualQaKnownBug).id === "string" &&
             typeof (item as ManualQaKnownBug).title === "string",
         )
-      : clickSuperAppClickAvtoPresetConfig.knownBugs,
+      : presetConfig.knownBugs,
   };
 }
 
@@ -142,7 +233,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function cleanText(value: unknown, maxLength: number) {
-  return String(value ?? "").trim().slice(0, maxLength);
+  return String(value ?? "")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function cleanSeverity(value: unknown): ManualQaBugReport["severity"] {
@@ -170,9 +263,7 @@ export function normalizeManualQaReports(value: unknown) {
       expected: cleanText(item.expected, 800),
       note: cleanText(item.note, 800) || undefined,
     }))
-    .filter(
-      (item) => item.title || item.steps || item.actual || item.expected,
-    );
+    .filter((item) => item.title || item.steps || item.actual || item.expected);
 }
 
 export function getManualQaAnswerPayload(value: unknown) {

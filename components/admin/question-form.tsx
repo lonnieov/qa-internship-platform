@@ -17,6 +17,7 @@ import {
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import {
   clickSuperAppClickAvtoPresetConfig,
+  getManualQaPresetConfig,
   getManualQaSandboxConfig,
   manualQaPresetOptions,
 } from "@/lib/manual-qa-sandbox";
@@ -121,9 +122,19 @@ export function QuestionForm({
   const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
   const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
   const config = getConfig(question);
-  const manualQaConfig =
+  const initialManualQaConfig =
     getManualQaSandboxConfig(question?.apiConfig) ??
     clickSuperAppClickAvtoPresetConfig;
+  const [draftManualQaPresetId, setDraftManualQaPresetId] = useState(
+    initialManualQaConfig.appPreset,
+  );
+  const selectedManualQaPresetConfig = getManualQaPresetConfig(
+    draftManualQaPresetId,
+  );
+  const manualQaConfig =
+    draftManualQaPresetId === initialManualQaConfig.appPreset
+      ? initialManualQaConfig
+      : selectedManualQaPresetConfig;
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
     (left, right) => left.order - right.order,
@@ -132,6 +143,18 @@ export function QuestionForm({
   const title = isEditing ? "Редактировать вопрос" : "Новый вопрос";
   const action = isEditing ? updateQuestionAction : createQuestionAction;
   const submitLabel = isEditing ? "Сохранить изменения" : "Добавить вопрос";
+  const defaultQuestionText =
+    questionType === "MANUAL_QA_SANDBOX" &&
+    draftManualQaPresetId !== initialManualQaConfig.appPreset
+      ? manualQaConfig.mission
+      : (question?.text ??
+        (questionType === "QUIZ"
+          ? "Что проверяет smoke testing?"
+          : questionType === "API_SANDBOX"
+            ? "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201."
+            : questionType === "MANUAL_QA_SANDBOX"
+              ? manualQaConfig.mission
+              : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response."));
   const form = (
     <form action={action} className="form-grid">
       {question ? (
@@ -144,8 +167,7 @@ export function QuestionForm({
         type="hidden"
         name="track"
         value={
-          draftTrack?.name ??
-          (question ? getTrackDisplayName(question) : "QA")
+          draftTrack?.name ?? (question ? getTrackDisplayName(question) : "QA")
         }
       />
 
@@ -192,7 +214,10 @@ export function QuestionForm({
           {selectableTracks.map((track) => {
             const meta = getQuestionTrackMeta(track);
             return (
-              <label className="question-form-choice" key={track.id ?? track.slug}>
+              <label
+                className="question-form-choice"
+                key={track.id ?? track.slug}
+              >
                 <input
                   checked={draftTrackId === track.id}
                   name="trackChoice"
@@ -223,18 +248,9 @@ export function QuestionForm({
         </Label>
         <Textarea
           id="text"
-          key={questionType}
+          key={`${questionType}-${manualQaConfig.appPreset}`}
           name="text"
-          defaultValue={
-            question?.text ??
-            (questionType === "QUIZ"
-              ? "Что проверяет smoke testing?"
-              : questionType === "API_SANDBOX"
-                ? "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201."
-                : questionType === "MANUAL_QA_SANDBOX"
-                  ? clickSuperAppClickAvtoPresetConfig.mission
-                  : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response.")
-          }
+          defaultValue={defaultQuestionText}
           required
         />
       </div>
@@ -464,7 +480,8 @@ export function QuestionForm({
             <Select
               id="manualQaPreset"
               name="manualQaPreset"
-              defaultValue={manualQaConfig.appPreset}
+              onChange={(event) => setDraftManualQaPresetId(event.target.value)}
+              value={draftManualQaPresetId}
             >
               {manualQaPresetOptions.map((preset) => (
                 <option key={preset.value} value={preset.value}>
@@ -474,90 +491,91 @@ export function QuestionForm({
             </Select>
           </div>
 
-          <div className="form-grid">
-            <Label htmlFor="manualQaScenarioTitle">Название сценария</Label>
-            <Input
-              id="manualQaScenarioTitle"
-              name="manualQaScenarioTitle"
-              defaultValue={manualQaConfig.scenarioTitle}
-              required
-            />
-          </div>
+          <div className="form-grid" key={manualQaConfig.appPreset}>
+            <div className="form-grid">
+              <Label htmlFor="manualQaScenarioTitle">Название сценария</Label>
+              <Input
+                id="manualQaScenarioTitle"
+                name="manualQaScenarioTitle"
+                defaultValue={manualQaConfig.scenarioTitle}
+                required
+              />
+            </div>
 
-          <div className="grid-2">
-            <div className="form-grid">
-              <Label htmlFor="manualQaViewportWidth">Viewport width</Label>
-              <Input
-                id="manualQaViewportWidth"
-                name="manualQaViewportWidth"
-                type="number"
-                min="320"
-                max="520"
-                defaultValue={manualQaConfig.viewport.width}
-                required
-              />
+            <div className="grid-2">
+              <div className="form-grid">
+                <Label htmlFor="manualQaViewportWidth">Viewport width</Label>
+                <Input
+                  id="manualQaViewportWidth"
+                  name="manualQaViewportWidth"
+                  type="number"
+                  min="320"
+                  max="520"
+                  defaultValue={manualQaConfig.viewport.width}
+                  required
+                />
+              </div>
+              <div className="form-grid">
+                <Label htmlFor="manualQaViewportHeight">Viewport height</Label>
+                <Input
+                  id="manualQaViewportHeight"
+                  name="manualQaViewportHeight"
+                  type="number"
+                  min="568"
+                  max="980"
+                  defaultValue={manualQaConfig.viewport.height}
+                  required
+                />
+              </div>
             </div>
-            <div className="form-grid">
-              <Label htmlFor="manualQaViewportHeight">Viewport height</Label>
-              <Input
-                id="manualQaViewportHeight"
-                name="manualQaViewportHeight"
-                type="number"
-                min="568"
-                max="980"
-                defaultValue={manualQaConfig.viewport.height}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="grid-2">
-            <div className="form-grid">
-              <Label htmlFor="manualQaTimeHintMinutes">Рекоменд. минуты</Label>
-              <Input
-                id="manualQaTimeHintMinutes"
-                name="manualQaTimeHintMinutes"
-                type="number"
-                min="1"
-                max="60"
-                defaultValue={manualQaConfig.timeHintMinutes}
-                required
-              />
+            <div className="grid-2">
+              <div className="form-grid">
+                <Label htmlFor="manualQaTimeHintMinutes">
+                  Рекоменд. минуты
+                </Label>
+                <Input
+                  id="manualQaTimeHintMinutes"
+                  name="manualQaTimeHintMinutes"
+                  type="number"
+                  min="1"
+                  max="60"
+                  defaultValue={manualQaConfig.timeHintMinutes}
+                  required
+                />
+              </div>
+              <div className="form-grid">
+                <Label htmlFor="manualQaCategories">
+                  Категории через запятую
+                </Label>
+                <Input
+                  id="manualQaCategories"
+                  name="manualQaCategories"
+                  defaultValue={manualQaConfig.bugCategories.join(", ")}
+                  required
+                />
+              </div>
             </div>
-            <div className="form-grid">
-              <Label htmlFor="manualQaCategories">
-                Категории через запятую
-              </Label>
-              <Input
-                id="manualQaCategories"
-                name="manualQaCategories"
-                defaultValue={manualQaConfig.bugCategories.join(", ")}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="form-grid">
-            <Label htmlFor="manualQaKnownBugs">Known bugs rubric</Label>
-            <JsonEditor
-              id="manualQaKnownBugs"
-              name="manualQaKnownBugs"
-              defaultValue={stringifyJson(
-                manualQaConfig.knownBugs,
-                stringifyJson(
-                  clickSuperAppClickAvtoPresetConfig.knownBugs,
-                  "[]",
-                ),
-              )}
-            />
+            <div className="form-grid">
+              <Label htmlFor="manualQaKnownBugs">Known bugs rubric</Label>
+              <JsonEditor
+                id="manualQaKnownBugs"
+                name="manualQaKnownBugs"
+                defaultValue={stringifyJson(
+                  manualQaConfig.knownBugs,
+                  stringifyJson(selectedManualQaPresetConfig.knownBugs, "[]"),
+                )}
+              />
+            </div>
           </div>
 
           <div className="soft-panel stack">
             <strong>Этот тип требует ручной проверки</strong>
             <p className="body-2 muted m-0">
-              Стажёр будет искать баги в miniapp и оформлять баг-репорты.
-              Known bugs нужны для рубрики проверяющего и будущей
-              полуавтоматической оценки.
+              Стажёр будет искать баги в miniapp и оформлять баг-репорты. Known
+              bugs нужны для рубрики проверяющего и будущей полуавтоматической
+              оценки.
             </p>
           </div>
         </div>

@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
 import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
+import { ClickSuperAppInstallmentWidgetPreset } from "@/components/intern/manual-qa-presets/click-super-app-installment-widget";
 import {
   getManualQaAnswerPayload,
   getManualQaSandboxConfig,
@@ -221,6 +222,14 @@ function buildDevtoolsEndpoint(
   }
 
   return `/api/devtools-sandbox/${question.id}/${path}?${search.toString()}`;
+}
+
+function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
+  if (appPreset === "click-super-app-installment-widget-v1") {
+    return <ClickSuperAppInstallmentWidgetPreset />;
+  }
+
+  return <ClickSuperAppClickAvtoPreset />;
 }
 
 export function TestRunner({
@@ -621,7 +630,10 @@ export function TestRunner({
     }, 0);
   }
 
-  function updateManualQaDraft(questionId: string, patch: Partial<ManualQaDraft>) {
+  function updateManualQaDraft(
+    questionId: string,
+    patch: Partial<ManualQaDraft>,
+  ) {
     setManualQaDrafts((prev) => {
       const next = new Map(prev);
       const question = questions.find((item) => item.id === questionId);
@@ -688,7 +700,9 @@ export function TestRunner({
 
     updateManualQaDraft(currentQuestion.id, {
       noBugsFound: value,
-      reports: value ? [] : manualQaDrafts.get(currentQuestion.id)?.reports ?? [],
+      reports: value
+        ? []
+        : (manualQaDrafts.get(currentQuestion.id)?.reports ?? []),
       answerSaveStatus: "idle",
     });
   }
@@ -845,7 +859,13 @@ export function TestRunner({
       : null;
 
   return (
-    <main className="page test-page-compact stack-lg">
+    <main
+      className={`page test-page-compact stack-lg ${
+        currentQuestion.type === "MANUAL_QA_SANDBOX"
+          ? "manual-qa-test-page"
+          : ""
+      }`}
+    >
       <section className="grid-2">
         <Card>
           <CardHeader className="test-card-header">
@@ -874,7 +894,9 @@ export function TestRunner({
                 onClick={() => setIsCommentDialogOpen(true)}
               >
                 <MessageSquare size={16} />
-                {currentQuestionComment.trim() ? "Комментарий" : "Комментировать"}
+                {currentQuestionComment.trim()
+                  ? "Комментарий"
+                  : "Комментировать"}
               </Button>
             </div>
           </CardHeader>
@@ -954,16 +976,21 @@ export function TestRunner({
             ) : currentManualQaDraft && currentManualQaConfig ? (
               <div className="manual-qa-task-layout">
                 <div className="manual-qa-task-app">
-                  <ClickSuperAppClickAvtoPreset />
+                  <ManualQaPresetRenderer
+                    appPreset={currentManualQaConfig.appPreset}
+                  />
                 </div>
 
                 <div className="manual-qa-report-panel">
-                  <div className="nav-row" style={{ justifyContent: "space-between" }}>
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
                     <div>
                       <strong>Баг-репорты</strong>
                       <p className="body-2 muted m-0">
-                        Заполняйте только дефекты, которые смогли
-                        воспроизвести в miniapp.
+                        Заполняйте только дефекты, которые смогли воспроизвести
+                        в miniapp.
                       </p>
                     </div>
                     <Badge variant="muted">
@@ -982,8 +1009,8 @@ export function TestRunner({
                     <span>
                       <strong>Баги не найдены</strong>
                       <small>
-                        Используйте только если осознанно завершили проверку
-                        без дефектов.
+                        Используйте только если осознанно завершили проверку без
+                        дефектов.
                       </small>
                     </span>
                   </label>
@@ -1360,7 +1387,6 @@ export function TestRunner({
                   <ArrowRight size={18} />
                 </Button>
               </div>
-
             </div>
           </CardContent>
         </Card>
@@ -1399,7 +1425,7 @@ export function TestRunner({
                         ? hasCompleteManualQaAnswer(
                             manualQaDrafts.get(question.id),
                           )
-                      : Boolean(answers.get(question.id));
+                        : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
                   const commented = Boolean(
                     commentDrafts.get(question.id)?.trim(),
@@ -1547,8 +1573,8 @@ export function TestRunner({
                 </Badge>
               </div>
               <p className="body-2 muted m-0">
-                Напишите, что должен увидеть ревьювер: например, нет
-                корректного ответа, фото не грузится или условие сформулировано
+                Напишите, что должен увидеть ревьювер: например, нет корректного
+                ответа, фото не грузится или условие сформулировано
                 неоднозначно.
               </p>
               <Textarea
