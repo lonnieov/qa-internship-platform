@@ -2009,6 +2009,21 @@ button {
   overflow: auto;
 }
 
+.invitation-modal {
+  width: min(520px, calc(100vw - 48px));
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: auto;
+}
+
+.invitation-form-embedded {
+  padding: 20px;
+}
+
+.invitation-form-embedded form > button[type="submit"] {
+  justify-self: end;
+  min-width: 150px;
+}
+
 .question-modal .edit-question-form {
   margin: 0;
   border: 0;

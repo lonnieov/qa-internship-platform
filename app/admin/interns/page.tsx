@@ -3,7 +3,7 @@ import { FileText, Search } from "lucide-react";
 import { revokeInvitationAction } from "@/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { formatPercent } from "@/lib/utils";
-import { InvitationForm } from "@/components/admin/invitation-form";
+import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
 import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,11 +65,10 @@ export default async function AdminInternsPage({
             Токен хранится в базе только в виде SHA-256 хэша.
           </p>
         </div>
+        <InvitationCreateModal />
       </div>
 
-      <section className="grid-2 interns-layout">
-        <InvitationForm />
-
+      <section>
         <Card>
           <CardHeader>
             <CardTitle>Последние токены</CardTitle>
