@@ -8,6 +8,10 @@ Show interns and newly issued token candidates in one admin list.
 
 - `/admin/interns` renders a single `Список стажёров` table.
 - A candidate appears in the list immediately after token creation.
+- New candidates are shown first by default.
+- Search updates automatically with a debounce as the admin types.
+- The table is paginated by 10 rows.
+- Each table column can be sorted by clicking its header.
 - Clicking a row opens a modal with masked token history, attempts, results, and token action.
 - New access tokens are created from the selected intern row modal.
 - Newly created tokens are added to the open row modal immediately.
@@ -26,8 +30,10 @@ Show interns and newly issued token candidates in one admin list.
 ## Main Flow
 
 - Admin opens `/admin/interns`.
+- Admin types in the search field and the list refreshes after a short pause.
 - Admin creates a token.
 - The candidate appears in `Список стажёров`.
+- Admin sorts or pages through the table when needed.
 - Admin clicks the row.
 - The modal shows masked access tokens and lets the admin copy available tokens.
 - The modal lets the admin create another token.
@@ -38,6 +44,7 @@ Show interns and newly issued token candidates in one admin list.
 
 - `app/admin/interns/page.tsx`
 - `components/admin/intern-candidate-table.tsx`
+- `components/admin/intern-search-form.tsx`
 - `components/admin/retake-invitation-form.tsx`
 - `src/actions/admin.ts`
 - `src/lib/security.ts`
@@ -53,3 +60,4 @@ Show interns and newly issued token candidates in one admin list.
 - Pending candidates do not have attempts until first token login creates an intern profile.
 - Token-only candidates can still receive another token from their row modal.
 - Historical retake tokens are associated by name when no direct profile relation remains.
+- The admin page keeps table navigation inside the card to avoid page-level vertical scrolling on desktop.

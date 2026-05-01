@@ -286,6 +286,11 @@ button {
   min-width: 0;
 }
 
+.admin-content:has(.admin-interns-page) {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .admin-content > .page {
   width: min(1180px, calc(100% - 64px));
 }
@@ -645,6 +650,30 @@ button {
 .stack-lg {
   display: grid;
   gap: 24px;
+}
+
+.admin-interns-page {
+  height: 100vh;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  overflow: hidden;
+  padding: 24px 0;
+}
+
+.admin-interns-page .page-header {
+  margin-bottom: 0;
+}
+
+.admin-interns-card {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.admin-interns-card-content {
+  display: grid;
+  min-height: 0;
+  align-items: start;
 }
 
 .grid-2 {
@@ -1570,6 +1599,45 @@ button {
   cursor: pointer;
 }
 
+.table-sort-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.table-sort-button span {
+  color: var(--primary);
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.candidate-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.candidate-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .candidate-table-row:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: -2px;
@@ -1585,18 +1653,60 @@ button {
 
 .intern-search-form {
   display: flex;
-  width: min(100%, 560px);
+  width: min(100%, 480px);
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
-.intern-search-form input {
-  min-width: 220px;
+.intern-search-field {
+  position: relative;
+  display: block;
+  min-width: 260px;
+  flex: 1;
+  color: var(--muted-foreground);
+}
+
+.intern-search-field svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  z-index: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.intern-search-field input {
+  min-width: 0;
+  width: 100%;
+  padding-left: 40px;
 }
 
 .intern-search-button {
   min-width: 96px;
+}
+
+.candidate-empty-state {
+  min-height: min(420px, calc(100vh - 320px));
+  place-items: center;
+  border-style: solid;
+}
+
+.candidate-empty-state > div {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  text-align: center;
+}
+
+.candidate-empty-state strong {
+  display: block;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.candidate-empty-state p {
+  margin: 0;
 }
 
 .intern-actions-cell {
@@ -3462,6 +3572,15 @@ button {
     width: min(100% - 32px, 1180px);
   }
 
+  .admin-content:has(.admin-interns-page) {
+    overflow: visible;
+  }
+
+  .admin-interns-page {
+    height: auto;
+    overflow: visible;
+  }
+
   .question-bank-layout,
   .question-bank-card,
   .question-option-grid {
@@ -3507,6 +3626,10 @@ button {
   .intern-search-form input {
     min-width: min(100%, 260px);
     flex: 1;
+  }
+
+  .intern-search-field input {
+    min-width: 0;
   }
 
   .grid-2,

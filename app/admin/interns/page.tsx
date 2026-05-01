@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { decryptInviteCode } from "@/lib/security";
 import { formatPercent } from "@/lib/utils";
@@ -7,10 +5,9 @@ import {
   InternCandidateTable,
   type CandidateRow,
 } from "@/components/admin/intern-candidate-table";
+import { InternSearchForm } from "@/components/admin/intern-search-form";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 function formatDateTime(value: Date | null | undefined) {
   if (!value) return "—";
@@ -97,6 +94,13 @@ export default async function AdminInternsPage({
         ? "идёт попытка"
         : formatDateTime(latest?.submittedAt),
       resultLabel: latest ? formatPercent(latest.scorePercent) : "нет попыток",
+      createdAtSort:
+        latestInvitation?.createdAt.getTime() ?? intern.createdAt.getTime(),
+      attemptAtSort:
+        activeAttempt?.startedAt.getTime() ??
+        latest?.submittedAt?.getTime() ??
+        0,
+      resultSort: latest?.scorePercent ?? null,
       badgeVariant: activeAttempt ? "warning" : "success",
       invitations: internInvitations.map((invitation) => ({
         id: invitation.id,
@@ -149,6 +153,9 @@ export default async function AdminInternsPage({
       accessLabel: latestInvitation.status,
       attemptLabel: "профиль не создан",
       resultLabel: "—",
+      createdAtSort: latestInvitation.createdAt.getTime(),
+      attemptAtSort: 0,
+      resultSort: null,
       badgeVariant:
         latestInvitation.status === "REVOKED"
           ? "danger"
@@ -169,8 +176,10 @@ export default async function AdminInternsPage({
     });
   }
 
+  rows.sort((left, right) => right.createdAtSort - left.createdAtSort);
+
   return (
-    <main className="page stack-lg">
+    <main className="page stack-lg admin-interns-page">
       <div className="page-header">
         <div>
           <h1 className="head-1">Стажёры и доступы</h1>
@@ -181,7 +190,7 @@ export default async function AdminInternsPage({
         <InvitationCreateModal />
       </div>
 
-      <Card>
+      <Card className="admin-interns-card">
         <CardHeader className="intern-profiles-header">
           <div>
             <CardTitle>Список стажёров</CardTitle>
@@ -191,27 +200,10 @@ export default async function AdminInternsPage({
                 : "Новые стажёры появляются здесь сразу после создания."}
             </p>
           </div>
-          <form className="intern-search-form" action="/admin/interns">
-            <Input
-              aria-label="Поиск по ФИО"
-              defaultValue={internSearch}
-              name="q"
-              placeholder="Поиск по ФИО"
-              type="search"
-            />
-            <Button className="intern-search-button" type="submit">
-              <Search size={16} />
-              Найти
-            </Button>
-            {internSearch ? (
-              <Button variant="outline" type="button" asChild>
-                <Link href="/admin/interns">Сбросить</Link>
-              </Button>
-            ) : null}
-          </form>
+          <InternSearchForm key={internSearch} initialQuery={internSearch} />
         </CardHeader>
-        <CardContent>
-          <InternCandidateTable rows={rows} />
+        <CardContent className="admin-interns-card-content">
+          <InternCandidateTable key={internSearch} rows={rows} />
         </CardContent>
       </Card>
     </main>

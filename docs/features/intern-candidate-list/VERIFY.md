@@ -10,12 +10,15 @@
 - Open `/admin/interns`.
 - Expected: there is one `Список стажёров` table.
 - Expected: separate `Последние токены` and `Профили стажёров` cards are not shown.
+- Expected: the first page shows no more than 10 rows.
+- Expected: the page itself does not get a vertical scrollbar on a desktop viewport.
 
 ## Positive Case
 
 - Click `Создать стажёра`.
 - Enter `Алина Каримова` and submit.
 - Expected: `Алина Каримова` appears in `Список стажёров` after the page refreshes.
+- Expected: the new candidate appears near the top before older candidates.
 - Click the `Алина Каримова` row.
 - Expected: a modal opens with the token listed in `Токены доступа`.
 - Expected: the token table shows a masked token value, not the full token.
@@ -41,6 +44,13 @@
 ## Regression Check
 
 - Search by `Алина`.
+- Expected: results update automatically after typing pauses, without clicking a search button.
 - Expected: matching token-only candidates and intern profiles remain visible.
+- Search for `zzzz-no-match`.
+- Expected: the empty state is centered and compact, with clear reset guidance.
+- Click each column header: `Стажёр`, `Доступ`, `Последняя попытка`, `Результат`.
+- Expected: rows reorder by the clicked column and the sort indicator changes direction when clicked again.
+- If more than 10 rows exist, click `Вперёд`.
+- Expected: the next 10 rows are shown and `Назад` returns to the previous page.
 - Open a completed intern row and click `Создать токен`.
 - Expected: a new access token is issued from the row modal.

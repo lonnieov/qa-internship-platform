@@ -14,6 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
+type SortKey = "created" | "name" | "access" | "attempt" | "result";
+type SortDirection = "asc" | "desc";
+
+const pageSize = 10;
 
 export type CandidateInvitation = {
   id: string;
@@ -43,6 +47,9 @@ export type CandidateRow = {
   accessLabel: string;
   attemptLabel: string;
   resultLabel: string;
+  createdAtSort: number;
+  attemptAtSort: number;
+  resultSort: number | null;
   badgeVariant: BadgeVariant;
   invitations: CandidateInvitation[];
   attempts: CandidateAttempt[];
@@ -185,6 +192,10 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
     Record<string, CandidateInvitation[]>
   >({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("created");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [page, setPage] = useState(1);
+
   const tableRows = rows.map((row) => {
     const additions = localInvitations[row.id] ?? [];
     const existingIds = new Set(row.invitations.map((item) => item.id));
@@ -200,7 +211,59 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
       invitations: [...mergedAdditions, ...row.invitations],
     };
   });
+  const sortedRows = [...tableRows].sort((left, right) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    if (sortKey === "created") {
+      return (left.createdAtSort - right.createdAtSort) * direction;
+    }
+
+    if (sortKey === "name") {
+      return left.name.localeCompare(right.name, "ru") * direction;
+    }
+
+    if (sortKey === "access") {
+      return (
+        invitationStatusLabel(left.accessLabel).localeCompare(
+          invitationStatusLabel(right.accessLabel),
+          "ru",
+        ) * direction
+      );
+    }
+
+    if (sortKey === "attempt") {
+      return (left.attemptAtSort - right.attemptAtSort) * direction;
+    }
+
+    const leftResult = left.resultSort ?? -1;
+    const rightResult = right.resultSort ?? -1;
+    return (leftResult - rightResult) * direction;
+  });
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = sortedRows.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
   const selected = tableRows.find((row) => row.id === selectedId) ?? null;
+
+  function toggleSort(nextKey: SortKey) {
+    setPage(1);
+    if (sortKey === nextKey) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(nextKey);
+    setSortDirection(
+      nextKey === "name" || nextKey === "access" ? "asc" : "desc",
+    );
+  }
+
+  function sortLabel(key: SortKey) {
+    if (sortKey !== key) return "↕";
+    return sortDirection === "asc" ? "↑" : "↓";
+  }
 
   function addInvitationToSelected(
     invitation: NonNullable<InvitationState["invitation"]>,
@@ -220,11 +283,14 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
 
   if (rows.length === 0) {
     return (
-      <div className="empty-state">
-        <strong>Стажёры не найдены</strong>
-        <p className="body-2 muted m-0">
-          Попробуйте изменить ФИО или сбросить поиск.
-        </p>
+      <div className="empty-state candidate-empty-state">
+        <div>
+          <strong>Ничего не найдено</strong>
+          <p className="body-2 muted m-0">
+            Измените запрос или сбросьте поиск, чтобы вернуться к полному
+            списку.
+          </p>
+        </div>
       </div>
     );
   }
@@ -235,14 +301,46 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
         <table className="table interns-table candidate-table">
           <thead>
             <tr>
-              <th>Стажёр</th>
-              <th>Доступ</th>
-              <th>Последняя попытка</th>
-              <th>Результат</th>
+              <th>
+                <button
+                  className="table-sort-button"
+                  type="button"
+                  onClick={() => toggleSort("name")}
+                >
+                  Стажёр <span>{sortLabel("name")}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  className="table-sort-button"
+                  type="button"
+                  onClick={() => toggleSort("access")}
+                >
+                  Доступ <span>{sortLabel("access")}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  className="table-sort-button"
+                  type="button"
+                  onClick={() => toggleSort("attempt")}
+                >
+                  Последняя попытка <span>{sortLabel("attempt")}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  className="table-sort-button"
+                  type="button"
+                  onClick={() => toggleSort("result")}
+                >
+                  Результат <span>{sortLabel("result")}</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {pageRows.map((row) => (
               <tr
                 key={row.id}
                 className="candidate-table-row"
@@ -270,6 +368,36 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="candidate-pagination">
+        <span>
+          {sortedRows.length > 0
+            ? `${(safePage - 1) * pageSize + 1}-${Math.min(
+                safePage * pageSize,
+                sortedRows.length,
+              )} из ${sortedRows.length}`
+            : "0 из 0"}
+        </span>
+        <div>
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            disabled={safePage === 1}
+            onClick={() => setPage(Math.max(1, safePage - 1))}
+          >
+            Назад
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            disabled={safePage === pageCount}
+            onClick={() => setPage(Math.min(pageCount, safePage + 1))}
+          >
+            Вперёд
+          </Button>
+        </div>
       </div>
 
       {selected ? (
