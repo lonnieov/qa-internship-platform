@@ -18,6 +18,7 @@ import {
   selectAnswerAction,
   submitManualQaAnswerAction,
   submitOpenQuizAnswerAction,
+  submitSqlSandboxAction,
   submitDevtoolsAnswerAction,
   spendQuestionTimeAction,
   submitApiSandboxAction,
@@ -39,6 +40,10 @@ import {
   getManualQaSandboxConfig,
   type ManualQaBugReport,
 } from "@/lib/manual-qa-sandbox";
+import {
+  getSqlSandboxConfig,
+  type SqlSandboxExecutionResult,
+} from "@/lib/sql-sandbox";
 
 type JsonValue =
   | null
@@ -63,7 +68,12 @@ type ResponseSnapshot = {
 
 type Question = {
   id: string;
-  type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX" | "MANUAL_QA_SANDBOX";
+  type:
+    | "QUIZ"
+    | "API_SANDBOX"
+    | "SQL_SANDBOX"
+    | "DEVTOOLS_SANDBOX"
+    | "MANUAL_QA_SANDBOX";
   track: string;
   text: string;
   explanation: string | null;
@@ -108,6 +118,13 @@ type ManualQaDraft = {
   noBugsFound: boolean;
   submissionCount: number;
   answerSaveStatus: "idle" | "saving" | "saved";
+};
+
+type SqlDraft = {
+  query: string;
+  response: SqlSandboxExecutionResult | null;
+  submissionCount: number;
+  isCorrect: boolean;
 };
 
 type CommentSaveStatus = "idle" | "saving" | "saved";
@@ -196,6 +213,29 @@ function createInitialManualQaDraft(question: Question): ManualQaDraft {
   };
 }
 
+function createInitialSqlDraft(question: Question): SqlDraft {
+  const request =
+    question.apiRequest &&
+    typeof question.apiRequest === "object" &&
+    !Array.isArray(question.apiRequest)
+      ? (question.apiRequest as { query?: unknown })
+      : null;
+
+  const response =
+    question.apiResponse &&
+    typeof question.apiResponse === "object" &&
+    !Array.isArray(question.apiResponse)
+      ? (question.apiResponse as SqlSandboxExecutionResult)
+      : null;
+
+  return {
+    query: typeof request?.query === "string" ? request.query : "",
+    response,
+    submissionCount: question.submissionCount,
+    isCorrect: question.isCorrect,
+  };
+}
+
 function hasCompleteManualQaAnswer(draft: ManualQaDraft | undefined) {
   if (!draft) return false;
   if (draft.noBugsFound) return true;
@@ -222,6 +262,12 @@ function buildDevtoolsEndpoint(
   }
 
   return `/api/devtools-sandbox/${question.id}/${path}?${search.toString()}`;
+}
+
+function getSqlConfig(question: Question) {
+  return question.type === "SQL_SANDBOX"
+    ? getSqlSandboxConfig(question.apiConfig)
+    : null;
 }
 
 function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
@@ -297,6 +343,25 @@ export function TestRunner({
           ]),
       ),
   );
+  const [sqlDrafts, setSqlDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => [question.id, createInitialSqlDraft(question)]),
+      ),
+  );
+  const [selectedSqlTables, setSelectedSqlTables] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => {
+            const config = getSqlConfig(question);
+            return [question.id, config?.tables[0]?.name ?? ""];
+          }),
+      ),
+  );
   const [remainingMs, setRemainingMs] = useState(
     Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
   );
@@ -310,9 +375,12 @@ export function TestRunner({
   const answeredCount = questions.filter((question) => {
     if (
       question.type === "API_SANDBOX" ||
-      question.type === "DEVTOOLS_SANDBOX"
+      question.type === "DEVTOOLS_SANDBOX" ||
+      question.type === "SQL_SANDBOX"
     ) {
-      return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
+      return question.type === "SQL_SANDBOX"
+        ? (sqlDrafts.get(question.id)?.submissionCount ?? 0) > 0
+        : (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
     }
 
     if (question.type === "MANUAL_QA_SANDBOX") {
@@ -466,6 +534,49 @@ export function TestRunner({
         next.get(currentQuestion.id) ?? createInitialApiDraft(currentQuestion);
       next.set(currentQuestion.id, { ...current, ...patch });
       return next;
+    });
+  }
+
+  function updateSqlDraft(questionId: string, patch: Partial<SqlDraft>) {
+    setSqlDrafts((prev) => {
+      const next = new Map(prev);
+      const question = questions.find((item) => item.id === questionId);
+      const current =
+        next.get(questionId) ?? (question ? createInitialSqlDraft(question) : null);
+      if (!current) return prev;
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function runSqlQuery() {
+    if (currentQuestion.type !== "SQL_SANDBOX") return;
+
+    const draft = sqlDrafts.get(currentQuestion.id) ?? createInitialSqlDraft(currentQuestion);
+    const timeSpentMs = Date.now() - enteredAtRef.current;
+    enteredAtRef.current = Date.now();
+
+    startTransition(() => {
+      void submitSqlSandboxAction({
+        attemptId,
+        questionId: currentQuestion.id,
+        query: draft.query,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setSqlDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(currentQuestion.id) ?? draft;
+          next.set(currentQuestion.id, {
+            ...current,
+            response: result.response ?? null,
+            submissionCount: current.submissionCount + 1,
+            isCorrect: Boolean(result.correct),
+          });
+          return next;
+        });
+      });
     });
   }
 
@@ -844,6 +955,24 @@ export function TestRunner({
       ? (apiDrafts.get(currentQuestion.id) ??
         createInitialApiDraft(currentQuestion))
       : null;
+  const currentSqlDraft =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? (sqlDrafts.get(currentQuestion.id) ?? createInitialSqlDraft(currentQuestion))
+      : null;
+  const currentSqlConfig =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? getSqlConfig(currentQuestion)
+      : null;
+  const currentSqlTable =
+    currentQuestion.type === "SQL_SANDBOX" && currentSqlConfig
+      ? currentSqlConfig.tables.find(
+          (table) =>
+            table.name ===
+            (selectedSqlTables.get(currentQuestion.id) ??
+              currentSqlConfig.tables[0]?.name ??
+              ""),
+        ) ?? currentSqlConfig.tables[0]
+      : null;
   const currentManualQaDraft =
     currentQuestion.type === "MANUAL_QA_SANDBOX"
       ? (manualQaDrafts.get(currentQuestion.id) ??
@@ -861,13 +990,19 @@ export function TestRunner({
   return (
     <main
       className={`page test-page-compact stack-lg ${
-        currentQuestion.type === "MANUAL_QA_SANDBOX"
+        currentQuestion.type === "SQL_SANDBOX"
+          ? "test-page-sql"
+          : currentQuestion.type === "MANUAL_QA_SANDBOX"
           ? "manual-qa-test-page"
           : ""
       }`}
     >
-      <section className="grid-2">
-        <Card>
+      <section
+        className={`grid-2 ${
+          currentQuestion.type === "SQL_SANDBOX" ? "test-layout-sql" : ""
+        }`}
+      >
+        <Card className={currentQuestion.type === "SQL_SANDBOX" ? "sql-main-card" : undefined}>
           <CardHeader className="test-card-header">
             <div
               className="nav-row"
@@ -882,6 +1017,8 @@ export function TestRunner({
                     ? "DevTools"
                     : currentQuestion.type === "API_SANDBOX"
                       ? "API Sandbox"
+                      : currentQuestion.type === "SQL_SANDBOX"
+                        ? "SQL Sandbox"
                       : currentQuestion.type === "MANUAL_QA_SANDBOX"
                         ? "Manual QA"
                         : "Quiz"}
@@ -973,6 +1110,208 @@ export function TestRunner({
                   </div>
                 )}
               </>
+            ) : currentSqlDraft && currentSqlConfig ? (
+              <div className="sql-workspace">
+                <div className="sql-center-column stack">
+                  <div className="surface sql-editor-panel stack">
+                    <div
+                      className="nav-row"
+                      style={{ justifyContent: "space-between" }}
+                    >
+                      <div className="stack" style={{ gap: 8 }}>
+                        <strong>SQL Query</strong>
+                        <div className="nav-row">
+                          <span className="type-chip">{currentSqlConfig.dialect}</span>
+                          {currentSqlConfig.expectedResult.columns.map((column) => (
+                            <span className="type-chip" key={column}>
+                              {column}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {currentSqlDraft.submissionCount > 0 ? (
+                        <Badge
+                          variant={currentSqlDraft.isCorrect ? "success" : "warning"}
+                        >
+                          {currentSqlDraft.isCorrect ? "зачтено" : "нужно исправить"}
+                        </Badge>
+                      ) : (
+                        <Badge variant="muted">есть результат</Badge>
+                      )}
+                    </div>
+
+                    <Textarea
+                      className="sql-editor"
+                      data-track="sql-query"
+                      onChange={(event) =>
+                        updateSqlDraft(currentQuestion.id, {
+                          query: event.target.value,
+                        })
+                      }
+                      placeholder="Введите SQL-запрос"
+                      value={currentSqlDraft.query}
+                    />
+
+                    <div
+                      className="nav-row"
+                      style={{ justifyContent: "space-between" }}
+                    >
+                      <div className="nav-row">
+                        <Button
+                          disabled={isPending || !currentSqlDraft.query.trim()}
+                          onClick={runSqlQuery}
+                          type="button"
+                        >
+                          <Send size={18} />
+                          Выполнить
+                        </Button>
+                        <span className="body-2 muted">
+                          Запусков: {currentSqlDraft.submissionCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="surface sql-result-panel stack">
+                    <div
+                      className="nav-row"
+                      style={{ justifyContent: "space-between" }}
+                    >
+                      <strong>Результат запроса</strong>
+                      {currentSqlDraft.response?.rows ? (
+                        <Badge variant="success">
+                          {currentSqlDraft.response.rows.length} rows
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    {currentSqlDraft.response?.error ? (
+                      <div className="soft-panel" style={{ color: "var(--destructive)" }}>
+                        {currentSqlDraft.response.error}
+                      </div>
+                    ) : currentSqlDraft.response &&
+                      currentSqlDraft.response.columns.length > 0 ? (
+                      <div className="sql-result-table table-wrap">
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              {currentSqlDraft.response.columns.map((column) => (
+                                <th key={column}>{column}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentSqlDraft.response.rows.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {row.map((value, columnIndex) => (
+                                  <td key={`${rowIndex}-${columnIndex}`}>
+                                    {value === null ? "NULL" : String(value)}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="body-2 muted m-0">
+                        Здесь будет результат вашего SQL-запроса.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="surface sql-schema-panel stack">
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <strong>Связанные таблицы</strong>
+                    <Badge variant="muted">{currentSqlConfig.tables.length}</Badge>
+                  </div>
+
+                  <div className="sql-table-tabs">
+                    {currentSqlConfig.tables.map((table) => {
+                      const active = currentSqlTable?.name === table.name;
+                      return (
+                        <Button
+                          className={`sql-table-tab ${active ? "active" : ""}`}
+                          key={table.name}
+                          onClick={() =>
+                            setSelectedSqlTables((prev) => {
+                              const next = new Map(prev);
+                              next.set(currentQuestion.id, table.name);
+                              return next;
+                            })
+                          }
+                          type="button"
+                          variant={active ? "default" : "secondary"}
+                        >
+                          {table.name}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {currentSqlTable ? (
+                    <div className="soft-panel stack">
+                      <div
+                        className="nav-row"
+                        style={{ justifyContent: "space-between" }}
+                      >
+                        <strong>{currentSqlTable.name}</strong>
+                        <Badge variant="muted">
+                          {currentSqlTable.rows.length} rows
+                        </Badge>
+                      </div>
+
+                      <div className="stack">
+                        <p className="body-2 muted m-0">Поля таблицы</p>
+                        <div className="stack">
+                          {currentSqlTable.columns.map((column) => (
+                            <div
+                              className="surface nav-row"
+                              key={column.name}
+                              style={{ justifyContent: "space-between", padding: "16px 18px" }}
+                            >
+                              <strong>{column.name}</strong>
+                              <span className="body-2 muted">{column.type}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="stack">
+                        <p className="body-2 muted m-0">Пример данных</p>
+                        <div className="sql-table-preview table-wrap">
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                {currentSqlTable.columns.map((column) => (
+                                  <th key={column.name}>{column.name}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {currentSqlTable.rows.map((row, rowIndex) => (
+                                <tr key={rowIndex}>
+                                  {currentSqlTable.columns.map((column) => (
+                                    <td key={`${rowIndex}-${column.name}`}>
+                                      {row[column.name] === null
+                                        ? "NULL"
+                                        : String(row[column.name] ?? "")}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : currentManualQaDraft && currentManualQaConfig ? (
               <div className="manual-qa-task-layout">
                 <div className="manual-qa-task-app">
@@ -1392,7 +1731,7 @@ export function TestRunner({
         </Card>
 
         <div className="stack">
-          <Card>
+          <Card className={currentQuestion.type === "SQL_SANDBOX" ? "test-nav-card-sql" : undefined}>
             <CardHeader className="test-card-header">
               <div
                 className="nav-row"
@@ -1415,12 +1754,21 @@ export function TestRunner({
                 </div>
                 <Progress value={progress} />
               </div>
-              <div className="question-grid">
+              <div
+                className={
+                  currentQuestion.type === "SQL_SANDBOX"
+                    ? "question-grid question-grid-sql"
+                    : "question-grid"
+                }
+              >
                 {questions.map((question, index) => {
                   const done =
                     question.type === "API_SANDBOX" ||
-                    question.type === "DEVTOOLS_SANDBOX"
-                      ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                    question.type === "DEVTOOLS_SANDBOX" ||
+                    question.type === "SQL_SANDBOX"
+                      ? question.type === "SQL_SANDBOX"
+                        ? (sqlDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                        : (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
                       : question.type === "MANUAL_QA_SANDBOX"
                         ? hasCompleteManualQaAnswer(
                             manualQaDrafts.get(question.id),
@@ -1432,7 +1780,11 @@ export function TestRunner({
                   );
                   return (
                     <button
-                      className={`question-dot ${done ? "done" : ""} ${
+                      className={`question-dot ${
+                        currentQuestion.type === "SQL_SANDBOX"
+                          ? "question-dot-sql"
+                          : ""
+                      } ${done ? "done" : ""} ${
                         commented ? "commented" : ""
                       } ${active ? "active" : ""}`}
                       key={question.id}
@@ -1445,8 +1797,8 @@ export function TestRunner({
                 })}
               </div>
               <p className="body-2 muted m-0">
-                Отмечено {answeredCount} из {questions.length}. Для API sandbox
-                вопроса прогресс появляется после проверки ответа.
+                Отмечено {answeredCount} из {questions.length}. Для sandbox-задач
+                прогресс появляется после отправки ответа на проверку.
               </p>
               <div className="question-nav-legend">
                 <span>

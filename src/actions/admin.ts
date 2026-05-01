@@ -14,6 +14,10 @@ import {
   manualQaPresetOptions,
   type ManualQaKnownBug,
 } from "@/lib/manual-qa-sandbox";
+import {
+  getSqlSandboxConfig,
+  sampleSqlSandboxConfig,
+} from "@/lib/sql-sandbox";
 
 export type InvitationState = {
   ok: boolean;
@@ -44,7 +48,8 @@ function questionRedirectUrl(
     type:
       questionType === "API_SANDBOX" ||
       questionType === "DEVTOOLS_SANDBOX" ||
-      questionType === "MANUAL_QA_SANDBOX"
+      questionType === "MANUAL_QA_SANDBOX" ||
+      questionType === "SQL_SANDBOX"
         ? questionType
         : "QUIZ",
   });
@@ -129,6 +134,31 @@ function readManualQaSandboxConfig(formData: FormData, text: string) {
     bugCategories: categories.length > 0 ? categories : preset.bugCategories,
     knownBugs,
   };
+}
+
+function readSqlSandboxConfig(formData: FormData, text: string) {
+  const taskTitle = String(
+    formData.get("sqlTaskTitle") ?? sampleSqlSandboxConfig.taskTitle,
+  ).trim();
+  const tablesText = String(formData.get("sqlTables") ?? "").trim();
+  const expectedText = String(formData.get("sqlExpectedResult") ?? "").trim();
+
+  const config = getSqlSandboxConfig({
+    mode: "SQL_SANDBOX",
+    taskTitle,
+    mission: text,
+    dialect: sampleSqlSandboxConfig.dialect,
+    tables: tablesText ? JSON.parse(tablesText) : sampleSqlSandboxConfig.tables,
+    expectedResult: expectedText
+      ? JSON.parse(expectedText)
+      : sampleSqlSandboxConfig.expectedResult,
+  });
+
+  if (!config) {
+    throw new Error("Invalid SQL sandbox config");
+  }
+
+  return config;
 }
 
 export async function createInvitationAction(
@@ -217,7 +247,31 @@ export async function createQuestionAction(formData: FormData) {
     orderBy: { order: "desc" },
   });
 
-  if (questionType === "MANUAL_QA_SANDBOX") {
+  if (questionType === "SQL_SANDBOX") {
+    if (!text) {
+      return;
+    }
+
+    let apiConfig;
+    try {
+      apiConfig = readSqlSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.create({
+      data: {
+        type: "SQL_SANDBOX",
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        order: (lastQuestion?.order ?? 0) + 1,
+        createdById: admin.id,
+        apiConfig,
+      },
+    });
+  } else if (questionType === "MANUAL_QA_SANDBOX") {
     if (!text) {
       return;
     }
@@ -418,7 +472,25 @@ export async function updateQuestionAction(formData: FormData) {
     return;
   }
 
-  if (questionType === "MANUAL_QA_SANDBOX") {
+  if (questionType === "SQL_SANDBOX") {
+    let apiConfig;
+    try {
+      apiConfig = readSqlSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        apiConfig,
+      },
+    });
+  } else if (questionType === "MANUAL_QA_SANDBOX") {
     let apiConfig;
     try {
       apiConfig = readManualQaSandboxConfig(formData, text);

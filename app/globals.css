@@ -596,6 +596,21 @@ button {
   gap: 0;
 }
 
+.test-page-sql {
+  width: min(1520px, calc(100% - 24px));
+  padding: 10px 0 18px;
+}
+
+.test-layout-sql {
+  grid-template-columns: minmax(0, 1fr) 272px !important;
+  gap: 20px;
+}
+
+.sql-main-card {
+  width: 100%;
+  min-width: 0;
+}
+
 .test-card-header {
   padding: 18px 24px 12px;
 }
@@ -726,6 +741,145 @@ button {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-garden);
   padding: 16px;
+}
+
+.sql-workspace {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1.6fr) minmax(380px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.sql-brief-panel,
+.sql-center-column,
+.sql-schema-panel {
+  align-self: start;
+}
+
+.sql-editor-panel,
+.sql-result-panel,
+.sql-schema-panel,
+.sql-brief-panel {
+  border-radius: 20px;
+}
+
+.sql-editor-panel,
+.sql-result-panel {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.sql-center-column {
+  min-width: 0;
+  width: 100%;
+}
+
+.sql-schema-panel {
+  min-width: 0;
+  width: 100%;
+}
+
+.sql-editor {
+  min-height: 310px !important;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--primary) 12%);
+  background: var(--coin-code-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.sql-result-panel {
+  min-height: 240px;
+}
+
+.sql-result-table .table {
+  min-width: 100%;
+}
+
+.sql-result-table th {
+  background: var(--coin-blue-08);
+}
+
+.sql-table-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sql-table-tab {
+  min-height: 34px;
+  border-radius: 999px;
+}
+
+.sql-table-preview .table {
+  width: max-content;
+  min-width: max-content;
+  table-layout: auto;
+}
+
+.sql-table-preview .table th {
+  background: var(--coin-code-bg);
+  white-space: nowrap;
+  vertical-align: top;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.sql-table-preview .table tbody tr:nth-child(even) {
+  background: rgba(0, 119, 255, 0.03);
+}
+
+.sql-table-preview .table td {
+  white-space: nowrap;
+  vertical-align: top;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.sql-table-preview .table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.test-nav-card-sql {
+  border-radius: 24px;
+}
+
+.test-page-sql .test-card-content {
+  padding: 0 20px 18px;
+}
+
+.test-page-sql .test-nav-summary {
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.question-grid-sql {
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 10px;
+}
+
+.question-dot-sql {
+  height: 58px;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.test-page-sql .question-nav-legend {
+  gap: 8px;
+}
+
+.test-page-sql .question-nav-legend span {
+  font-size: 15px;
+}
+
+.test-page-sql .submit-info-bubble.compact {
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .empty-state {

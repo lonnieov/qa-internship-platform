@@ -21,10 +21,15 @@ import {
   getManualQaSandboxConfig,
   manualQaPresetOptions,
 } from "@/lib/manual-qa-sandbox";
+import {
+  getSqlSandboxConfig,
+  sampleSqlSandboxConfig,
+} from "@/lib/sql-sandbox";
 
 type QuestionType =
   | "QUIZ"
   | "API_SANDBOX"
+  | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
   | "MANUAL_QA_SANDBOX";
 type JsonRecord = Record<string, unknown>;
@@ -122,6 +127,8 @@ export function QuestionForm({
   const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
   const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
   const config = getConfig(question);
+  const sqlSandboxConfig =
+    getSqlSandboxConfig(question?.apiConfig) ?? sampleSqlSandboxConfig;
   const initialManualQaConfig =
     getManualQaSandboxConfig(question?.apiConfig) ??
     clickSuperAppClickAvtoPresetConfig;
@@ -152,6 +159,8 @@ export function QuestionForm({
           ? "Что проверяет smoke testing?"
           : questionType === "API_SANDBOX"
             ? "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201."
+            : questionType === "SQL_SANDBOX"
+              ? sqlSandboxConfig.mission
             : questionType === "MANUAL_QA_SANDBOX"
               ? manualQaConfig.mission
               : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response."));
@@ -178,6 +187,7 @@ export function QuestionForm({
             {[
               ["QUIZ", "Quiz"],
               ["API_SANDBOX", "API Sandbox"],
+              ["SQL_SANDBOX", "SQL Sandbox"],
               ["DEVTOOLS_SANDBOX", "DevTools"],
               ["MANUAL_QA_SANDBOX", "Manual QA"],
             ].map(([value, label]) => (
@@ -201,6 +211,8 @@ export function QuestionForm({
               ? "DevTools"
               : questionType === "API_SANDBOX"
                 ? "API Sandbox"
+                : questionType === "SQL_SANDBOX"
+                  ? "SQL Sandbox"
                 : questionType === "MANUAL_QA_SANDBOX"
                   ? "Manual QA"
                   : "Quiz"}
@@ -242,6 +254,8 @@ export function QuestionForm({
         <Label htmlFor="text">
           {questionType === "QUIZ"
             ? "Текст вопроса"
+            : questionType === "SQL_SANDBOX"
+              ? "Описание SQL-задачи"
             : questionType === "MANUAL_QA_SANDBOX"
               ? "Миссия для стажёра"
               : "Описание API-задачи"}
@@ -471,6 +485,50 @@ export function QuestionForm({
                 '{\n  "id": 101,\n  "name": "Ali Valiyev"\n}',
               )}
             />
+          </div>
+        </div>
+      ) : questionType === "SQL_SANDBOX" ? (
+        <div className="stack">
+          <div className="form-grid">
+            <Label htmlFor="sqlTaskTitle">Название задания</Label>
+            <Input
+              id="sqlTaskTitle"
+              name="sqlTaskTitle"
+              defaultValue={sqlSandboxConfig.taskTitle}
+              required
+            />
+          </div>
+
+          <div className="form-grid">
+            <Label htmlFor="sqlTables">Связанные таблицы и данные</Label>
+            <JsonEditor
+              id="sqlTables"
+              name="sqlTables"
+              defaultValue={stringifyJson(
+                sqlSandboxConfig.tables,
+                stringifyJson(sampleSqlSandboxConfig.tables, "[]"),
+              )}
+            />
+          </div>
+
+          <div className="form-grid">
+            <Label htmlFor="sqlExpectedResult">Ожидаемый результат</Label>
+            <JsonEditor
+              id="sqlExpectedResult"
+              name="sqlExpectedResult"
+              defaultValue={stringifyJson(
+                sqlSandboxConfig.expectedResult,
+                stringifyJson(sampleSqlSandboxConfig.expectedResult, "{}"),
+              )}
+            />
+          </div>
+
+          <div className="soft-panel stack">
+            <strong>SQL sandbox проверяется автоматически</strong>
+            <p className="body-2 muted m-0">
+              Стажёр пишет один SELECT или WITH запрос к таблицам из задания, а
+              система валидирует синтаксис и сверяет результат по смыслу.
+            </p>
           </div>
         </div>
       ) : questionType === "MANUAL_QA_SANDBOX" ? (

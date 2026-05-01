@@ -9,11 +9,13 @@ import type { TrackSummary } from "@/lib/question-classification";
 type QuestionType =
   | "QUIZ"
   | "API_SANDBOX"
+  | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
   | "MANUAL_QA_SANDBOX";
 
 function typeLabel(type: QuestionType) {
   if (type === "API_SANDBOX") return "API Sandbox";
+  if (type === "SQL_SANDBOX") return "SQL Sandbox";
   if (type === "DEVTOOLS_SANDBOX") return "DevTools Sandbox";
   if (type === "MANUAL_QA_SANDBOX") return "Manual QA Sandbox";
   return "Quiz";

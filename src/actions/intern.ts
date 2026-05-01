@@ -22,6 +22,10 @@ import {
   normalizeManualQaReports,
   summarizeManualQaAnswer,
 } from "@/lib/manual-qa-sandbox";
+import {
+  executeSqlSandboxQuery,
+  getSqlSandboxConfig,
+} from "@/lib/sql-sandbox";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,
@@ -527,6 +531,90 @@ export async function submitApiSandboxAction(input: {
     expired: false,
     correct: evaluation.ok,
     response: evaluation.response,
+  };
+}
+
+export async function submitSqlSandboxAction(input: {
+  attemptId: string;
+  questionId: string;
+  query: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (
+    !answer ||
+    answer.question.type !== "SQL_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
+    return { ok: false, expired: false };
+  }
+
+  const config = getSqlSandboxConfig(answer.question.apiConfig);
+  if (!config) {
+    return { ok: false, expired: false };
+  }
+
+  const response = await executeSqlSandboxQuery(config, input.query);
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: mergeInternComment(
+        {
+          mode: "SQL_SANDBOX",
+          query: input.query,
+        },
+        getInternComment(answer.apiRequest),
+      ),
+      apiResponse: response,
+      isCorrect: response.ok,
+      answeredAt: new Date(),
+      submissionCount: {
+        increment: 1,
+      },
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return {
+    ok: true,
+    expired: false,
+    correct: response.ok,
+    response,
   };
 }
 

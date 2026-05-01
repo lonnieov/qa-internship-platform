@@ -10,6 +10,7 @@ import {
 import { ensureTracks } from "@/lib/tracks";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
+import { getSqlSandboxConfig } from "@/lib/sql-sandbox";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
@@ -25,6 +26,7 @@ import { TrackManageModal } from "@/components/admin/track-manage-modal";
 type QuestionType =
   | "QUIZ"
   | "API_SANDBOX"
+  | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
   | "MANUAL_QA_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
@@ -58,6 +60,13 @@ function sectionMeta(type: QuestionType) {
         title: "DevTools Sandbox",
         description: "Задачи на работу с Network и ответами из DevTools.",
       };
+    case "SQL_SANDBOX":
+      return {
+        id: "sql-sandbox",
+        title: "SQL Sandbox",
+        description:
+          "Задачи на написание SQL-запросов по связанным таблицам и данным.",
+      };
     case "MANUAL_QA_SANDBOX":
       return {
         id: "manual-qa-sandbox",
@@ -76,6 +85,7 @@ function sectionMeta(type: QuestionType) {
 
 function typeLabel(type: QuestionType) {
   if (type === "API_SANDBOX") return "API Sandbox";
+  if (type === "SQL_SANDBOX") return "SQL Sandbox";
   if (type === "DEVTOOLS_SANDBOX") return "DevTools";
   if (type === "MANUAL_QA_SANDBOX") return "Manual QA";
   return "Quiz";
@@ -114,6 +124,7 @@ function renderQuestionCard(
   const track = getQuestionTrackMeta(question.trackRef ?? question.track);
   const summary = apiSummary(question);
   const manualQaConfig = getManualQaSandboxConfig(question.apiConfig);
+  const sqlConfig = getSqlSandboxConfig(question.apiConfig);
 
   return (
     <Card className="question-bank-card" key={question.id}>
@@ -132,7 +143,21 @@ function renderQuestionCard(
             <p className="body-2 muted m-0">{question.explanation}</p>
           ) : null}
         </div>
-        {question.type === "MANUAL_QA_SANDBOX" && manualQaConfig ? (
+        {question.type === "SQL_SANDBOX" && sqlConfig ? (
+          <div className="stack">
+            <div className="nav-row">
+              <code className="type-chip">{sqlConfig.dialect}</code>
+              <code className="type-chip">{sqlConfig.tables.length} tables</code>
+              <code className="type-chip">
+                {sqlConfig.expectedResult.columns.join(", ")}
+              </code>
+            </div>
+            <div className="soft-panel stack">
+              <strong>{sqlConfig.taskTitle}</strong>
+              <p className="body-2 muted m-0">{sqlConfig.mission}</p>
+            </div>
+          </div>
+        ) : question.type === "MANUAL_QA_SANDBOX" && manualQaConfig ? (
           <div className="stack">
             <div className="nav-row">
               <code className="type-chip">{manualQaConfig.appPreset}</code>
@@ -255,6 +280,7 @@ export default async function AdminQuestionsPage({
   const questions = await getQuestions();
   const selectedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
+    resolvedSearchParams.type === "SQL_SANDBOX" ||
     resolvedSearchParams.type === "DEVTOOLS_SANDBOX" ||
     resolvedSearchParams.type === "MANUAL_QA_SANDBOX" ||
     resolvedSearchParams.type === "QUIZ"
@@ -280,6 +306,9 @@ export default async function AdminQuestionsPage({
   const apiSandboxQuestions = filteredByTrack.filter(
     (question) => question.type === "API_SANDBOX",
   );
+  const sqlSandboxQuestions = filteredByTrack.filter(
+    (question) => question.type === "SQL_SANDBOX",
+  );
   const devtoolsSandboxQuestions = filteredByTrack.filter(
     (question) => question.type === "DEVTOOLS_SANDBOX",
   );
@@ -289,6 +318,7 @@ export default async function AdminQuestionsPage({
   const sections: Array<{ type: QuestionType; items: AdminQuestion[] }> = [
     { type: "QUIZ" as const, items: quizQuestions },
     { type: "API_SANDBOX" as const, items: apiSandboxQuestions },
+    { type: "SQL_SANDBOX" as const, items: sqlSandboxQuestions },
     { type: "DEVTOOLS_SANDBOX" as const, items: devtoolsSandboxQuestions },
     { type: "MANUAL_QA_SANDBOX" as const, items: manualQaSandboxQuestions },
   ];

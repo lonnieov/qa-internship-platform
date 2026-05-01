@@ -23,6 +23,7 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "node-sql-parser": "^5.4.0",
     "openai": "latest",
     "pg": "^8.20.0",
     "react": "latest",
