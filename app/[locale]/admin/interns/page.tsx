@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { decryptInviteCode } from "@/lib/security";
 import { formatPercent } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
+import { isLocale, routing, type Locale } from "@/i18n/routing";
 import {
   InternCandidateTable,
   type CandidateRow,
@@ -9,10 +11,10 @@ import { InternSearchForm } from "@/components/admin/intern-search-form";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function formatDateTime(value: Date | null | undefined) {
+function formatDateTime(value: Date | null | undefined, locale: Locale) {
   if (!value) return "—";
 
-  return value.toLocaleString("ru-RU", {
+  return value.toLocaleString(locale === "uz" ? "uz-UZ" : "ru-RU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -26,10 +28,15 @@ function normalizeName(value: string) {
 }
 
 export default async function AdminInternsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string }>;
 }) {
+  const { locale: localeParam } = await params;
+  const locale = isLocale(localeParam) ? localeParam : routing.defaultLocale;
+  const t = await getTranslations("AdminInterns");
   const { q } = await searchParams;
   const internSearch = String(q ?? "").trim();
 
@@ -89,11 +96,13 @@ export default async function AdminInternsPage({
       internProfileId: intern.id,
       accessLabel: activeAttempt
         ? "идёт попытка"
-        : (latestInvitation?.status ?? "профиль"),
+        : (latestInvitation?.status ?? "profile"),
       attemptLabel: activeAttempt
         ? "идёт попытка"
-        : formatDateTime(latest?.submittedAt),
-      resultLabel: latest ? formatPercent(latest.scorePercent) : "нет попыток",
+        : formatDateTime(latest?.submittedAt, locale),
+      resultLabel: latest
+        ? formatPercent(latest.scorePercent)
+        : t("noAttemptsShort"),
       createdAtSort:
         latestInvitation?.createdAt.getTime() ?? intern.createdAt.getTime(),
       attemptAtSort:
@@ -108,15 +117,15 @@ export default async function AdminInternsPage({
         inviteCodeMask: invitation.inviteCodeMask ?? "••••",
         inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
         status: invitation.status,
-        createdAt: formatDateTime(invitation.createdAt),
-        acceptedAt: formatDateTime(invitation.acceptedAt),
+        createdAt: formatDateTime(invitation.createdAt, locale),
+        acceptedAt: formatDateTime(invitation.acceptedAt, locale),
         canRevoke: invitation.status === "PENDING",
       })),
       attempts: intern.attempts.map((attempt) => ({
         id: attempt.id,
         status: attempt.status,
-        startedAt: formatDateTime(attempt.startedAt),
-        submittedAt: formatDateTime(attempt.submittedAt),
+        startedAt: formatDateTime(attempt.startedAt, locale),
+        submittedAt: formatDateTime(attempt.submittedAt, locale),
         scorePercent:
           attempt.status === "IN_PROGRESS"
             ? "—"
@@ -151,7 +160,7 @@ export default async function AdminInternsPage({
       kind: "invitation",
       internProfileId: null,
       accessLabel: latestInvitation.status,
-      attemptLabel: "профиль не создан",
+      attemptLabel: t("noProfile"),
       resultLabel: "—",
       createdAtSort: latestInvitation.createdAt.getTime(),
       attemptAtSort: 0,
@@ -168,8 +177,8 @@ export default async function AdminInternsPage({
         inviteCodeMask: invitation.inviteCodeMask ?? "••••",
         inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
         status: invitation.status,
-        createdAt: formatDateTime(invitation.createdAt),
-        acceptedAt: formatDateTime(invitation.acceptedAt),
+        createdAt: formatDateTime(invitation.createdAt, locale),
+        acceptedAt: formatDateTime(invitation.acceptedAt, locale),
         canRevoke: invitation.status === "PENDING",
       })),
       attempts: [],
@@ -182,9 +191,9 @@ export default async function AdminInternsPage({
     <main className="page stack-lg admin-interns-page">
       <div className="page-header">
         <div>
-          <h1 className="head-1">Стажёры и доступы</h1>
+          <h1 className="head-1">{t("pageTitle")}</h1>
           <p className="body-1 muted m-0">
-            Токен хранится в базе только в виде SHA-256 хэша.
+            {t("pageDescription")}
           </p>
         </div>
         <InvitationCreateModal />
@@ -193,11 +202,11 @@ export default async function AdminInternsPage({
       <Card className="admin-interns-card">
         <CardHeader className="intern-profiles-header">
           <div>
-            <CardTitle>Список стажёров</CardTitle>
+            <CardTitle>{t("listTitle")}</CardTitle>
             <p className="body-2 muted m-0">
               {internSearch
-                ? `Поиск по ФИО: ${internSearch}`
-                : "Новые стажёры появляются здесь сразу после создания."}
+                ? t("searchActive", { query: internSearch })
+                : t("searchIdle")}
             </p>
           </div>
           <InternSearchForm key={internSearch} initialQuery={internSearch} />

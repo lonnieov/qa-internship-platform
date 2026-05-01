@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { UserPlus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { InvitationForm } from "@/components/admin/invitation-form";
 import { Button } from "@/components/ui/button";
 
 export function InvitationCreateModal() {
+  const t = useTranslations("AdminInterns");
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <Button type="button" onClick={() => setIsOpen(true)}>
         <UserPlus size={18} />
-        Создать стажёра
+        {t("createIntern")}
       </Button>
 
       {isOpen ? (
@@ -30,14 +32,14 @@ export function InvitationCreateModal() {
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id="create-invitation-title">
-                  Новый стажёр
+                  {t("createInternTitle")}
                 </h2>
                 <p className="body-2 muted m-0">
-                  После создания стажёра токен доступа будет выпущен сразу.
+                  {t("createInternDescription")}
                 </p>
               </div>
               <Button
-                aria-label="Закрыть модальное окно"
+                aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
                 onClick={() => setIsOpen(false)}

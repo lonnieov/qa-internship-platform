@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { createInvitationAction, type InvitationState } from "@/actions/admin";
 import { CopyableToken } from "@/components/admin/copyable-token";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ type InvitationFormProps = {
 };
 
 export function InvitationForm({ embedded = false }: InvitationFormProps) {
+  const t = useTranslations("AdminInterns");
   const [state, action, isPending] = useActionState(
     createInvitationAction,
     initialState,
@@ -27,15 +29,15 @@ export function InvitationForm({ embedded = false }: InvitationFormProps) {
     <>
       <form action={action} className="form-grid">
         <div className="form-grid">
-          <Label htmlFor="candidateName">Имя и фамилия кандидата</Label>
+          <Label htmlFor="candidateName">{t("candidateName")}</Label>
           <Input
             id="candidateName"
             name="candidateName"
-            placeholder="Алина Каримова"
+            placeholder={t("candidatePlaceholder")}
           />
         </div>
         <Button disabled={isPending} type="submit">
-          Создать стажёра
+          {t("createIntern")}
         </Button>
       </form>
       {state.message ? (
@@ -54,7 +56,7 @@ export function InvitationForm({ embedded = false }: InvitationFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Создать стажёра</CardTitle>
+        <CardTitle>{t("createIntern")}</CardTitle>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

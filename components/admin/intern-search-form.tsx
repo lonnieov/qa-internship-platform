@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -12,6 +13,8 @@ const debounceMs = 350;
 export function InternSearchForm({ initialQuery }: { initialQuery: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("AdminInterns");
   const [query, setQuery] = useState(initialQuery);
 
   useEffect(() => {
@@ -37,17 +40,17 @@ export function InternSearchForm({ initialQuery }: { initialQuery: string }) {
       <div className="intern-search-field">
         <Search aria-hidden="true" size={16} />
         <Input
-          aria-label="Поиск по ФИО"
+          aria-label={t("searchLabel")}
           name="q"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Поиск по ФИО"
+          placeholder={t("searchPlaceholder")}
           type="search"
           value={query}
         />
       </div>
       {query.trim() ? (
         <Button variant="outline" type="button" asChild>
-          <Link href="/admin/interns">Сбросить</Link>
+          <Link href={`/${locale}/admin/interns`}>{t("reset")}</Link>
         </Button>
       ) : null}
     </div>

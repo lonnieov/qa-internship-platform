@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { CheckCircle2, Clock3, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   createRetakeInvitationAction,
   type InvitationState,
@@ -25,6 +26,7 @@ export function RetakeInvitationForm({
   issuedButtonLabel?: string;
   onCreated?: (invitation: NonNullable<InvitationState["invitation"]>) => void;
 }) {
+  const t = useTranslations("AdminInterns");
   const [state, action, isPending] = useActionState(
     createRetakeInvitationAction,
     initialState,
@@ -64,7 +66,7 @@ export function RetakeInvitationForm({
               {state.ok ? <CheckCircle2 size={16} /> : <RotateCcw size={16} />}
             </span>
             <div>
-              <strong>{state.ok ? "Доступ обновлён" : "Не удалось"}</strong>
+              <strong>{state.ok ? t("tokenCreated") : t("failed")}</strong>
               <p className="body-2 muted m-0">{state.message}</p>
             </div>
           </div>
@@ -73,7 +75,7 @@ export function RetakeInvitationForm({
               <CopyableToken token={state.inviteCode} />
               <div className="retake-token-meta">
                 <Clock3 size={14} />
-                <span>Новый токен показан один раз. Старый доступ отвязан.</span>
+                <span>{t("newTokenShownOnce")}</span>
               </div>
             </>
           ) : null}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clock3, FileText, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   createInvitationAction,
   revokeInvitationAction,
@@ -61,23 +62,8 @@ function invitationBadgeVariant(status: string): BadgeVariant {
   return "default";
 }
 
-function invitationStatusLabel(status: string) {
-  if (status === "PENDING") return "ожидает";
-  if (status === "ACCEPTED") return "принят";
-  if (status === "COMPLETED") return "завершён";
-  if (status === "REVOKED") return "отозван";
-  return status;
-}
-
-function attemptStatusLabel(status: string) {
-  if (status === "IN_PROGRESS") return "идёт попытка";
-  if (status === "SUBMITTED") return "завершена";
-  if (status === "AUTO_SUBMITTED") return "завершена автоматически";
-  if (status === "EXPIRED") return "истекла";
-  return status;
-}
-
 function MaskedTokenCell({ invitation }: { invitation: CandidateInvitation }) {
+  const t = useTranslations("AdminInterns");
   const [copied, setCopied] = useState(false);
 
   async function copyToken(event: React.MouseEvent<HTMLButtonElement>) {
@@ -93,25 +79,25 @@ function MaskedTokenCell({ invitation }: { invitation: CandidateInvitation }) {
     return (
       <code
         className="masked-token masked-token-unavailable"
-        title="Полный токен недоступен: запись создана до сохранения токенов для админа"
+        title={t("oldTokenTitle")}
       >
-        старый токен
+        {t("oldToken")}
       </code>
     );
   }
 
   return (
     <button
-      aria-label="Показать и скопировать токен"
+      aria-label={t("revealCopyToken")}
       className="masked-token masked-token-reveal"
-      title="Наведите, чтобы увидеть токен. Нажмите, чтобы скопировать."
+      title={t("revealCopyTitle")}
       type="button"
       onClick={copyToken}
     >
       <span className="masked-token-mask">{invitation.inviteCodeMask}</span>
       <span className="masked-token-full">{invitation.inviteCodeCopyValue}</span>
       <span className="masked-token-status">
-        {copied ? "Скопировано" : "Скопировать"}
+        {copied ? t("copied") : t("copy")}
       </span>
     </button>
   );
@@ -129,6 +115,7 @@ function CandidateTokenForm({
   candidateName: string;
   onCreated?: (invitation: NonNullable<InvitationState["invitation"]>) => void;
 }) {
+  const t = useTranslations("AdminInterns");
   const [state, action, isPending] = useActionState(
     createInvitationAction,
     initialInvitationState,
@@ -156,7 +143,7 @@ function CandidateTokenForm({
           disabled={isPending}
         >
           <Clock3 size={15} />
-          {state.inviteCode ? "Создать ещё" : "Создать токен"}
+          {state.inviteCode ? t("createMore") : t("createToken")}
         </Button>
       </form>
       {state.message ? (
@@ -168,7 +155,7 @@ function CandidateTokenForm({
               {state.ok ? <CheckCircle2 size={16} /> : <Clock3 size={16} />}
             </span>
             <div>
-              <strong>{state.ok ? "Токен создан" : "Не удалось"}</strong>
+              <strong>{state.ok ? t("tokenCreated") : t("failed")}</strong>
               <p className="body-2 muted m-0">{state.message}</p>
             </div>
           </div>
@@ -177,7 +164,7 @@ function CandidateTokenForm({
               <CopyableToken token={state.inviteCode} />
               <div className="retake-token-meta">
                 <Clock3 size={14} />
-                <span>Новый токен показан один раз.</span>
+                <span>{t("newTokenShownOnce")}</span>
               </div>
             </>
           ) : null}
@@ -188,6 +175,8 @@ function CandidateTokenForm({
 }
 
 export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
+  const locale = useLocale();
+  const t = useTranslations("AdminInterns");
   const [localInvitations, setLocalInvitations] = useState<
     Record<string, CandidateInvitation[]>
   >({});
@@ -224,8 +213,8 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
 
     if (sortKey === "access") {
       return (
-        invitationStatusLabel(left.accessLabel).localeCompare(
-          invitationStatusLabel(right.accessLabel),
+        t(`status.${left.accessLabel}`).localeCompare(
+          t(`status.${right.accessLabel}`),
           "ru",
         ) * direction
       );
@@ -285,10 +274,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
     return (
       <div className="empty-state candidate-empty-state">
         <div>
-          <strong>Ничего не найдено</strong>
+          <strong>{t("emptyTitle")}</strong>
           <p className="body-2 muted m-0">
-            Измените запрос или сбросьте поиск, чтобы вернуться к полному
-            списку.
+            {t("emptyDescription")}
           </p>
         </div>
       </div>
@@ -307,7 +295,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   type="button"
                   onClick={() => toggleSort("name")}
                 >
-                  Стажёр <span>{sortLabel("name")}</span>
+                  {t("table.intern")} <span>{sortLabel("name")}</span>
                 </button>
               </th>
               <th>
@@ -316,7 +304,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   type="button"
                   onClick={() => toggleSort("access")}
                 >
-                  Доступ <span>{sortLabel("access")}</span>
+                  {t("table.access")} <span>{sortLabel("access")}</span>
                 </button>
               </th>
               <th>
@@ -325,7 +313,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   type="button"
                   onClick={() => toggleSort("attempt")}
                 >
-                  Последняя попытка <span>{sortLabel("attempt")}</span>
+                  {t("table.latestAttempt")} <span>{sortLabel("attempt")}</span>
                 </button>
               </th>
               <th>
@@ -334,7 +322,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   type="button"
                   onClick={() => toggleSort("result")}
                 >
-                  Результат <span>{sortLabel("result")}</span>
+                  {t("table.result")} <span>{sortLabel("result")}</span>
                 </button>
               </th>
             </tr>
@@ -359,7 +347,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                 </td>
                 <td>
                   <Badge variant={row.badgeVariant}>
-                    {invitationStatusLabel(row.accessLabel)}
+                    {t(`status.${row.accessLabel}`)}
                   </Badge>
                 </td>
                 <td>{row.attemptLabel}</td>
@@ -372,11 +360,12 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
       <div className="candidate-pagination">
         <span>
           {sortedRows.length > 0
-            ? `${(safePage - 1) * pageSize + 1}-${Math.min(
-                safePage * pageSize,
-                sortedRows.length,
-              )} из ${sortedRows.length}`
-            : "0 из 0"}
+            ? t("pagination", {
+                from: (safePage - 1) * pageSize + 1,
+                to: Math.min(safePage * pageSize, sortedRows.length),
+                total: sortedRows.length,
+              })
+            : t("paginationEmpty")}
         </span>
         <div>
           <Button
@@ -386,7 +375,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
             disabled={safePage === 1}
             onClick={() => setPage(Math.max(1, safePage - 1))}
           >
-            Назад
+            {t("previous")}
           </Button>
           <Button
             size="sm"
@@ -395,7 +384,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
             disabled={safePage === pageCount}
             onClick={() => setPage(Math.min(pageCount, safePage + 1))}
           >
-            Вперёд
+            {t("next")}
           </Button>
         </div>
       </div>
@@ -418,11 +407,11 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   {selected.name}
                 </h2>
                 <p className="body-2 muted m-0">
-                  Токены, попытки и действия по стажёру.
+                  {t("tokensAttemptsActions")}
                 </p>
               </div>
               <Button
-                aria-label="Закрыть модальное окно"
+                aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
                 onClick={() => setSelectedId(null)}
@@ -435,15 +424,15 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
               <section className="candidate-modal-section">
                 <div className="candidate-modal-section-header">
                   <div className="candidate-modal-section-title">
-                    <h3 className="section-title">Токены доступа</h3>
+                    <h3 className="section-title">{t("accessTokens")}</h3>
                     <p className="body-2 muted m-0">
-                      Новые токены раскрываются при наведении на маску.
+                      {t("tokenHoverHint")}
                     </p>
                   </div>
                   {selected.internProfileId ? (
                     <RetakeInvitationForm
-                      buttonLabel="Создать токен"
-                      issuedButtonLabel="Создать ещё"
+                      buttonLabel={t("createToken")}
+                      issuedButtonLabel={t("createMore")}
                       internProfileId={selected.internProfileId}
                       onCreated={addInvitationToSelected}
                     />
@@ -458,10 +447,10 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   <table className="table candidate-details-table">
                     <thead>
                       <tr>
-                        <th>Кандидат</th>
-                        <th>Токен</th>
-                        <th>Статус</th>
-                        <th>Создан</th>
+                        <th>{t("table.candidate")}</th>
+                        <th>{t("table.token")}</th>
+                        <th>{t("table.status")}</th>
+                        <th>{t("table.created")}</th>
                         <th />
                       </tr>
                     </thead>
@@ -478,7 +467,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                                 invitation.status,
                               )}
                             >
-                              {invitationStatusLabel(invitation.status)}
+                              {t(`status.${invitation.status}`)}
                             </Badge>
                           </td>
                           <td>{invitation.createdAt}</td>
@@ -496,7 +485,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                                   type="submit"
                                   onClick={(event) => event.stopPropagation()}
                                 >
-                                  Отозвать
+                                  {t("revoke")}
                                 </Button>
                               </form>
                             ) : null}
@@ -512,9 +501,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                 <section className="candidate-modal-section">
                   <div className="candidate-modal-section-header">
                     <div className="candidate-modal-section-title">
-                      <h3 className="section-title">Попытки и результаты</h3>
+                      <h3 className="section-title">{t("attemptsResults")}</h3>
                       <p className="body-2 muted m-0">
-                        История прохождений для этого профиля.
+                        {t("attemptHistory")}
                       </p>
                     </div>
                   </div>
@@ -523,17 +512,17 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                       <table className="table candidate-details-table">
                         <thead>
                           <tr>
-                            <th>Статус</th>
-                            <th>Начал</th>
-                            <th>Завершил</th>
-                            <th>Результат</th>
+                            <th>{t("table.status")}</th>
+                            <th>{t("table.started")}</th>
+                            <th>{t("table.submitted")}</th>
+                            <th>{t("table.result")}</th>
                             <th />
                           </tr>
                         </thead>
                         <tbody>
                           {selected.attempts.map((attempt) => (
                             <tr key={attempt.id}>
-                              <td>{attemptStatusLabel(attempt.status)}</td>
+                              <td>{t(`status.${attempt.status}`)}</td>
                               <td>{attempt.startedAt}</td>
                               <td>{attempt.submittedAt}</td>
                               <td>{attempt.scorePercent}</td>
@@ -545,9 +534,11 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                                     asChild
                                     onClick={(event) => event.stopPropagation()}
                                   >
-                                    <Link href={`/admin/attempts/${attempt.id}`}>
+                                    <Link
+                                      href={`/${locale}/admin/attempts/${attempt.id}`}
+                                    >
                                       <FileText size={15} />
-                                      Результат
+                                      {t("openResult")}
                                     </Link>
                                   </Button>
                                 ) : null}
@@ -559,9 +550,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                     </div>
                   ) : (
                     <div className="empty-state">
-                      <strong>Попыток пока нет</strong>
+                      <strong>{t("noAttempts")}</strong>
                       <p className="body-2 muted m-0">
-                        Стажёр ещё не начал тест.
+                        {t("notStarted")}
                       </p>
                     </div>
                   )}
@@ -569,9 +560,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
               ) : (
                 <section className="candidate-modal-section">
                   <div className="empty-state">
-                    <strong>Профиль ещё не создан</strong>
+                    <strong>{t("profileNotCreated")}</strong>
                     <p className="body-2 muted m-0">
-                      Профиль появится после первого входа по токену.
+                      {t("profileCreatedAfterLogin")}
                     </p>
                   </div>
                 </section>
