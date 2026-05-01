@@ -1586,7 +1586,8 @@ button {
   color: var(--primary-foreground);
 }
 
-.question-dot.flagged:not(.active):not(.done) {
+.question-dot.flagged:not(.active):not(.done),
+.question-dot.commented:not(.active):not(.done) {
   border-color: transparent;
   background: rgba(224, 165, 0, 0.16);
   color: var(--gold);
@@ -1668,7 +1669,8 @@ button {
   background: var(--primary);
 }
 
-.legend-dot.flagged {
+.legend-dot.flagged,
+.legend-dot.commented {
   background: rgba(224, 165, 0, 0.5);
 }
 
@@ -2260,6 +2262,23 @@ button {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-garden);
   background: var(--coin-code-bg);
+}
+
+.intern-comment-result {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(224, 165, 0, 0.35);
+  border-radius: var(--radius-garden);
+  background: rgba(224, 165, 0, 0.08);
+}
+
+.question-comment-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.question-comment-dialog textarea {
+  min-height: 180px;
 }
 
 @media (max-width: 860px) {

@@ -8,6 +8,7 @@ import {
   normalizeAnswerValue,
   normalizeApiSandboxConfig,
 } from "@/lib/api-sandbox";
+import { getInternComment, mergeInternComment } from "@/lib/answer-comment";
 import { prisma } from "@/lib/prisma";
 import { getCurrentProfile, requireIntern } from "@/lib/auth";
 import {
@@ -254,10 +255,13 @@ export async function submitOpenQuizAnswerAction(input: {
       },
     },
     data: {
-      apiRequest: {
-        mode: "OPEN_TEXT",
-        answerText: input.answerText,
-      },
+      apiRequest: mergeInternComment(
+        {
+          mode: "OPEN_TEXT",
+          answerText: input.answerText,
+        },
+        getInternComment(answer.apiRequest),
+      ),
       selectedOptionId: null,
       isCorrect: false,
       answeredAt: new Date(),
@@ -267,6 +271,53 @@ export async function submitOpenQuizAnswerAction(input: {
       timeSpentMs: {
         increment: Math.max(0, Math.round(input.timeSpentMs)),
       },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return { ok: true, expired: false };
+}
+
+export async function saveQuestionCommentAction(input: {
+  attemptId: string;
+  questionId: string;
+  internComment: string;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+  });
+
+  if (!answer) return { ok: false, expired: false };
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: mergeInternComment(answer.apiRequest, input.internComment),
     },
   });
 
@@ -454,7 +505,10 @@ export async function submitApiSandboxAction(input: {
       },
     },
     data: {
-      apiRequest: evaluation.normalizedRequest,
+      apiRequest: mergeInternComment(
+        evaluation.normalizedRequest,
+        getInternComment(answer.apiRequest),
+      ),
       apiResponse: evaluation.response,
       isCorrect: evaluation.ok,
       answeredAt: new Date(),
@@ -539,11 +593,14 @@ export async function submitDevtoolsAnswerAction(input: {
       },
     },
     data: {
-      apiRequest: {
-        mode: "DEVTOOLS_RESPONSE",
-        answerPath: config.answerPath,
-        answerText: input.answerText,
-      },
+      apiRequest: mergeInternComment(
+        {
+          mode: "DEVTOOLS_RESPONSE",
+          answerPath: config.answerPath,
+          answerText: input.answerText,
+        },
+        getInternComment(answer.apiRequest),
+      ),
       apiResponse: {
         status: config.successStatus ?? 200,
         headers: config.successHeaders ?? {},
@@ -620,11 +677,14 @@ export async function submitManualQaAnswerAction(input: {
       },
     },
     data: {
-      apiRequest: {
-        mode: "MANUAL_QA_SANDBOX",
-        reports,
-        noBugsFound,
-      },
+      apiRequest: mergeInternComment(
+        {
+          mode: "MANUAL_QA_SANDBOX",
+          reports,
+          noBugsFound,
+        },
+        getInternComment(answer.apiRequest),
+      ),
       apiResponse: summary,
       isCorrect: false,
       answeredAt: hasAnswer ? new Date() : null,

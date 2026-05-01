@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
+import { getInternComment } from "@/lib/answer-comment";
 import { getManualQaAnswerPayload } from "@/lib/manual-qa-sandbox";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
@@ -39,21 +40,29 @@ function getAnswerText(
     Awaited<ReturnType<typeof getAttemptReportData>>
   >["answers"][number],
 ) {
+  const internComment = getInternComment(answer.apiRequest);
+  const withInternComment = (value: string) =>
+    internComment
+      ? `${value}\n\nКомментарий стажёра: ${internComment}`
+      : value;
+
   if (answer.question.type === "MANUAL_QA_SANDBOX") {
     const payload = getManualQaAnswerPayload(answer.apiRequest);
-    if (!payload) return "не заполнен";
-    if (payload.noBugsFound) return "Баги не найдены";
+    if (!payload) return withInternComment("не заполнен");
+    if (payload.noBugsFound) return withInternComment("Баги не найдены");
 
-    return payload.reports
-      .map(
-        (report, index) =>
-          `${index + 1}. [${report.severity}/${report.category}] ${
-            report.title
-          }\nSteps: ${report.steps}\nActual: ${report.actual}\nExpected: ${
-            report.expected
-          }${report.note ? `\nNote: ${report.note}` : ""}`,
-      )
-      .join("\n\n");
+    return withInternComment(
+      payload.reports
+        .map(
+          (report, index) =>
+            `${index + 1}. [${report.severity}/${report.category}] ${
+              report.title
+            }\nSteps: ${report.steps}\nActual: ${report.actual}\nExpected: ${
+              report.expected
+            }${report.note ? `\nNote: ${report.note}` : ""}`,
+        )
+        .join("\n\n"),
+    );
   }
 
   if (
@@ -68,13 +77,15 @@ function getAnswerText(
       ? `\nRequest:\n${stringifyPrettyJson(answer.apiRequest)}`
       : "";
 
-    return `API request, status ${response?.status ?? "-"}, отправок: ${
-      answer.submissionCount
-    }${request}`;
+    return withInternComment(
+      `API request, status ${response?.status ?? "-"}, отправок: ${
+        answer.submissionCount
+      }${request}`,
+    );
   }
 
   if (getOpenQuizConfig(answer.question.apiConfig)) {
-    return (
+    return withInternComment(
       (
         answer.apiRequest as
           | {
@@ -82,11 +93,11 @@ function getAnswerText(
             }
           | null
           | undefined
-      )?.answerText ?? "не заполнен"
+      )?.answerText ?? "не заполнен",
     );
   }
 
-  return answer.selectedOption?.text ?? "не выбран";
+  return withInternComment(answer.selectedOption?.text ?? "не выбран");
 }
 
 function addFooter(doc: PDFKit.PDFDocument) {

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getInternComment } from "@/lib/answer-comment";
 import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -90,6 +91,7 @@ export default async function InternTestPage({
       apiRequest: answer.apiRequest,
       apiResponse: answer.apiResponse,
       isCorrect: answer.isCorrect,
+      internComment: getInternComment(answer.apiRequest),
       options: answer.question.options.map((option) => ({
         id: option.id,
         label: option.label,

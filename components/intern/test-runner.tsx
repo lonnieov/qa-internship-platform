@@ -8,11 +8,13 @@ import {
   ArrowRight,
   Clock3,
   Info,
+  MessageSquare,
   Plus,
   Send,
   Trash2,
 } from "lucide-react";
 import {
+  saveQuestionCommentAction,
   selectAnswerAction,
   submitManualQaAnswerAction,
   submitOpenQuizAnswerAction,
@@ -73,6 +75,7 @@ type Question = {
   apiRequest: unknown;
   apiResponse: unknown;
   isCorrect: boolean;
+  internComment: string;
 };
 
 type ApiDraft = {
@@ -105,6 +108,8 @@ type ManualQaDraft = {
   submissionCount: number;
   answerSaveStatus: "idle" | "saving" | "saved";
 };
+
+type CommentSaveStatus = "idle" | "saving" | "saved";
 
 function stringifyJson(value: JsonValue | null | undefined) {
   if (typeof value === "undefined") return "";
@@ -228,8 +233,21 @@ export function TestRunner({
   questions: Question[];
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [flaggedQuestions, setFlaggedQuestions] = useState(
-    () => new Set<string>(),
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [commentDrafts, setCommentDrafts] = useState(
+    () =>
+      new Map(
+        questions.map((question) => [question.id, question.internComment]),
+      ),
+  );
+  const [commentSaveStatuses, setCommentSaveStatuses] = useState(
+    () =>
+      new Map<string, CommentSaveStatus>(
+        questions.map((question) => [
+          question.id,
+          question.internComment ? "saved" : "idle",
+        ]),
+      ),
   );
   const [answers, setAnswers] = useState(
     () =>
@@ -301,9 +319,12 @@ export function TestRunner({
   const progress =
     questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
   const isLastQuestion = currentIndex === questions.length - 1;
-  const flaggedCount = questions.filter((question) =>
-    flaggedQuestions.has(question.id),
+  const commentedCount = questions.filter((question) =>
+    Boolean(commentDrafts.get(question.id)?.trim()),
   ).length;
+  const currentQuestionComment = commentDrafts.get(currentQuestion.id) ?? "";
+  const currentCommentSaveStatus =
+    commentSaveStatuses.get(currentQuestion.id) ?? "idle";
 
   function flushCurrentTime() {
     const questionId = currentQuestion?.id;
@@ -378,16 +399,47 @@ export function TestRunner({
     });
   }
 
-  function toggleFlag() {
+  function updateQuestionComment(value: string) {
     if (!currentQuestion) return;
-    setFlaggedQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(currentQuestion.id)) {
-        next.delete(currentQuestion.id);
-      } else {
-        next.add(currentQuestion.id);
-      }
+    setCommentDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(currentQuestion.id, value);
       return next;
+    });
+    setCommentSaveStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(currentQuestion.id, "idle");
+      return next;
+    });
+  }
+
+  function saveQuestionComment() {
+    if (!currentQuestion) return;
+
+    const questionId = currentQuestion.id;
+    const internComment = commentDrafts.get(questionId) ?? "";
+
+    setCommentSaveStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(questionId, "saving");
+      return next;
+    });
+
+    startTransition(() => {
+      void saveQuestionCommentAction({
+        attemptId,
+        questionId,
+        internComment,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setCommentSaveStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(questionId, "saved");
+          return next;
+        });
+        setIsCommentDialogOpen(false);
+      });
     });
   }
 
@@ -819,16 +871,10 @@ export function TestRunner({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={toggleFlag}
-                style={{
-                  color: flaggedQuestions.has(currentQuestion.id)
-                    ? "var(--gold)"
-                    : "var(--muted-foreground)",
-                }}
+                onClick={() => setIsCommentDialogOpen(true)}
               >
-                {flaggedQuestions.has(currentQuestion.id)
-                  ? "Отмечено"
-                  : "Отметить"}
+                <MessageSquare size={16} />
+                {currentQuestionComment.trim() ? "Комментарий" : "Комментировать"}
               </Button>
             </div>
           </CardHeader>
@@ -1355,11 +1401,13 @@ export function TestRunner({
                           )
                       : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
-                  const flagged = flaggedQuestions.has(question.id);
+                  const commented = Boolean(
+                    commentDrafts.get(question.id)?.trim(),
+                  );
                   return (
                     <button
                       className={`question-dot ${done ? "done" : ""} ${
-                        flagged ? "flagged" : ""
+                        commented ? "commented" : ""
                       } ${active ? "active" : ""}`}
                       key={question.id}
                       onClick={() => goTo(index)}
@@ -1380,8 +1428,8 @@ export function TestRunner({
                   Отвечено · {answeredCount}
                 </span>
                 <span>
-                  <i className="legend-dot flagged" />
-                  Отмечено · {flaggedCount}
+                  <i className="legend-dot commented" />
+                  Комментарии · {commentedCount}
                 </span>
                 <span>
                   <i className="legend-dot empty" />
@@ -1458,6 +1506,72 @@ export function TestRunner({
                   disabled={isPending}
                 >
                   Продолжить
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isCommentDialogOpen ? (
+        <div
+          aria-labelledby="question-comment-title"
+          aria-modal="true"
+          className="modal-backdrop"
+          role="dialog"
+          onClick={() => setIsCommentDialogOpen(false)}
+        >
+          <div
+            className="confirm-dialog question-comment-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="stack">
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <div className="nav-row">
+                  <span className="confirm-dialog-icon">
+                    <MessageSquare size={20} />
+                  </span>
+                  <h2 className="head-3 m-0" id="question-comment-title">
+                    Комментарий к вопросу
+                  </h2>
+                </div>
+                <Badge variant="muted">
+                  {currentCommentSaveStatus === "saving"
+                    ? "сохраняем"
+                    : currentCommentSaveStatus === "saved"
+                      ? "сохранено"
+                      : "черновик"}
+                </Badge>
+              </div>
+              <p className="body-2 muted m-0">
+                Напишите, что должен увидеть ревьювер: например, нет
+                корректного ответа, фото не грузится или условие сформулировано
+                неоднозначно.
+              </p>
+              <Textarea
+                autoFocus
+                maxLength={1000}
+                onChange={(event) => updateQuestionComment(event.target.value)}
+                placeholder="Например: нет правильного ответа, потому что..."
+                value={currentQuestionComment}
+              />
+              <div className="confirm-dialog-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCommentDialogOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  type="button"
+                  onClick={saveQuestionComment}
+                  disabled={isPending || currentCommentSaveStatus === "saving"}
+                >
+                  Сохранить
                 </Button>
               </div>
             </div>
