@@ -47,6 +47,9 @@ import {
   type SqlSandboxExecutionResult,
   type SqlSandboxTable,
 } from "@/lib/sql-sandbox-config";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ServiceLogo } from "@/components/service-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type JsonValue =
   | null
@@ -1240,8 +1243,8 @@ export function TestRunner({
               >
                 <MessageSquare size={16} />
                 {currentQuestionComment.trim()
-                  ? "Комментарий"
-                  : "Комментировать"}
+                  ? t("commentShort")
+                  : t("addComment")}
               </Button>
             </div>
           </CardHeader>
@@ -1260,7 +1263,7 @@ export function TestRunner({
                     <div className="form-grid">
                       <LabelLike>
                         {getOpenQuizConfig(currentQuestion.apiConfig)
-                          ?.answerLabel || "Введите ответ"}
+                          ?.answerLabel || t("openQuizAnswerLabel")}
                       </LabelLike>
                       <Textarea
                         data-track="open-quiz-answer"
@@ -1270,7 +1273,7 @@ export function TestRunner({
                         }
                         placeholder={
                           getOpenQuizConfig(currentQuestion.apiConfig)
-                            ?.placeholder || "Опишите ответ своими словами"
+                            ?.placeholder || t("openQuizPlaceholder")
                         }
                         value={textAnswers.get(currentQuestion.id) ?? ""}
                       />
@@ -1287,10 +1290,10 @@ export function TestRunner({
                         onClick={() => saveOpenAnswer()}
                         type="button"
                       >
-                        Сохранить ответ
+                        {t("saveAnswer")}
                       </Button>
                       {(textAnswers.get(currentQuestion.id) ?? "").trim() ? (
-                        <Badge variant="muted">ответ заполнен</Badge>
+                        <Badge variant="muted">{t("answerFilled")}</Badge>
                       ) : null}
                     </div>
                   </div>
@@ -1580,10 +1583,9 @@ export function TestRunner({
                     style={{ justifyContent: "space-between" }}
                   >
                     <div>
-                      <strong>Баг-репорты</strong>
+                      <strong>{t("manualQa.bugReportsTitle")}</strong>
                       <p className="body-2 muted m-0">
-                        Заполняйте только дефекты, которые смогли воспроизвести
-                        в miniapp.
+                        {t("manualQa.bugReportsHelp")}
                       </p>
                     </div>
                     <Badge variant="muted">
@@ -1600,10 +1602,9 @@ export function TestRunner({
                       type="checkbox"
                     />
                     <span>
-                      <strong>Баги не найдены</strong>
+                      <strong>{t("manualQa.noBugsTitle")}</strong>
                       <small>
-                        Используйте только если осознанно завершили проверку без
-                        дефектов.
+                        {t("manualQa.noBugsHelp")}
                       </small>
                     </span>
                   </label>
@@ -1616,9 +1617,11 @@ export function TestRunner({
                             className="nav-row"
                             style={{ justifyContent: "space-between" }}
                           >
-                            <strong>Баг {index + 1}</strong>
+                            <strong>
+                              {t("manualQa.bugTitle", { number: index + 1 })}
+                            </strong>
                             <Button
-                              aria-label="Удалить баг-репорт"
+                              aria-label={t("manualQa.deleteBug")}
                               onClick={() => removeManualQaReport(report.id)}
                               size="sm"
                               type="button"
@@ -1629,14 +1632,14 @@ export function TestRunner({
                           </div>
 
                           <div className="form-grid">
-                            <LabelLike>Название</LabelLike>
+                            <LabelLike>{t("manualQa.titleLabel")}</LabelLike>
                             <Input
                               onChange={(event) =>
                                 updateManualQaReport(report.id, {
                                   title: event.target.value,
                                 })
                               }
-                              placeholder="Например: промокод применяется повторно"
+                              placeholder={t("manualQa.titlePlaceholder")}
                               value={report.title}
                             />
                           </div>
@@ -1682,14 +1685,16 @@ export function TestRunner({
                           </div>
 
                           <div className="form-grid">
-                            <LabelLike>Steps to reproduce</LabelLike>
+                            <LabelLike>
+                              {t("manualQa.stepsLabel")}
+                            </LabelLike>
                             <Textarea
                               onChange={(event) =>
                                 updateManualQaReport(report.id, {
                                   steps: event.target.value,
                                 })
                               }
-                              placeholder={"1. Открыть ClickAvto\n2. ..."}
+                              placeholder={t("manualQa.stepsPlaceholder")}
                               value={report.steps}
                             />
                           </div>
@@ -1703,7 +1708,7 @@ export function TestRunner({
                                     actual: event.target.value,
                                   })
                                 }
-                                placeholder="Что произошло фактически"
+                                placeholder={t("manualQa.actualPlaceholder")}
                                 value={report.actual}
                               />
                             </div>
@@ -1715,7 +1720,7 @@ export function TestRunner({
                                     expected: event.target.value,
                                   })
                                 }
-                                placeholder="Как должно быть"
+                                placeholder={t("manualQa.expectedPlaceholder")}
                                 value={report.expected}
                               />
                             </div>
@@ -1729,7 +1734,7 @@ export function TestRunner({
                                   note: event.target.value,
                                 })
                               }
-                              placeholder="Необязательно: устройство, сеть, доп. контекст"
+                              placeholder={t("manualQa.notesPlaceholder")}
                               value={report.note ?? ""}
                             />
                           </div>
@@ -1742,7 +1747,7 @@ export function TestRunner({
                         variant="secondary"
                       >
                         <Plus size={18} />
-                        Добавить баг
+                        {t("manualQa.addBug")}
                       </Button>
                     </div>
                   ) : null}
@@ -1753,17 +1758,17 @@ export function TestRunner({
                   >
                     <Badge variant="muted">
                       {currentManualQaDraft.answerSaveStatus === "saving"
-                        ? "сохраняем"
+                        ? t("commentSaving")
                         : currentManualQaDraft.answerSaveStatus === "saved"
-                          ? "ответ сохранён"
-                          : "есть несохранённые изменения"}
+                          ? t("answerSaved")
+                          : t("unsavedChanges")}
                     </Badge>
                     <Button
                       disabled={isPending}
                       onClick={() => saveManualQaAnswer()}
                       type="button"
                     >
-                      Сохранить ответ
+                      {t("saveAnswer")}
                     </Button>
                   </div>
                 </div>
@@ -1777,7 +1782,7 @@ export function TestRunner({
                   >
                     <div>
                       <p className="body-2 muted m-0">
-                        Запрос для проверки в DevTools
+                        {t("devtools.requestTitle")}
                       </p>
                       <strong>
                         {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
@@ -1791,7 +1796,9 @@ export function TestRunner({
                       </strong>
                     </div>
                     {currentApiDraft.requestSent ? (
-                      <Badge variant="success">запрос отправлен</Badge>
+                      <Badge variant="success">
+                        {t("devtools.requestSent")}
+                      </Badge>
                     ) : null}
                   </div>
                   <Button
@@ -1801,14 +1808,19 @@ export function TestRunner({
                     type="button"
                   >
                     <Send size={18} />
-                    {currentDevtoolsConfig.buttonLabel || "Отправить запрос"}
+                    {currentDevtoolsConfig.buttonLabel ||
+                      t("devtools.sendRequest")}
                   </Button>
                 </div>
 
                 <div className="form-grid">
                   <LabelLike>
                     {currentDevtoolsConfig.answerLabel ||
-                      `Введите значение ${currentDevtoolsConfig.answerPath || "параметра"} из response`}
+                      t("devtools.answerLabel", {
+                        value:
+                          currentDevtoolsConfig.answerPath ||
+                          t("devtools.parameter"),
+                      })}
                   </LabelLike>
                   <Input
                     data-track="devtools-answer"
@@ -1827,10 +1839,10 @@ export function TestRunner({
                 >
                   <Badge variant="muted">
                     {currentApiDraft.answerSaveStatus === "saving"
-                      ? "сохраняем ответ"
+                      ? t("devtools.savingAnswer")
                       : currentApiDraft.submissionCount > 0
-                        ? "ответ сохранён"
-                        : "ответ сохранится автоматически"}
+                        ? t("answerSaved")
+                        : t("devtools.autosave")}
                   </Badge>
                 </div>
               </div>
@@ -1904,9 +1916,11 @@ export function TestRunner({
                       <Send size={18} />
                       Send
                     </Button>
-                    <span className="body-2 muted">
-                      Отправок: {currentApiDraft.submissionCount}
-                    </span>
+                  <span className="body-2 muted">
+                    {t("api.submissions", {
+                      count: currentApiDraft.submissionCount,
+                    })}
+                  </span>
                   </div>
                   {currentApiDraft.submissionCount > 0 ? (
                     <Badge
@@ -1915,8 +1929,8 @@ export function TestRunner({
                       }
                     >
                       {currentApiDraft.isCorrect
-                        ? "зачтено"
-                        : "нужно исправить"}
+                        ? t("statusPassed")
+                        : t("statusFix")}
                     </Badge>
                   ) : null}
                 </div>
@@ -1968,7 +1982,7 @@ export function TestRunner({
                   disabled={currentIndex === 0}
                 >
                   <ArrowLeft size={18} />
-                  Назад
+                  {t("back")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -1976,7 +1990,7 @@ export function TestRunner({
                   onClick={() => goTo(currentIndex + 1)}
                   disabled={isLastQuestion}
                 >
-                  Далее
+                  {t("next")}
                   <ArrowRight size={18} />
                 </Button>
               </div>
@@ -1991,7 +2005,20 @@ export function TestRunner({
                 className="nav-row"
                 style={{ justifyContent: "space-between" }}
               >
-                <CardTitle>Навигация</CardTitle>
+                <div className="brand">
+                  <ServiceLogo />
+                  QA Assessment
+                </div>
+                <div className="nav-row">
+                  <LanguageSwitcher />
+                  <ThemeToggle variant="icon" />
+                </div>
+              </div>
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <CardTitle>{t("navigation")}</CardTitle>
                 <span className="timer-pill compact" suppressHydrationWarning>
                   <Clock3 size={16} />
                   {minutes}:{seconds.toString().padStart(2, "0")}
@@ -2002,9 +2029,12 @@ export function TestRunner({
               <div className="test-nav-summary">
                 <div>
                   <strong>
-                    Вопрос {currentIndex + 1} из {questions.length}
+                    {t("questionProgress", {
+                      current: currentIndex + 1,
+                      total: questions.length,
+                    })}
                   </strong>
-                  <span>Можно возвращаться до истечения времени.</span>
+                  <span>{t("canReturn")}</span>
                 </div>
                 <Progress value={progress} />
               </div>
@@ -2051,21 +2081,25 @@ export function TestRunner({
                 })}
               </div>
               <p className="body-2 muted m-0">
-                Отмечено {answeredCount} из {questions.length}. Для sandbox-задач
-                прогресс появляется после отправки ответа на проверку.
+                {t("markedProgress", {
+                  answered: answeredCount,
+                  total: questions.length,
+                })}
               </p>
               <div className="question-nav-legend">
                 <span>
                   <i className="legend-dot answered" />
-                  Отвечено · {answeredCount}
+                  {t("answeredLegend", { count: answeredCount })}
                 </span>
                 <span>
                   <i className="legend-dot commented" />
-                  Комментарии · {commentedCount}
+                  {t("commentsLegend", { count: commentedCount })}
                 </span>
                 <span>
                   <i className="legend-dot empty" />
-                  Без ответа · {questions.length - answeredCount}
+                  {t("emptyLegend", {
+                    count: questions.length - answeredCount,
+                  })}
                 </span>
               </div>
               <div className="test-submit-control compact">
@@ -2077,11 +2111,11 @@ export function TestRunner({
                   className="test-nav-submit"
                 >
                   <Send size={18} />
-                  Завершить
+                  {t("finish")}
                 </Button>
                 <div className="submit-info-bubble compact" role="note">
                   <Info size={16} />
-                  <span>Неотвеченные вопросы будут засчитаны как fail.</span>
+                  <span>{t("unansweredFail")}</span>
                 </div>
               </div>
             </CardContent>
@@ -2093,7 +2127,7 @@ export function TestRunner({
               style={{ color: "var(--destructive)" }}
             >
               <AlertTriangle size={18} />
-              <strong>Осталось меньше минуты</strong>
+              <strong>{t("lessThanMinute")}</strong>
             </div>
           ) : null}
         </div>
@@ -2117,12 +2151,11 @@ export function TestRunner({
                   <AlertTriangle size={20} />
                 </span>
                 <h2 className="head-3 m-0" id="finish-test-title">
-                  Завершить тест?
+                  {t("finishDialogTitle")}
                 </h2>
               </div>
               <p className="body-1 muted m-0">
-                После подтверждения тест будет отправлен на проверку. Все
-                вопросы без ответа будут засчитаны как fail.
+                {t("finishDialogBody")}
               </p>
               <div className="confirm-dialog-actions">
                 <Button
@@ -2130,14 +2163,14 @@ export function TestRunner({
                   variant="outline"
                   onClick={() => setIsSubmitDialogOpen(false)}
                 >
-                  Отмена
+                  {t("cancel")}
                 </Button>
                 <Button
                   type="button"
                   onClick={() => submit(false)}
                   disabled={isPending}
                 >
-                  Продолжить
+                  {t("continue")}
                 </Button>
               </div>
             </div>
@@ -2167,27 +2200,25 @@ export function TestRunner({
                     <MessageSquare size={20} />
                   </span>
                   <h2 className="head-3 m-0" id="question-comment-title">
-                    Комментарий к вопросу
+                    {t("commentTitle")}
                   </h2>
                 </div>
                 <Badge variant="muted">
                   {currentCommentSaveStatus === "saving"
-                    ? "сохраняем"
+                    ? t("commentSaving")
                     : currentCommentSaveStatus === "saved"
-                      ? "сохранено"
-                      : "черновик"}
+                      ? t("commentSaved")
+                      : t("commentDraft")}
                 </Badge>
               </div>
               <p className="body-2 muted m-0">
-                Напишите, что должен увидеть ревьювер: например, нет корректного
-                ответа, фото не грузится или условие сформулировано
-                неоднозначно.
+                {t("commentHelp")}
               </p>
               <Textarea
                 autoFocus
                 maxLength={1000}
                 onChange={(event) => updateQuestionComment(event.target.value)}
-                placeholder="Например: нет правильного ответа, потому что..."
+                placeholder={t("commentPlaceholder")}
                 value={currentQuestionComment}
               />
               <div className="confirm-dialog-actions">
@@ -2196,14 +2227,14 @@ export function TestRunner({
                   variant="outline"
                   onClick={() => setIsCommentDialogOpen(false)}
                 >
-                  Отмена
+                  {t("cancel")}
                 </Button>
                 <Button
                   type="button"
                   onClick={saveQuestionComment}
                   disabled={isPending || currentCommentSaveStatus === "saving"}
                 >
-                  Сохранить
+                  {t("save")}
                 </Button>
               </div>
             </div>

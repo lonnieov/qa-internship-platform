@@ -1,4 +1,5 @@
 import { AuthRoleTabs } from "@/components/auth-role-tabs";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TokenLoginForm } from "@/components/intern/token-login-form";
@@ -36,7 +37,10 @@ export default function InternSignInPage() {
         <div className="auth-form-card">
           <div className="auth-form-top">
             <Badge>Стажёр</Badge>
-            <ThemeToggle />
+            <div className="nav-row">
+              <LanguageSwitcher />
+              <ThemeToggle variant="icon" />
+            </div>
           </div>
           <div className="stack">
             <h2 className="head-1">Вход в систему</h2>

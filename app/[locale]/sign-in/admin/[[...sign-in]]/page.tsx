@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
 import { AuthRoleTabs } from "@/components/auth-role-tabs";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,10 @@ export default async function AdminSignInPage() {
         <div className="auth-form-card">
           <div className="auth-form-top">
             <Badge variant="warning">{t("badge")}</Badge>
-            <ThemeToggle />
+            <div className="nav-row">
+              <LanguageSwitcher />
+              <ThemeToggle variant="icon" />
+            </div>
           </div>
           <div className="stack">
             <h2 className="head-1">{t("title")}</h2>
