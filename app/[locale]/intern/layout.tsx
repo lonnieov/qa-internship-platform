@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { logoutInternAction } from "@/actions/intern";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,14 +11,11 @@ export default function InternLayout({
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link className="brand" href="/intern">
+        <div className="brand">
           <ServiceLogo />
           QA Assessment
-        </Link>
+        </div>
         <nav className="nav-row">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/intern">Главная</Link>
-          </Button>
           <ThemeToggle />
           <form action={logoutInternAction}>
             <Button variant="outline" size="sm" type="submit">

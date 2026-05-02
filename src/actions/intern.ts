@@ -47,11 +47,35 @@ function splitName(fullName: string) {
   };
 }
 
+async function findFinishedAttemptForInvitation(
+  internProfileId: string,
+  invitationCreatedAt: Date,
+) {
+  return prisma.assessmentAttempt.findFirst({
+    where: {
+      internProfileId,
+      status: { not: "IN_PROGRESS" },
+      startedAt: { gte: invitationCreatedAt },
+    },
+    orderBy: { startedAt: "desc" },
+  });
+}
+
 export async function loginInternByTokenAction(
   _prevState: InternTokenLoginState,
   formData: FormData,
 ): Promise<InternTokenLoginState> {
   const token = String(formData.get("token") ?? "");
+  const hasPersonalDataConsent =
+    String(formData.get("personalDataConsent") ?? "") === "on";
+
+  if (!hasPersonalDataConsent) {
+    return {
+      ok: false,
+      message: "Подтвердите согласие на обработку персональных данных.",
+    };
+  }
+
   const invitation = await prisma.invitation.findUnique({
     where: { inviteCodeHash: hashInviteCode(token) },
     include: {
@@ -80,6 +104,20 @@ export async function loginInternByTokenAction(
   }
 
   if (profile && invitation.internProfile) {
+    const finishedAttemptForToken = await findFinishedAttemptForInvitation(
+      invitation.internProfile.id,
+      invitation.createdAt,
+    );
+
+    if (finishedAttemptForToken) {
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { status: "COMPLETED" },
+      });
+
+      return { ok: false, message: "Тест по этому токену уже завершён." };
+    }
+
     const activeAttempt = await prisma.assessmentAttempt.findFirst({
       where: {
         internProfileId: invitation.internProfile.id,
@@ -88,6 +126,11 @@ export async function loginInternByTokenAction(
     });
 
     if (activeAttempt) {
+      const currentAttempt = await expireAttemptIfNeeded(activeAttempt.id);
+      if (!currentAttempt || currentAttempt.status !== "IN_PROGRESS") {
+        return { ok: false, message: "Тест по этому токену уже завершён." };
+      }
+
       await createInternSession(profile.id);
       revalidatePath("/intern");
       redirect("/intern");
@@ -159,9 +202,10 @@ export async function startAttemptAction() {
     orderBy: { startedAt: "desc" },
   });
 
-  if (existing?.status === "IN_PROGRESS") {
-    redirect(`/intern/test?attempt=${existing.id}`);
-  }
+  const currentExisting =
+    existing?.status === "IN_PROGRESS"
+      ? await expireAttemptIfNeeded(existing.id)
+      : existing;
 
   const invitation = profile.internProfile.invitationId
     ? await prisma.invitation.findUnique({
@@ -169,8 +213,32 @@ export async function startAttemptAction() {
       })
     : null;
 
-  if (existing && invitation?.status === "COMPLETED") {
-    const ticket = await createResultSession(existing.id);
+  if (invitation) {
+    const finishedAttemptForToken = await findFinishedAttemptForInvitation(
+      profile.internProfile.id,
+      invitation.createdAt,
+    );
+
+    if (finishedAttemptForToken) {
+      if (invitation.status !== "COMPLETED") {
+        await prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { status: "COMPLETED" },
+        });
+      }
+
+      const ticket = await createResultSession(finishedAttemptForToken.id);
+      await clearInternSession();
+      redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+    }
+  }
+
+  if (currentExisting?.status === "IN_PROGRESS") {
+    redirect(`/intern/test?attempt=${currentExisting.id}`);
+  }
+
+  if (currentExisting && invitation?.status === "COMPLETED") {
+    const ticket = await createResultSession(currentExisting.id);
     await clearInternSession();
     redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
   }

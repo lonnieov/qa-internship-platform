@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
@@ -23,26 +23,75 @@ function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
   window.localStorage.setItem("theme", theme);
+  window.dispatchEvent(new Event("themechange"));
 }
 
-export function ThemeToggle() {
-  const t = useTranslations("ThemeToggle");
+function subscribeTheme(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("themechange", callback);
 
-  function toggleTheme() {
-    const nextTheme = preferredTheme() === "dark" ? "light" : "dark";
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("themechange", callback);
+  };
+}
+
+export function ThemeToggle({
+  variant = "segmented",
+}: {
+  variant?: "segmented" | "icon";
+}) {
+  const t = useTranslations("ThemeToggle");
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    preferredTheme,
+    () => "light",
+  );
+
+  function setTheme(nextTheme: Theme) {
     applyTheme(nextTheme);
   }
 
+  if (variant === "icon") {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+
+    return (
+      <button
+        aria-label={t("toggle")}
+        className="theme-toggle-icon"
+        title={t("toggle")}
+        type="button"
+        onClick={() => setTheme(nextTheme)}
+      >
+        {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
+      </button>
+    );
+  }
+
   return (
-    <Button
-      aria-label={t("toggle")}
-      size="icon"
-      type="button"
-      variant="outline"
-      onClick={toggleTheme}
+    <div
+      aria-label={t("label")}
+      className="theme-toggle-control"
+      role="group"
     >
-      <Sun className="theme-icon theme-icon-sun" size={18} />
-      <Moon className="theme-icon theme-icon-moon" size={18} />
-    </Button>
+      <button
+        aria-pressed={theme === "light"}
+        className={theme === "light" ? "active" : ""}
+        type="button"
+        onClick={() => setTheme("light")}
+      >
+        <Sun size={15} />
+        <span>{t("light")}</span>
+      </button>
+      <button
+        aria-pressed={theme === "dark"}
+        className={theme === "dark" ? "active" : ""}
+        type="button"
+        onClick={() => setTheme("dark")}
+      >
+        <Moon size={15} />
+        <span>{t("dark")}</span>
+      </button>
+    </div>
   );
 }

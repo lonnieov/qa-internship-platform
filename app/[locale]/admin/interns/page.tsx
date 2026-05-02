@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { decryptInviteCode } from "@/lib/security";
 import { formatPercent } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
@@ -27,6 +28,21 @@ function normalizeName(value: string) {
   return value.trim().toLowerCase();
 }
 
+function getTokenDisplayStatus(invitation: {
+  status: string;
+  expiresAt: Date | null;
+}) {
+  if (invitation.status === "REVOKED" || invitation.status === "COMPLETED") {
+    return invitation.status;
+  }
+
+  if (invitation.expiresAt && invitation.expiresAt.getTime() < Date.now()) {
+    return "TOKEN_EXPIRED";
+  }
+
+  return invitation.status;
+}
+
 export default async function AdminInternsPage({
   params,
   searchParams,
@@ -40,7 +56,7 @@ export default async function AdminInternsPage({
   const { q } = await searchParams;
   const internSearch = String(q ?? "").trim();
 
-  const [invitations, interns] = await Promise.all([
+  const [initialInvitations, interns] = await Promise.all([
     prisma.invitation.findMany({
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -65,9 +81,41 @@ export default async function AdminInternsPage({
       },
     }),
   ]);
+  let invitations = initialInvitations;
+
+  const expiredAttempts = await Promise.all(
+    interns.flatMap((intern) =>
+      intern.attempts
+        .filter(
+          (attempt) =>
+            attempt.status === "IN_PROGRESS" &&
+            attempt.deadlineAt.getTime() <= Date.now(),
+        )
+        .map((attempt) => expireAttemptIfNeeded(attempt.id)),
+    ),
+  );
+  const expiredAttemptById = new Map(
+    expiredAttempts
+      .filter((attempt) => attempt !== null)
+      .map((attempt) => [attempt.id, attempt]),
+  );
+  const internsWithCurrentAttempts = interns.map((intern) => ({
+    ...intern,
+    attempts: intern.attempts.map(
+      (attempt) => expiredAttemptById.get(attempt.id) ?? attempt,
+    ),
+  }));
+
+  if (expiredAttemptById.size > 0) {
+    invitations = await prisma.invitation.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: { acceptedByProfile: true },
+    });
+  }
 
   const matchedInvitationIds = new Set<string>();
-  const rows: CandidateRow[] = interns.map((intern) => {
+  const rows: CandidateRow[] = internsWithCurrentAttempts.map((intern) => {
     const normalizedFullName = normalizeName(intern.fullName);
     const internInvitations = invitations.filter((invitation) => {
       return (
@@ -88,21 +136,24 @@ export default async function AdminInternsPage({
       (attempt) => attempt.status === "IN_PROGRESS",
     );
     const latestInvitation = internInvitations[0];
+    const testStatus = activeAttempt?.status ?? latest?.status ?? "NO_ATTEMPTS";
 
     return {
       id: `profile-${intern.id}`,
       name: intern.fullName,
       kind: "profile",
       internProfileId: intern.id,
-      accessLabel: activeAttempt
-        ? "IN_PROGRESS"
-        : (latestInvitation?.status ?? "profile"),
+      accessLabel: testStatus,
       attemptLabel: activeAttempt
-        ? t("status.IN_PROGRESS")
-        : formatDateTime(latest?.submittedAt, locale),
-      resultLabel: latest
-        ? formatPercent(latest.scorePercent)
-        : t("noAttemptsShort"),
+        ? formatDateTime(activeAttempt.startedAt, locale)
+        : latest
+          ? formatDateTime(latest.submittedAt, locale)
+          : t("noAttemptsShort"),
+      resultLabel: activeAttempt
+        ? "—"
+        : latest
+          ? formatPercent(latest.scorePercent)
+          : t("noAttemptsShort"),
       createdAtSort:
         latestInvitation?.createdAt.getTime() ?? intern.createdAt.getTime(),
       attemptAtSort:
@@ -110,17 +161,34 @@ export default async function AdminInternsPage({
         latest?.submittedAt?.getTime() ??
         0,
       resultSort: latest?.scorePercent ?? null,
-      badgeVariant: activeAttempt ? "warning" : "success",
-      invitations: internInvitations.map((invitation) => ({
-        id: invitation.id,
-        candidateName: invitation.candidateName,
-        inviteCodeMask: invitation.inviteCodeMask ?? "••••",
-        inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
-        status: invitation.status,
-        createdAt: formatDateTime(invitation.createdAt, locale),
-        acceptedAt: formatDateTime(invitation.acceptedAt, locale),
-        canRevoke: invitation.status === "PENDING",
-      })),
+      badgeVariant: activeAttempt
+        ? "warning"
+        : latest?.status === "EXPIRED"
+          ? "danger"
+          : latest
+            ? "success"
+            : "default",
+      invitations: internInvitations.map((invitation) => {
+        const currentTokenHasFinishedAttempt =
+          invitation.id === intern.invitationId &&
+          !activeAttempt &&
+          latest &&
+          latest.startedAt.getTime() >= invitation.createdAt.getTime();
+        const tokenStatus = currentTokenHasFinishedAttempt
+          ? "COMPLETED"
+          : getTokenDisplayStatus(invitation);
+
+        return {
+          id: invitation.id,
+          candidateName: invitation.candidateName,
+          inviteCodeMask: invitation.inviteCodeMask ?? "••••",
+          inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
+          status: tokenStatus,
+          createdAt: formatDateTime(invitation.createdAt, locale),
+          acceptedAt: formatDateTime(invitation.acceptedAt, locale),
+          canRevoke: tokenStatus === "PENDING",
+        };
+      }),
       attempts: intern.attempts.map((attempt) => ({
         id: attempt.id,
         status: attempt.status,
@@ -159,28 +227,27 @@ export default async function AdminInternsPage({
       name: latestInvitation.candidateName,
       kind: "invitation",
       internProfileId: null,
-      accessLabel: latestInvitation.status,
-      attemptLabel: t("noProfile"),
+      accessLabel: "NO_ATTEMPTS",
+      attemptLabel: t("noAttemptsShort"),
       resultLabel: "—",
       createdAtSort: latestInvitation.createdAt.getTime(),
       attemptAtSort: 0,
       resultSort: null,
-      badgeVariant:
-        latestInvitation.status === "REVOKED"
-          ? "danger"
-          : latestInvitation.status === "PENDING"
-            ? "default"
-            : "success",
-      invitations: group.map((invitation) => ({
-        id: invitation.id,
-        candidateName: invitation.candidateName,
-        inviteCodeMask: invitation.inviteCodeMask ?? "••••",
-        inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
-        status: invitation.status,
-        createdAt: formatDateTime(invitation.createdAt, locale),
-        acceptedAt: formatDateTime(invitation.acceptedAt, locale),
-        canRevoke: invitation.status === "PENDING",
-      })),
+      badgeVariant: "default",
+      invitations: group.map((invitation) => {
+        const tokenStatus = getTokenDisplayStatus(invitation);
+
+        return {
+          id: invitation.id,
+          candidateName: invitation.candidateName,
+          inviteCodeMask: invitation.inviteCodeMask ?? "••••",
+          inviteCodeCopyValue: decryptInviteCode(invitation.inviteCodeEncrypted),
+          status: tokenStatus,
+          createdAt: formatDateTime(invitation.createdAt, locale),
+          acceptedAt: formatDateTime(invitation.acceptedAt, locale),
+          canRevoke: tokenStatus === "PENDING",
+        };
+      }),
       attempts: [],
     });
   }

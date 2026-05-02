@@ -57,8 +57,8 @@ export type CandidateRow = {
 };
 
 function invitationBadgeVariant(status: string): BadgeVariant {
-  if (status === "ACCEPTED" || status === "COMPLETED") return "success";
-  if (status === "REVOKED") return "danger";
+  if (status === "PENDING" || status === "ACCEPTED") return "success";
+  if (status === "REVOKED" || status === "TOKEN_EXPIRED") return "danger";
   return "default";
 }
 
@@ -189,14 +189,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
     const additions = localInvitations[row.id] ?? [];
     const existingIds = new Set(row.invitations.map((item) => item.id));
     const mergedAdditions = additions.filter((item) => !existingIds.has(item.id));
-    const latestInvitation = mergedAdditions[0];
 
     return {
       ...row,
-      accessLabel: latestInvitation?.status ?? row.accessLabel,
-      badgeVariant: latestInvitation
-        ? invitationBadgeVariant(latestInvitation.status)
-        : row.badgeVariant,
       invitations: [...mergedAdditions, ...row.invitations],
     };
   });
@@ -304,7 +299,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   type="button"
                   onClick={() => toggleSort("access")}
                 >
-                  {t("table.access")} <span>{sortLabel("access")}</span>
+                  {t("table.testStatus")} <span>{sortLabel("access")}</span>
                 </button>
               </th>
               <th>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeLegacyTrack } from "@/lib/question-classification";
@@ -878,7 +879,14 @@ export async function createRetakeInvitationAction(
     return { ok: false, message: "Профиль стажёра не найден." };
   }
 
-  if (intern.attempts[0]?.status === "IN_PROGRESS") {
+  const latestAttempt = intern.attempts[0];
+  const currentLatestAttempt =
+    latestAttempt?.status === "IN_PROGRESS" &&
+    latestAttempt.deadlineAt.getTime() <= Date.now()
+      ? await expireAttemptIfNeeded(latestAttempt.id)
+      : latestAttempt;
+
+  if (currentLatestAttempt?.status === "IN_PROGRESS") {
     return {
       ok: false,
       message:

@@ -77,13 +77,20 @@ export async function finalizeAttempt(attemptId: string, auto = false) {
 export async function expireAttemptIfNeeded(attemptId: string) {
   const attempt = await prisma.assessmentAttempt.findUnique({
     where: { id: attemptId },
+    include: {
+      internProfile: {
+        select: {
+          invitationId: true,
+        },
+      },
+    },
   });
 
   if (!attempt || attempt.status !== "IN_PROGRESS") return attempt;
 
   if (attempt.deadlineAt.getTime() <= Date.now()) {
     const score = await calculateAttemptScore(attemptId);
-    return prisma.assessmentAttempt.update({
+    const expiredAttempt = await prisma.assessmentAttempt.update({
       where: { id: attemptId },
       data: {
         status: "EXPIRED",
@@ -97,6 +104,15 @@ export async function expireAttemptIfNeeded(attemptId: string) {
         ...score,
       },
     });
+
+    if (attempt.internProfile.invitationId) {
+      await prisma.invitation.update({
+        where: { id: attempt.internProfile.invitationId },
+        data: { status: "COMPLETED" },
+      });
+    }
+
+    return expiredAttempt;
   }
 
   return attempt;

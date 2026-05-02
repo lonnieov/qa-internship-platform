@@ -26,6 +26,8 @@
 - Expected: no token is issued and an explanatory message is shown.
 - Try to sign in with an old already completed token after a retake token was issued.
 - Expected: access is denied.
+- Try to start a second test with the same token after its previous attempt expired.
+- Expected: the app opens the existing result flow and does not create another attempt.
 
 ## Regression Check
 
