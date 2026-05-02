@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,8 @@ type Suggestion = {
 };
 
 export function AiQuestionGenerator() {
-  const [topic, setTopic] = useState("QA теория для стажёров");
+  const t = useTranslations("AdminQuestions");
+  const [topic, setTopic] = useState(t("ai.defaultTopic"));
   const [items, setItems] = useState<Suggestion[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ export function AiQuestionGenerator() {
     setLoading(false);
 
     if (!response.ok) {
-      setMessage(data.error ?? "Не удалось получить предложения.");
+      setMessage(data.error ?? t("ai.error"));
       return;
     }
 
@@ -43,11 +45,11 @@ export function AiQuestionGenerator() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI-подсказки вопросов</CardTitle>
+        <CardTitle>{t("ai.title")}</CardTitle>
       </CardHeader>
       <CardContent className="stack">
         <div className="form-grid">
-          <Label htmlFor="topic">Тема</Label>
+          <Label htmlFor="topic">{t("ai.topic")}</Label>
           <Input
             id="topic"
             value={topic}
@@ -56,7 +58,7 @@ export function AiQuestionGenerator() {
         </div>
         <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
           <Sparkles size={18} />
-          Сгенерировать варианты
+          {t("ai.generate")}
         </Button>
         {message ? <p className="body-2 muted m-0">{message}</p> : null}
         <div className="stack">
@@ -67,7 +69,9 @@ export function AiQuestionGenerator() {
                 {item.options.map((option, optionIndex) => (
                   <li key={option}>
                     {option}
-                    {optionIndex === item.correctIndex ? " - верный" : ""}
+                    {optionIndex === item.correctIndex
+                      ? ` ${t("ai.correctSuffix")}`
+                      : ""}
                   </li>
                 ))}
               </ol>

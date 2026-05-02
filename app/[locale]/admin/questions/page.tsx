@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createTrackAction, toggleQuestionAction } from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +11,7 @@ import {
 import { ensureTracks } from "@/lib/tracks";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
-import { getSqlSandboxConfig } from "@/lib/sql-sandbox";
+import { getSqlSandboxConfig } from "@/lib/sql-sandbox-config";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
@@ -46,49 +47,53 @@ async function getQuestions() {
   });
 }
 
-function sectionMeta(type: QuestionType) {
+function sectionMeta(
+  type: QuestionType,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
   switch (type) {
     case "API_SANDBOX":
       return {
         id: "api-sandbox",
-        title: "API Sandbox",
-        description: "Задачи на ручную отправку и проверку API-запросов.",
+        title: t("typeLabels.api"),
+        description: t("sections.api.description"),
       };
     case "DEVTOOLS_SANDBOX":
       return {
         id: "devtools-sandbox",
-        title: "DevTools Sandbox",
-        description: "Задачи на работу с Network и ответами из DevTools.",
+        title: t("typeLabels.devtools"),
+        description: t("sections.devtools.description"),
       };
     case "SQL_SANDBOX":
       return {
         id: "sql-sandbox",
-        title: "SQL Sandbox",
-        description:
-          "Задачи на написание SQL-запросов по связанным таблицам и данным.",
+        title: t("typeLabels.sql"),
+        description: t("sections.sql.description"),
       };
     case "MANUAL_QA_SANDBOX":
       return {
         id: "manual-qa-sandbox",
-        title: "Manual QA",
-        description:
-          "Практические задания на поиск и оформление багов в mobile/webview miniapp.",
+        title: t("typeLabels.manualQa"),
+        description: t("sections.manualQa.description"),
       };
     default:
       return {
         id: "quiz",
-        title: "Quiz",
-        description: "Классические тестовые вопросы с вариантами ответов.",
+        title: t("typeLabels.quiz"),
+        description: t("sections.quiz.description"),
       };
   }
 }
 
-function typeLabel(type: QuestionType) {
-  if (type === "API_SANDBOX") return "API Sandbox";
-  if (type === "SQL_SANDBOX") return "SQL Sandbox";
-  if (type === "DEVTOOLS_SANDBOX") return "DevTools";
-  if (type === "MANUAL_QA_SANDBOX") return "Manual QA";
-  return "Quiz";
+function typeLabel(
+  type: QuestionType,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
+  if (type === "API_SANDBOX") return t("typeLabels.api");
+  if (type === "SQL_SANDBOX") return t("typeLabels.sql");
+  if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtoolsShort");
+  if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  return t("typeLabels.quiz");
 }
 
 function apiSummary(question: AdminQuestion) {
@@ -120,6 +125,7 @@ function renderQuestionCard(
   question: AdminQuestion,
   indexLabel: string,
   tracks: TrackSummary[],
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ) {
   const track = getQuestionTrackMeta(question.trackRef ?? question.track);
   const summary = apiSummary(question);
@@ -132,9 +138,9 @@ function renderQuestionCard(
       <div className="stack">
         <div className="nav-row">
           <span className={track.className}>{track.label}</span>
-          <span className="type-chip">{typeLabel(question.type)}</span>
+          <span className="type-chip">{typeLabel(question.type, t)}</span>
           <Badge variant={question.isActive ? "success" : "muted"}>
-            {question.isActive ? "активен" : "скрыт"}
+            {question.isActive ? t("status.active") : t("status.hidden")}
           </Badge>
         </div>
         <div>
@@ -147,7 +153,9 @@ function renderQuestionCard(
           <div className="stack">
             <div className="nav-row">
               <code className="type-chip">{sqlConfig.dialect}</code>
-              <code className="type-chip">{sqlConfig.tables.length} tables</code>
+              <code className="type-chip">
+                {t("meta.tables", { count: sqlConfig.tables.length })}
+              </code>
               <code className="type-chip">
                 {sqlConfig.expectedResult.columns.join(", ")}
               </code>
@@ -166,7 +174,7 @@ function renderQuestionCard(
                 {manualQaConfig.viewport.height}
               </code>
               <code className="type-chip">
-                {manualQaConfig.knownBugs.length} known bugs
+                {t("meta.knownBugs", { count: manualQaConfig.knownBugs.length })}
               </code>
             </div>
             <div className="soft-panel stack">
@@ -180,7 +188,9 @@ function renderQuestionCard(
             <div className="nav-row">
               <code className="type-chip">{summary.method}</code>
               <code className="type-chip">{summary.path}</code>
-              <code className="type-chip">status {summary.status}</code>
+              <code className="type-chip">
+                {t("meta.status", { status: summary.status })}
+              </code>
             </div>
             <div className="soft-panel">
               <pre className="body-2 m-0 whitespace-pre-wrap">
@@ -195,18 +205,18 @@ function renderQuestionCard(
             if (openQuiz) {
               return (
                 <div className="soft-panel stack">
-                  <Badge variant="muted">Открытый вопрос</Badge>
+                  <Badge variant="muted">{t("openQuestion.label")}</Badge>
                   {openQuiz.answerLabel ? (
                     <p className="body-2 muted m-0">{openQuiz.answerLabel}</p>
                   ) : null}
                   {openQuiz.expectedAnswer ? (
                     <p className="body-2 m-0">
-                      <strong>Подсказка проверяющему:</strong>{" "}
+                      <strong>{t("openQuestion.reviewerHint")}:</strong>{" "}
                       {openQuiz.expectedAnswer}
                     </p>
                   ) : (
                     <p className="body-2 muted m-0">
-                      Подсказка для проверяющего не указана.
+                      {t("openQuestion.reviewerHintMissing")}
                     </p>
                   )}
                 </div>
@@ -233,7 +243,7 @@ function renderQuestionCard(
           })()
         )}
         <details className="edit-question-panel">
-          <summary>Редактировать</summary>
+          <summary>{t("edit")}</summary>
           <QuestionForm
             embedded
             initialType={question.type}
@@ -259,7 +269,7 @@ function renderQuestionCard(
                 value={String(question.isActive)}
               />
               <Button type="submit" variant="secondary" size="sm">
-                {question.isActive ? "Скрыть" : "Активировать"}
+                {question.isActive ? t("hide") : t("activate")}
               </Button>
             </form>
             <QuestionDeleteForm questionId={question.id} />
@@ -271,10 +281,14 @@ function renderQuestionCard(
 }
 
 export default async function AdminQuestionsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: "ru" | "uz" }>;
   searchParams: Promise<{ type?: string; track?: string; created?: string }>;
 }) {
+  await params;
+  const t = await getTranslations("AdminQuestions");
   const resolvedSearchParams = await searchParams;
   const tracks = await ensureTracks();
   const questions = await getQuestions();
@@ -324,7 +338,7 @@ export default async function AdminQuestionsPage({
   ];
   const activeSection =
     sections.find((section) => section.type === selectedType) ?? sections[0];
-  const activeMeta = sectionMeta(activeSection.type);
+  const activeMeta = sectionMeta(activeSection.type, t);
   const allTypeCount = (type: QuestionType) =>
     questions.filter((question) => question.type === type).length;
   const trackCounts = Object.fromEntries(
@@ -347,9 +361,9 @@ export default async function AdminQuestionsPage({
       {resolvedSearchParams.created === "1" ? <QuestionCreatedToast /> : null}
       <div className="page-header">
         <div>
-          <h1 className="head-1">Банк вопросов</h1>
+          <h1 className="head-1">{t("title")}</h1>
           <p className="body-1 muted m-0">
-            Вопросы классифицируются по трекам и типам задач.
+            {t("description")}
           </p>
         </div>
       </div>
@@ -357,13 +371,13 @@ export default async function AdminQuestionsPage({
       <section className="surface question-bank-layout">
         <aside className="question-filter-rail">
           <div className="question-filter-title-row">
-            <div className="question-filter-title">Треки</div>
+            <div className="question-filter-title">{t("tracks.title")}</div>
           </div>
           <form action={createTrackAction} className="track-create-form">
             <Input
-              aria-label="Название нового трека"
+              aria-label={t("tracks.newTrackAria")}
               name="name"
-              placeholder="Новый трек"
+              placeholder={t("tracks.newTrackPlaceholder")}
               required
             />
             <Button type="submit" size="sm">
@@ -374,7 +388,7 @@ export default async function AdminQuestionsPage({
             className={`question-filter-item ${selectedTrack === "all" ? "active" : ""}`}
             href={filterUrl(activeSection.type, "all")}
           >
-            <span>Все треки</span>
+            <span>{t("tracks.all")}</span>
             <span>{questions.length}</span>
           </Link>
           {tracks.map((track) => {
@@ -402,7 +416,7 @@ export default async function AdminQuestionsPage({
         <div className="question-list-panel">
           <div className="nav-row">
             {sections.map(({ type }) => {
-              const meta = sectionMeta(type);
+              const meta = sectionMeta(type, t);
               const active = type === activeSection.type;
 
               return (
@@ -438,7 +452,7 @@ export default async function AdminQuestionsPage({
           {activeSection.items.length === 0 ? (
             <Card>
               <CardContent className="p-6 muted">
-                Пока нет вопросов в выбранном срезе.
+                {t("empty")}
               </CardContent>
             </Card>
           ) : (
@@ -447,7 +461,12 @@ export default async function AdminQuestionsPage({
               questionIds={activeSection.items.map((question) => question.id)}
             >
               {activeSection.items.map((question, index) =>
-                renderQuestionCard(question, `${index + 1}`, tracksForForms),
+                renderQuestionCard(
+                  question,
+                  `${index + 1}`,
+                  tracksForForms,
+                  t,
+                ),
               )}
             </SortableQuestionList>
           )}

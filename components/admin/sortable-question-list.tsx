@@ -9,6 +9,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { GripVertical } from "lucide-react";
 import { reorderQuestionsAction } from "@/actions/admin";
 
@@ -40,6 +41,7 @@ export function SortableQuestionList({
   questionIds,
   children,
 }: SortableQuestionListProps) {
+  const t = useTranslations("AdminQuestions");
   const router = useRouter();
   const [orderedIds, setOrderedIds] = useState(questionIds);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function SortableQuestionList({
           onDrop={handleDrop}
         >
           <button
-            aria-label="Перетащить вопрос"
+            aria-label={t("dragQuestion")}
             className="question-dnd-handle"
             draggable
             onDragEnd={handleDragEnd}

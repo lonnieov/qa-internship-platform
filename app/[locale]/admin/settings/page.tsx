@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { updateSettingsAction } from "@/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/assessment";
@@ -10,7 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default async function AdminSettingsPage() {
+export default async function AdminSettingsPage({
+  params,
+}: {
+  params: Promise<{ locale: "ru" | "uz" }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations("AdminSettings");
   const currentAdmin = await requireAdmin();
   const [settings, admins] = await Promise.all([
     getSettings(),
@@ -34,20 +41,19 @@ export default async function AdminSettingsPage() {
   return (
     <main className="page page-narrow stack-lg">
       <div>
-        <h1 className="head-1">Настройки</h1>
+        <h1 className="head-1">{t("title")}</h1>
         <p className="body-1 muted m-0">
-          Лимит применяется к новым попыткам. Результат считается как процент
-          верных ответов.
+          {t("description")}
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Общее время</CardTitle>
+          <CardTitle>{t("timeCard.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={updateSettingsAction} className="form-grid">
             <div className="form-grid">
-              <Label htmlFor="totalTimeMinutes">Минут на весь тест</Label>
+              <Label htmlFor="totalTimeMinutes">{t("timeCard.minutesLabel")}</Label>
               <Input
                 id="totalTimeMinutes"
                 name="totalTimeMinutes"
@@ -57,14 +63,14 @@ export default async function AdminSettingsPage() {
                 defaultValue={settings.totalTimeMinutes}
               />
             </div>
-            <Button type="submit">Сохранить</Button>
+            <Button type="submit">{t("save")}</Button>
           </form>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Администраторы</CardTitle>
+          <CardTitle>{t("admins.title")}</CardTitle>
         </CardHeader>
         <CardContent className="stack">
           <AdminCreateForm />
@@ -72,9 +78,9 @@ export default async function AdminSettingsPage() {
             <table className="table admins-table">
               <thead>
                 <tr>
-                  <th>Администратор</th>
-                  <th>Email</th>
-                  <th>Создан</th>
+                  <th>{t("admins.table.admin")}</th>
+                  <th>{t("admins.table.email")}</th>
+                  <th>{t("admins.table.created")}</th>
                   <th />
                 </tr>
               </thead>
@@ -89,20 +95,23 @@ export default async function AdminSettingsPage() {
                           <span>
                             {[admin.firstName, admin.lastName]
                               .filter(Boolean)
-                              .join(" ") || "Без имени"}
+                              .join(" ") || t("admins.noName")}
                           </span>
                           {isCurrent ? (
-                            <span className="type-chip">текущий</span>
+                            <span className="type-chip">{t("admins.current")}</span>
                           ) : null}
                         </div>
                       </td>
                       <td>{admin.email}</td>
                       <td>
-                        {admin.createdAt.toLocaleDateString("ru-RU", {
+                        {admin.createdAt.toLocaleDateString(
+                          locale === "uz" ? "uz-UZ" : "ru-RU",
+                          {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
-                        })}
+                          },
+                        )}
                       </td>
                       <td>
                         <AdminManageModal

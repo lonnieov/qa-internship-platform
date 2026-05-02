@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { CheckCircle2, Clock3, UsersRound } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/assessment";
@@ -8,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-function formatDateTime(value: Date | null | undefined) {
+function formatDateTime(value: Date | null | undefined, locale: "ru" | "uz") {
   if (!value) return "--";
 
-  return value.toLocaleString("ru-RU", {
+  return value.toLocaleString(locale === "uz" ? "uz-UZ" : "ru-RU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -20,7 +21,13 @@ function formatDateTime(value: Date | null | undefined) {
   });
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  params,
+}: {
+  params: Promise<{ locale: "ru" | "uz" }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations("AdminOverview");
   const [settings, internCount, activeQuestionCount, attempts] =
     await Promise.all([
       getSettings(),
@@ -41,13 +48,13 @@ export default async function AdminPage() {
     <main className="page stack-lg">
       <div className="page-header">
         <div>
-          <h1 className="head-1">Панель администратора</h1>
+          <h1 className="head-1">{t("title")}</h1>
           <p className="body-1 muted m-0">
-            Управляйте доступом, вопросами и результатами стажёров.
+            {t("description")}
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/interns">Выдать доступ</Link>
+          <Link href="/admin/interns">{t("grantAccess")}</Link>
         </Button>
       </div>
 
@@ -55,50 +62,50 @@ export default async function AdminPage() {
         <Card>
           <CardHeader>
             <UsersRound color="var(--primary)" />
-            <CardTitle>Стажёры</CardTitle>
+            <CardTitle>{t("cards.interns")}</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">{internCount}</span>
-            <Badge>в базе</Badge>
+            <Badge>{t("cards.inDatabase")}</Badge>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CheckCircle2 color="var(--primary)" />
-            <CardTitle>Активные вопросы</CardTitle>
+            <CardTitle>{t("cards.activeQuestions")}</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">{activeQuestionCount}</span>
-            <Badge variant="success">активно</Badge>
+            <Badge variant="success">{t("cards.active")}</Badge>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <Clock3 color="var(--primary)" />
-            <CardTitle>Лимит времени</CardTitle>
+            <CardTitle>{t("cards.timeLimit")}</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">{settings.totalTimeMinutes}</span>
-            <Badge variant="muted">минут</Badge>
+            <Badge variant="muted">{t("cards.minutes")}</Badge>
           </CardContent>
         </Card>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Последние попытки</CardTitle>
+          <CardTitle>{t("recentAttempts.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Стажёр</th>
-                  <th>Начал тест</th>
-                  <th>Прошёл тест</th>
-                  <th>Статус</th>
-                  <th>Результат</th>
-                  <th>Прогресс</th>
+                  <th>{t("recentAttempts.table.intern")}</th>
+                  <th>{t("recentAttempts.table.started")}</th>
+                  <th>{t("recentAttempts.table.submitted")}</th>
+                  <th>{t("recentAttempts.table.status")}</th>
+                  <th>{t("recentAttempts.table.result")}</th>
+                  <th>{t("recentAttempts.table.progress")}</th>
                   <th />
                 </tr>
               </thead>
@@ -106,15 +113,15 @@ export default async function AdminPage() {
                 {attempts.map((attempt) => (
                   <tr key={attempt.id}>
                     <td>{attempt.internProfile.fullName}</td>
-                    <td>{formatDateTime(attempt.startedAt)}</td>
-                    <td>{formatDateTime(attempt.submittedAt)}</td>
+                    <td>{formatDateTime(attempt.startedAt, locale)}</td>
+                    <td>{formatDateTime(attempt.submittedAt, locale)}</td>
                     <td>
                       <Badge
                         variant={
                           attempt.status === "SUBMITTED" ? "success" : "warning"
                         }
                       >
-                        {attempt.status}
+                        {t(`status.${attempt.status}`)}
                       </Badge>
                     </td>
                     <td>{formatPercent(attempt.scorePercent)}</td>
@@ -124,7 +131,7 @@ export default async function AdminPage() {
                     <td>
                       <Button size="sm" variant="outline" asChild>
                         <Link href={`/admin/attempts/${attempt.id}`}>
-                          Открыть
+                          {t("recentAttempts.open")}
                         </Link>
                       </Button>
                     </td>
@@ -133,7 +140,7 @@ export default async function AdminPage() {
                 {attempts.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="muted">
-                      Пока нет попыток.
+                      {t("recentAttempts.empty")}
                     </td>
                   </tr>
                 ) : null}

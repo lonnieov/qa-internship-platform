@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
 import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import {
 import {
   getSqlSandboxConfig,
   sampleSqlSandboxConfig,
-} from "@/lib/sql-sandbox";
+} from "@/lib/sql-sandbox-config";
 
 type QuestionType =
   | "QUIZ"
@@ -87,6 +88,14 @@ function getConfig(question: EditableQuestion | undefined) {
   return isRecord(question?.apiConfig) ? question.apiConfig : {};
 }
 
+function getQuestionTypeLabel(t: ReturnType<typeof useTranslations>, type: QuestionType) {
+  if (type === "API_SANDBOX") return t("typeLabels.api");
+  if (type === "SQL_SANDBOX") return t("typeLabels.sql");
+  if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtools");
+  if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  return t("typeLabels.quiz");
+}
+
 export function QuestionForm({
   initialType,
   initialTrackId,
@@ -104,6 +113,7 @@ export function QuestionForm({
   showTitle?: boolean;
   question?: EditableQuestion;
 }) {
+  const t = useTranslations("AdminQuestionForm");
   const [draftType, setDraftType] = useState<QuestionType>(
     question?.type ?? initialType,
   );
@@ -147,23 +157,23 @@ export function QuestionForm({
     (left, right) => left.order - right.order,
   );
 
-  const title = isEditing ? "Редактировать вопрос" : "Новый вопрос";
+  const title = isEditing ? t("title.edit") : t("title.new");
   const action = isEditing ? updateQuestionAction : createQuestionAction;
-  const submitLabel = isEditing ? "Сохранить изменения" : "Добавить вопрос";
+  const submitLabel = isEditing ? t("submit.save") : t("submit.add");
   const defaultQuestionText =
     questionType === "MANUAL_QA_SANDBOX" &&
     draftManualQaPresetId !== initialManualQaConfig.appPreset
       ? manualQaConfig.mission
       : (question?.text ??
         (questionType === "QUIZ"
-          ? "Что проверяет smoke testing?"
+          ? t("defaults.quizPrompt")
           : questionType === "API_SANDBOX"
-            ? "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201."
+            ? t("defaults.apiPrompt")
             : questionType === "SQL_SANDBOX"
               ? sqlSandboxConfig.mission
             : questionType === "MANUAL_QA_SANDBOX"
               ? manualQaConfig.mission
-              : "Нажмите кнопку, найдите request в Network и впишите значение поля message из response."));
+              : t("defaults.devtoolsPrompt")));
   const form = (
     <form action={action} className="form-grid">
       {question ? (
@@ -182,14 +192,14 @@ export function QuestionForm({
 
       {!isEditing && !lockType ? (
         <div className="form-grid">
-          <Label>Тип вопроса</Label>
+          <Label>{t("questionType")}</Label>
           <div className="question-form-choice-grid">
             {[
-              ["QUIZ", "Quiz"],
-              ["API_SANDBOX", "API Sandbox"],
-              ["SQL_SANDBOX", "SQL Sandbox"],
-              ["DEVTOOLS_SANDBOX", "DevTools"],
-              ["MANUAL_QA_SANDBOX", "Manual QA"],
+              ["QUIZ", t("typeLabels.quiz")],
+              ["API_SANDBOX", t("typeLabels.api")],
+              ["SQL_SANDBOX", t("typeLabels.sql")],
+              ["DEVTOOLS_SANDBOX", t("typeLabels.devtools")],
+              ["MANUAL_QA_SANDBOX", t("typeLabels.manualQa")],
             ].map(([value, label]) => (
               <label className="question-form-choice" key={value}>
                 <input
@@ -205,23 +215,13 @@ export function QuestionForm({
         </div>
       ) : (
         <div className="form-grid">
-          <Label>Тип вопроса</Label>
-          <span className="type-chip">
-            {questionType === "DEVTOOLS_SANDBOX"
-              ? "DevTools"
-              : questionType === "API_SANDBOX"
-                ? "API Sandbox"
-                : questionType === "SQL_SANDBOX"
-                  ? "SQL Sandbox"
-                : questionType === "MANUAL_QA_SANDBOX"
-                  ? "Manual QA"
-                  : "Quiz"}
-          </span>
+          <Label>{t("questionType")}</Label>
+          <span className="type-chip">{getQuestionTypeLabel(t, questionType)}</span>
         </div>
       )}
 
       <div className="form-grid">
-        <Label>Классификация</Label>
+        <Label>{t("classification")}</Label>
         <div className="question-form-choice-grid">
           {selectableTracks.map((track) => {
             const meta = getQuestionTrackMeta(track);
@@ -245,7 +245,7 @@ export function QuestionForm({
         </div>
         {selectableTracks.length === 0 ? (
           <p className="body-2 muted m-0">
-            Создайте активный трек перед добавлением вопроса.
+            {t("createTrackFirst")}
           </p>
         ) : null}
       </div>
@@ -253,12 +253,12 @@ export function QuestionForm({
       <div className="form-grid">
         <Label htmlFor="text">
           {questionType === "QUIZ"
-            ? "Текст вопроса"
+            ? t("fields.questionText")
             : questionType === "SQL_SANDBOX"
-              ? "Описание SQL-задачи"
+              ? t("fields.sqlMission")
             : questionType === "MANUAL_QA_SANDBOX"
-              ? "Миссия для стажёра"
-              : "Описание API-задачи"}
+              ? t("fields.manualMission")
+              : t("fields.apiMission")}
         </Label>
         <Textarea
           id="text"
@@ -273,11 +273,11 @@ export function QuestionForm({
         <div className="stack">
           {!isEditing ? (
             <div className="form-grid">
-              <Label>Формат Quiz-вопроса</Label>
+              <Label>{t("quizMode")}</Label>
               <div className="question-form-choice-grid">
                 {[
-                  ["CHOICE", "С вариантами"],
-                  ["OPEN_TEXT", "Открытый ответ"],
+                  ["CHOICE", t("quizModes.choice")],
+                  ["OPEN_TEXT", t("quizModes.openText")],
                 ].map(([value, label]) => (
                   <label className="question-form-choice" key={value}>
                     <input
@@ -295,11 +295,11 @@ export function QuestionForm({
             </div>
           ) : (
             <div className="form-grid">
-              <Label>Формат Quiz-вопроса</Label>
+              <Label>{t("quizMode")}</Label>
               <div className="question-form-choice-grid">
                 {[
-                  ["CHOICE", "С вариантами"],
-                  ["OPEN_TEXT", "Открытый ответ"],
+                  ["CHOICE", t("quizModes.choice")],
+                  ["OPEN_TEXT", t("quizModes.openText")],
                 ].map(([value, label]) => (
                   <label className="question-form-choice" key={value}>
                     <input
@@ -320,33 +320,31 @@ export function QuestionForm({
           {quizMode === "OPEN_TEXT" ? (
             <div className="stack">
               <div className="form-grid">
-                <Label htmlFor="openExpectedAnswer">Эталонный ответ</Label>
+                <Label htmlFor="openExpectedAnswer">{t("open.answerKey")}</Label>
                 <Textarea
                   id="openExpectedAnswer"
                   name="openExpectedAnswer"
                   defaultValue={openQuizConfig?.expectedAnswer ?? ""}
-                  placeholder="Необязательно. Можно оставить подсказку для проверяющего."
+                  placeholder={t("open.answerKeyPlaceholder")}
                 />
               </div>
               <div className="grid-2">
                 <div className="form-grid">
-                  <Label htmlFor="openAnswerLabel">
-                    Подпись поля для стажёра
-                  </Label>
+                  <Label htmlFor="openAnswerLabel">{t("open.answerLabel")}</Label>
                   <Input
                     id="openAnswerLabel"
                     name="openAnswerLabel"
                     defaultValue={openQuizConfig?.answerLabel ?? ""}
-                    placeholder="Опишите ответ своими словами"
+                    placeholder={t("open.answerLabelPlaceholder")}
                   />
                 </div>
                 <div className="form-grid">
-                  <Label htmlFor="openPlaceholder">Placeholder</Label>
+                  <Label htmlFor="openPlaceholder">{t("open.placeholderLabel")}</Label>
                   <Input
                     id="openPlaceholder"
                     name="openPlaceholder"
                     defaultValue={openQuizConfig?.placeholder ?? ""}
-                    placeholder="Введите ответ"
+                    placeholder={t("open.placeholder")}
                   />
                 </div>
               </div>
@@ -366,7 +364,7 @@ export function QuestionForm({
                       />
                     ) : null}
                     <Label htmlFor={`option-${index}`}>
-                      Вариант {String.fromCharCode(65 + index)}
+                      {t("choice.option")} {String.fromCharCode(65 + index)}
                     </Label>
                     <div className="flex gap-2">
                       <Input
@@ -375,10 +373,10 @@ export function QuestionForm({
                         defaultValue={
                           option?.text ??
                           [
-                            "Быстрая проверка критичного функционала после сборки",
-                            "Полная проверка всех требований проекта",
-                            "Проверка только визуального слоя интерфейса",
-                            "Нагрузочное тестирование API",
+                            t("defaults.choiceA"),
+                            t("defaults.choiceB"),
+                            t("defaults.choiceC"),
+                            t("defaults.choiceD"),
                           ][index]
                         }
                         required={quizMode === "CHOICE"}
@@ -390,7 +388,7 @@ export function QuestionForm({
                           value={index}
                           defaultChecked={option?.isCorrect ?? index === 0}
                         />
-                        верный
+                        {t("choice.correct")}
                       </label>
                     </div>
                   </div>
@@ -403,7 +401,7 @@ export function QuestionForm({
         <div className="stack">
           <div className="grid-2">
             <div className="form-grid">
-              <Label htmlFor="apiMethod">Ожидаемый method</Label>
+              <Label htmlFor="apiMethod">{t("api.expectedMethod")}</Label>
               <Select
                 id="apiMethod"
                 name="apiMethod"
@@ -417,7 +415,7 @@ export function QuestionForm({
               </Select>
             </div>
             <div className="form-grid">
-              <Label htmlFor="apiSuccessStatus">Успешный status code</Label>
+              <Label htmlFor="apiSuccessStatus">{t("api.successStatus")}</Label>
               <Input
                 id="apiSuccessStatus"
                 name="apiSuccessStatus"
@@ -431,7 +429,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiPath">Ожидаемый path</Label>
+            <Label htmlFor="apiPath">{t("api.expectedPath")}</Label>
             <Input
               id="apiPath"
               name="apiPath"
@@ -441,7 +439,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiQuery">Ожидаемый query string</Label>
+            <Label htmlFor="apiQuery">{t("api.expectedQuery")}</Label>
             <Input
               id="apiQuery"
               name="apiQuery"
@@ -452,7 +450,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiHeaders">Обязательные request headers</Label>
+            <Label htmlFor="apiHeaders">{t("api.requiredHeaders")}</Label>
             <Textarea
               id="apiHeaders"
               name="apiHeaders"
@@ -464,7 +462,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiBody">Ожидаемый JSON body</Label>
+            <Label htmlFor="apiBody">{t("api.expectedBody")}</Label>
             <JsonEditor
               id="apiBody"
               name="apiBody"
@@ -476,7 +474,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiSuccessBody">Успешный response body</Label>
+            <Label htmlFor="apiSuccessBody">{t("api.successBody")}</Label>
             <JsonEditor
               id="apiSuccessBody"
               name="apiSuccessBody"
@@ -490,7 +488,7 @@ export function QuestionForm({
       ) : questionType === "SQL_SANDBOX" ? (
         <div className="stack">
           <div className="form-grid">
-            <Label htmlFor="sqlTaskTitle">Название задания</Label>
+            <Label htmlFor="sqlTaskTitle">{t("sql.taskTitle")}</Label>
             <Input
               id="sqlTaskTitle"
               name="sqlTaskTitle"
@@ -500,7 +498,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="sqlTables">Связанные таблицы и данные</Label>
+            <Label htmlFor="sqlTables">{t("sql.tables")}</Label>
             <JsonEditor
               id="sqlTables"
               name="sqlTables"
@@ -512,7 +510,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="sqlExpectedResult">Ожидаемый результат</Label>
+            <Label htmlFor="sqlExpectedResult">{t("sql.expectedResult")}</Label>
             <JsonEditor
               id="sqlExpectedResult"
               name="sqlExpectedResult"
@@ -524,17 +522,16 @@ export function QuestionForm({
           </div>
 
           <div className="soft-panel stack">
-            <strong>SQL sandbox проверяется автоматически</strong>
+            <strong>{t("sql.autoTitle")}</strong>
             <p className="body-2 muted m-0">
-              Стажёр пишет один SELECT или WITH запрос к таблицам из задания, а
-              система валидирует синтаксис и сверяет результат по смыслу.
+              {t("sql.autoDescription")}
             </p>
           </div>
         </div>
       ) : questionType === "MANUAL_QA_SANDBOX" ? (
         <div className="stack">
           <div className="form-grid">
-            <Label htmlFor="manualQaPreset">Preset приложения</Label>
+            <Label htmlFor="manualQaPreset">{t("manual.preset")}</Label>
             <Select
               id="manualQaPreset"
               name="manualQaPreset"
@@ -551,7 +548,7 @@ export function QuestionForm({
 
           <div className="form-grid" key={manualQaConfig.appPreset}>
             <div className="form-grid">
-              <Label htmlFor="manualQaScenarioTitle">Название сценария</Label>
+              <Label htmlFor="manualQaScenarioTitle">{t("manual.scenarioTitle")}</Label>
               <Input
                 id="manualQaScenarioTitle"
                 name="manualQaScenarioTitle"
@@ -562,7 +559,9 @@ export function QuestionForm({
 
             <div className="grid-2">
               <div className="form-grid">
-                <Label htmlFor="manualQaViewportWidth">Viewport width</Label>
+                <Label htmlFor="manualQaViewportWidth">
+                  {t("manual.viewportWidth")}
+                </Label>
                 <Input
                   id="manualQaViewportWidth"
                   name="manualQaViewportWidth"
@@ -574,7 +573,9 @@ export function QuestionForm({
                 />
               </div>
               <div className="form-grid">
-                <Label htmlFor="manualQaViewportHeight">Viewport height</Label>
+                <Label htmlFor="manualQaViewportHeight">
+                  {t("manual.viewportHeight")}
+                </Label>
                 <Input
                   id="manualQaViewportHeight"
                   name="manualQaViewportHeight"
@@ -590,7 +591,7 @@ export function QuestionForm({
             <div className="grid-2">
               <div className="form-grid">
                 <Label htmlFor="manualQaTimeHintMinutes">
-                  Рекоменд. минуты
+                  {t("manual.recommendedMinutes")}
                 </Label>
                 <Input
                   id="manualQaTimeHintMinutes"
@@ -604,7 +605,7 @@ export function QuestionForm({
               </div>
               <div className="form-grid">
                 <Label htmlFor="manualQaCategories">
-                  Категории через запятую
+                  {t("manual.categories")}
                 </Label>
                 <Input
                   id="manualQaCategories"
@@ -616,7 +617,9 @@ export function QuestionForm({
             </div>
 
             <div className="form-grid">
-              <Label htmlFor="manualQaKnownBugs">Known bugs rubric</Label>
+              <Label htmlFor="manualQaKnownBugs">
+                {t("manual.knownBugsRubric")}
+              </Label>
               <JsonEditor
                 id="manualQaKnownBugs"
                 name="manualQaKnownBugs"
@@ -629,11 +632,9 @@ export function QuestionForm({
           </div>
 
           <div className="soft-panel stack">
-            <strong>Этот тип требует ручной проверки</strong>
+            <strong>{t("manual.reviewTitle")}</strong>
             <p className="body-2 muted m-0">
-              Стажёр будет искать баги в miniapp и оформлять баг-репорты. Known
-              bugs нужны для рубрики проверяющего и будущей полуавтоматической
-              оценки.
+              {t("manual.reviewDescription")}
             </p>
           </div>
         </div>
@@ -641,7 +642,7 @@ export function QuestionForm({
         <div className="stack">
           <div className="grid-2">
             <div className="form-grid">
-              <Label htmlFor="apiMethod">Method запроса в Network</Label>
+              <Label htmlFor="apiMethod">{t("devtools.networkMethod")}</Label>
               <Select
                 id="apiMethod"
                 name="apiMethod"
@@ -655,7 +656,7 @@ export function QuestionForm({
               </Select>
             </div>
             <div className="form-grid">
-              <Label htmlFor="apiSuccessStatus">Status ответа</Label>
+              <Label htmlFor="apiSuccessStatus">{t("devtools.responseStatus")}</Label>
               <Input
                 id="apiSuccessStatus"
                 name="apiSuccessStatus"
@@ -669,21 +670,21 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiButtonLabel">Текст кнопки для стажёра</Label>
+            <Label htmlFor="apiButtonLabel">{t("devtools.buttonLabel")}</Label>
             <Input
               id="apiButtonLabel"
               name="apiButtonLabel"
               defaultValue={readString(
                 config,
                 "buttonLabel",
-                "Отправить запрос",
+                t("devtools.buttonDefault"),
               )}
               required
             />
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiPath">Имя endpoint в Network</Label>
+            <Label htmlFor="apiPath">{t("devtools.endpointName")}</Label>
             <Input
               id="apiPath"
               name="apiPath"
@@ -693,7 +694,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiQuery">Query string для endpoint</Label>
+            <Label htmlFor="apiQuery">{t("devtools.endpointQuery")}</Label>
             <Input
               id="apiQuery"
               name="apiQuery"
@@ -702,7 +703,7 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiHeaders">Response headers</Label>
+            <Label htmlFor="apiHeaders">{t("devtools.responseHeaders")}</Label>
             <Textarea
               id="apiHeaders"
               name="apiHeaders"
@@ -715,7 +716,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiBody">
-              Request JSON body, который уйдёт при клике
+              {t("devtools.requestBody")}
             </Label>
             <JsonEditor
               id="apiBody"
@@ -729,7 +730,7 @@ export function QuestionForm({
 
           <div className="form-grid">
             <Label htmlFor="apiSuccessBody">
-              JSON response body для DevTools
+              {t("devtools.responseBody")}
             </Label>
             <JsonEditor
               id="apiSuccessBody"
@@ -744,7 +745,7 @@ export function QuestionForm({
 
           <div className="grid-2">
             <div className="form-grid">
-              <Label htmlFor="apiAnswerPath">Путь параметра в response</Label>
+              <Label htmlFor="apiAnswerPath">{t("devtools.answerPath")}</Label>
               <Input
                 id="apiAnswerPath"
                 name="apiAnswerPath"
@@ -753,7 +754,7 @@ export function QuestionForm({
               />
             </div>
             <div className="form-grid">
-              <Label htmlFor="apiExpectedAnswer">Ожидаемый ответ стажёра</Label>
+              <Label htmlFor="apiExpectedAnswer">{t("devtools.expectedAnswer")}</Label>
               <Input
                 id="apiExpectedAnswer"
                 name="apiExpectedAnswer"
@@ -768,14 +769,14 @@ export function QuestionForm({
           </div>
 
           <div className="form-grid">
-            <Label htmlFor="apiAnswerLabel">Подпись поля ответа</Label>
+            <Label htmlFor="apiAnswerLabel">{t("devtools.answerLabel")}</Label>
             <Input
               id="apiAnswerLabel"
               name="apiAnswerLabel"
               defaultValue={readString(
                 config,
                 "answerLabel",
-                "Введите значение поля message из response",
+                t("devtools.answerLabelDefault"),
               )}
             />
           </div>
@@ -783,7 +784,7 @@ export function QuestionForm({
       )}
 
       <div className="form-grid">
-        <Label htmlFor="explanation">Пояснение для админа</Label>
+        <Label htmlFor="explanation">{t("adminNote")}</Label>
         <Textarea
           id="explanation"
           name="explanation"

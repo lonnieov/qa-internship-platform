@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +26,8 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
+  const t = useTranslations("ThemeToggle");
+
   function toggleTheme() {
     const nextTheme = preferredTheme() === "dark" ? "light" : "dark";
     applyTheme(nextTheme);
@@ -32,7 +35,7 @@ export function ThemeToggle() {
 
   return (
     <Button
-      aria-label="Переключить тему"
+      aria-label={t("toggle")}
       size="icon"
       type="button"
       variant="outline"

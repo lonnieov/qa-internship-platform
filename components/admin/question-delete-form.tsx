@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { deleteQuestionAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 
@@ -8,13 +9,13 @@ type QuestionDeleteFormProps = {
 };
 
 export function QuestionDeleteForm({ questionId }: QuestionDeleteFormProps) {
+  const t = useTranslations("AdminQuestions");
+
   return (
     <form
       action={deleteQuestionAction}
       onSubmit={(event) => {
-        const confirmed = window.confirm(
-          "Удалить вопрос без возможности восстановления?",
-        );
+        const confirmed = window.confirm(t("deleteConfirm"));
 
         if (!confirmed) {
           event.preventDefault();
@@ -23,7 +24,7 @@ export function QuestionDeleteForm({ questionId }: QuestionDeleteFormProps) {
     >
       <input type="hidden" name="questionId" value={questionId} />
       <Button type="submit" variant="destructive" size="sm">
-        Удалить
+        {t("delete")}
       </Button>
     </form>
   );

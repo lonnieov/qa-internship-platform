@@ -22,7 +22,7 @@ import {
 import {
   getSqlSandboxConfig,
   sampleSqlSandboxConfig,
-} from "@/lib/sql-sandbox";
+} from "@/lib/sql-sandbox-config";
 
 const defaultInvitationExpiryDays = 14;
 

@@ -23,9 +23,9 @@ import {
   summarizeManualQaAnswer,
 } from "@/lib/manual-qa-sandbox";
 import {
-  executeSqlSandboxQuery,
   getSqlSandboxConfig,
-} from "@/lib/sql-sandbox";
+} from "@/lib/sql-sandbox-config";
+import { executeSqlSandboxQuery } from "@/lib/sql-sandbox";
 import { hashInviteCode } from "@/lib/security";
 import {
   clearInternSession,

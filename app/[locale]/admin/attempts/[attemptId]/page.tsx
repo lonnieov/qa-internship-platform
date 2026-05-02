@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Clock3, Route, TimerReset } from "lucide-react";
 import { getInternComment } from "@/lib/answer-comment";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
@@ -17,9 +18,10 @@ import { Progress } from "@/components/ui/progress";
 export default async function AttemptDetailsPage({
   params,
 }: {
-  params: Promise<{ attemptId: string }>;
+  params: Promise<{ locale: "ru" | "uz"; attemptId: string }>;
 }) {
   const { attemptId } = await params;
+  const t = await getTranslations("AdminAttemptReport");
   const attempt = await prisma.assessmentAttempt.findUnique({
     where: { id: attemptId },
     include: {
@@ -35,39 +37,56 @@ export default async function AttemptDetailsPage({
   });
 
   if (!attempt) notFound();
+  const safeAttempt = attempt;
 
-  const score = attempt.scorePercent ?? 0;
-  const answerTimeMs = attempt.answers.reduce(
+  const score = safeAttempt.scorePercent ?? 0;
+  const answerTimeMs = safeAttempt.answers.reduce(
     (sum, answer) => sum + answer.timeSpentMs,
     0,
   );
   const totalTimeMs =
-    typeof attempt.totalTimeSeconds === "number"
-      ? attempt.totalTimeSeconds * 1000
+    typeof safeAttempt.totalTimeSeconds === "number"
+      ? safeAttempt.totalTimeSeconds * 1000
       : Math.max(
           0,
-          (attempt.submittedAt?.getTime() ?? Date.now()) -
-            attempt.startedAt.getTime(),
+          (safeAttempt.submittedAt?.getTime() ?? Date.now()) -
+            safeAttempt.startedAt.getTime(),
         );
   const averageQuestionTimeMs =
-    attempt.questionCount > 0
-      ? Math.round(answerTimeMs / attempt.questionCount)
+    safeAttempt.questionCount > 0
+      ? Math.round(answerTimeMs / safeAttempt.questionCount)
       : 0;
+
+  function formatAttemptStatus(status: typeof safeAttempt.status) {
+    return t(`status.${status}`);
+  }
+
+  function formatQuestionResult(answer: (typeof safeAttempt.answers)[number]) {
+    if (answer.question.type === "MANUAL_QA_SANDBOX") {
+      return t("table.resultManual");
+    }
+
+    if (getOpenQuizConfig(answer.question.apiConfig)) {
+      return t("table.resultUngraded");
+    }
+
+    return answer.isCorrect ? t("table.resultCorrect") : t("table.resultWrong");
+  }
 
   return (
     <main className="page stack-lg report-print-area">
       <div className="page-header">
         <div>
-          <h1 className="head-1">Отчёт по ассессменту</h1>
+          <h1 className="head-1">{t("title")}</h1>
           <p className="body-1 muted m-0">
-            {attempt.internProfile.fullName} · вход по токену без email
+            {t("subtitle", { name: attempt.internProfile.fullName })}
           </p>
         </div>
         <div className="nav-row">
           <Badge variant={score >= 100 ? "success" : "danger"}>
             {formatPercent(score)}
           </Badge>
-          <ReportDownloadButton attemptId={attempt.id} />
+          <ReportDownloadButton attemptId={safeAttempt.id} />
         </div>
       </div>
 
@@ -75,7 +94,7 @@ export default async function AttemptDetailsPage({
         <Card>
           <CardHeader>
             <Clock3 color="var(--primary)" />
-            <CardTitle>Общее время</CardTitle>
+            <CardTitle>{t("summary.totalTime")}</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">{formatDuration(totalTimeMs)}</span>
@@ -84,7 +103,7 @@ export default async function AttemptDetailsPage({
         <Card>
           <CardHeader>
             <TimerReset color="var(--accent)" />
-            <CardTitle>Среднее на вопрос</CardTitle>
+            <CardTitle>{t("summary.averageTime")}</CardTitle>
           </CardHeader>
           <CardContent className="metric">
             <span className="metric-value">
@@ -96,19 +115,19 @@ export default async function AttemptDetailsPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Итог</CardTitle>
+          <CardTitle>{t("summary.result")}</CardTitle>
         </CardHeader>
         <CardContent className="stack">
           <Progress value={score} />
           <div className="report-summary-grid">
             <div>
-              <span className="body-2 muted">Статус</span>
-              <strong>{attempt.status}</strong>
+              <span className="body-2 muted">{t("summary.status")}</span>
+              <strong>{formatAttemptStatus(safeAttempt.status)}</strong>
             </div>
             <div>
-              <span className="body-2 muted">Верные ответы</span>
+              <span className="body-2 muted">{t("summary.correctAnswers")}</span>
               <strong>
-                {attempt.correctCount}/{attempt.questionCount}
+                {safeAttempt.correctCount}/{safeAttempt.questionCount}
               </strong>
             </div>
           </div>
@@ -118,21 +137,27 @@ export default async function AttemptDetailsPage({
       <Card>
         <CardHeader>
           <Route color="var(--primary)" />
-          <CardTitle>Время по вопросам</CardTitle>
+          <CardTitle>{t("table.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="table-wrap">
-            <table className="table">
+            <table className="table attempt-answers-table">
+              <colgroup>
+                <col className="attempt-col-question" />
+                <col className="attempt-col-answer" />
+                <col className="attempt-col-time" />
+                <col className="attempt-col-result" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Вопрос</th>
-                  <th>Ответ</th>
-                  <th>Время</th>
-                  <th>Результат</th>
+                  <th>{t("table.question")}</th>
+                  <th>{t("table.answer")}</th>
+                  <th>{t("table.time")}</th>
+                  <th>{t("table.result")}</th>
                 </tr>
               </thead>
               <tbody>
-                {attempt.answers.map((answer, index) => (
+                {safeAttempt.answers.map((answer, index) => (
                   <tr key={answer.id}>
                     <td>
                       <strong>
@@ -141,9 +166,7 @@ export default async function AttemptDetailsPage({
                     </td>
                     <td>
                       {(() => {
-                        const internComment = getInternComment(
-                          answer.apiRequest,
-                        );
+                        const internComment = getInternComment(answer.apiRequest);
 
                         return (
                           <div className="stack">
@@ -166,24 +189,27 @@ export default async function AttemptDetailsPage({
                                       : null;
 
                                   if (!payload) {
-                                    return "не заполнен";
+                                    return t("table.notFilled");
                                   }
 
                                   return (
                                     <div className="manual-qa-report-summary">
                                       <div className="nav-row">
                                         <Badge variant="muted">
-                                          {payload.reports.length} багов
+                                          {t("table.bugsCount", {
+                                            count: payload.reports.length,
+                                          })}
                                         </Badge>
                                         {payload.noBugsFound ? (
                                           <Badge variant="warning">
-                                            баги не найдены
+                                            {t("table.noBugsFound")}
                                           </Badge>
                                         ) : null}
                                         <Badge variant="muted">
                                           {summary?.matchedKnownBugIds
                                             ?.length ?? 0}
-                                          /{config?.knownBugs.length ?? 0} known
+                                          /{config?.knownBugs.length ?? 0}{" "}
+                                          {t("table.knownBugs")}
                                         </Badge>
                                       </div>
                                       {payload.reports.map(
@@ -205,15 +231,15 @@ export default async function AttemptDetailsPage({
                                               </Badge>
                                             </div>
                                             <p className="body-2 m-0">
-                                              <strong>Steps:</strong>{" "}
+                                              <strong>{t("table.steps")}:</strong>{" "}
                                               {report.steps}
                                             </p>
                                             <p className="body-2 m-0">
-                                              <strong>Actual:</strong>{" "}
+                                              <strong>{t("table.actual")}:</strong>{" "}
                                               {report.actual}
                                             </p>
                                             <p className="body-2 m-0">
-                                              <strong>Expected:</strong>{" "}
+                                              <strong>{t("table.expected")}:</strong>{" "}
                                               {report.expected}
                                             </p>
                                             {report.note ? (
@@ -234,10 +260,12 @@ export default async function AttemptDetailsPage({
                                     {answer.apiResponse &&
                                     typeof answer.apiResponse === "object"
                                       ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
-                                      : "API request"}
+                                      : t("table.apiRequest")}
                                   </strong>
                                   <span className="body-2 muted">
-                                    отправок: {answer.submissionCount}
+                                    {t("table.submissions", {
+                                      count: answer.submissionCount,
+                                    })}
                                   </span>
                                   {answer.apiRequest ? (
                                     <pre className="body-2 m-0 whitespace-pre-wrap">
@@ -253,14 +281,14 @@ export default async function AttemptDetailsPage({
                                     | { answerText?: string }
                                     | null
                                     | undefined
-                                )?.answerText ?? "не заполнен")
+                                )?.answerText ?? t("table.notFilled"))
                               ) : (
-                                (answer.selectedOption?.text ?? "не выбран")
+                                answer.selectedOption?.text ?? t("table.notSelected")
                               )}
                             </div>
                             {internComment ? (
                               <div className="intern-comment-result">
-                                <strong>Комментарий стажёра</strong>
+                                <strong>{t("table.internComment")}</strong>
                                 <p className="body-2 m-0">{internComment}</p>
                               </div>
                             ) : null}
@@ -268,19 +296,23 @@ export default async function AttemptDetailsPage({
                         );
                       })()}
                     </td>
-                    <td>{formatDuration(answer.timeSpentMs)}</td>
+                    <td className="attempt-time-cell">
+                      {formatDuration(answer.timeSpentMs)}
+                    </td>
                     <td>
-                      {answer.question.type === "MANUAL_QA_SANDBOX" ? (
-                        <Badge variant="warning">ручная проверка</Badge>
-                      ) : getOpenQuizConfig(answer.question.apiConfig) ? (
-                        <Badge variant="muted">без оценки</Badge>
-                      ) : (
-                        <Badge
-                          variant={answer.isCorrect ? "success" : "danger"}
-                        >
-                          {answer.isCorrect ? "верно" : "0 баллов"}
-                        </Badge>
-                      )}
+                      <Badge
+                        variant={
+                          answer.question.type === "MANUAL_QA_SANDBOX"
+                            ? "warning"
+                            : getOpenQuizConfig(answer.question.apiConfig)
+                              ? "muted"
+                              : answer.isCorrect
+                                ? "success"
+                                : "danger"
+                        }
+                      >
+                        {formatQuestionResult(answer)}
+                      </Badge>
                     </td>
                   </tr>
                 ))}

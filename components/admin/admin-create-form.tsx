@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { createAdminAction, type AdminAuthState } from "@/actions/admin-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ const initialState: AdminAuthState = {
 };
 
 export function AdminCreateForm() {
+  const t = useTranslations("AdminSettings");
   const [state, action, isPending] = useActionState(
     createAdminAction,
     initialState,
@@ -21,7 +23,7 @@ export function AdminCreateForm() {
     <form action={action} className="form-grid">
       <div className="grid-2">
         <div className="form-field">
-          <Label htmlFor="new-admin-first-name">Имя</Label>
+          <Label htmlFor="new-admin-first-name">{t("admins.form.firstName")}</Label>
           <Input
             id="new-admin-first-name"
             name="firstName"
@@ -29,7 +31,7 @@ export function AdminCreateForm() {
           />
         </div>
         <div className="form-field">
-          <Label htmlFor="new-admin-last-name">Фамилия</Label>
+          <Label htmlFor="new-admin-last-name">{t("admins.form.lastName")}</Label>
           <Input
             id="new-admin-last-name"
             name="lastName"
@@ -38,7 +40,7 @@ export function AdminCreateForm() {
         </div>
       </div>
       <div className="form-field">
-        <Label htmlFor="new-admin-email">Email</Label>
+        <Label htmlFor="new-admin-email">{t("admins.form.email")}</Label>
         <Input
           id="new-admin-email"
           name="email"
@@ -48,7 +50,7 @@ export function AdminCreateForm() {
         />
       </div>
       <div className="form-field">
-        <Label htmlFor="new-admin-password">Пароль</Label>
+        <Label htmlFor="new-admin-password">{t("admins.form.password")}</Label>
         <Input
           id="new-admin-password"
           name="password"
@@ -60,7 +62,7 @@ export function AdminCreateForm() {
       </div>
       <div className="modal-actions">
         <Button type="submit" disabled={isPending}>
-          Создать администратора
+          {t("admins.form.create")}
         </Button>
       </div>
       {state.message ? (

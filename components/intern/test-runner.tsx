@@ -1,7 +1,8 @@
 "use client";
 
-import type { ClipboardEvent, ReactNode } from "react";
+import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Clock3,
   Info,
   MessageSquare,
+  Minus,
   Plus,
   Send,
   Trash2,
@@ -43,7 +45,8 @@ import {
 import {
   getSqlSandboxConfig,
   type SqlSandboxExecutionResult,
-} from "@/lib/sql-sandbox";
+  type SqlSandboxTable,
+} from "@/lib/sql-sandbox-config";
 
 type JsonValue =
   | null
@@ -128,6 +131,26 @@ type SqlDraft = {
 };
 
 type CommentSaveStatus = "idle" | "saving" | "saved";
+type SqlViewport = {
+  scale: number;
+  x: number;
+  y: number;
+};
+
+type SqlRelation = {
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+};
+
+type SqlDiagramCard = {
+  table: SqlSandboxTable;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 function stringifyJson(value: JsonValue | null | undefined) {
   if (typeof value === "undefined") return "";
@@ -270,6 +293,121 @@ function getSqlConfig(question: Question) {
     : null;
 }
 
+function normalizeSqlIdentifier(value: string) {
+  return value.toLowerCase().replace(/_/g, "");
+}
+
+function singularSqlIdentifier(value: string) {
+  return normalizeSqlIdentifier(value).replace(/s$/, "");
+}
+
+function inferSqlRelations(tables: SqlSandboxTable[]): SqlRelation[] {
+  const relations: SqlRelation[] = [];
+
+  for (const table of tables) {
+    for (const column of table.columns) {
+      const columnName = column.name.toLowerCase();
+      if (columnName === "id") continue;
+
+      const referenceKey = columnName.endsWith("_id")
+        ? columnName.slice(0, -3)
+        : columnName;
+
+      const target = tables.find((candidate) => {
+        const singular = singularSqlIdentifier(candidate.name);
+        const normalized = normalizeSqlIdentifier(candidate.name);
+        return singular === referenceKey || normalized === referenceKey;
+      });
+
+      if (!target) continue;
+
+      relations.push({
+        fromTable: table.name,
+        fromColumn: column.name,
+        toTable: target.name,
+        toColumn: "id",
+      });
+    }
+  }
+
+  return relations.filter(
+    (relation, index, all) =>
+      all.findIndex(
+        (item) =>
+          item.fromTable === relation.fromTable &&
+          item.fromColumn === relation.fromColumn &&
+          item.toTable === relation.toTable &&
+          item.toColumn === relation.toColumn,
+      ) === index,
+  );
+}
+
+function buildSqlDiagramCards(tables: SqlSandboxTable[]): SqlDiagramCard[] {
+  const cardWidth = 252;
+  const padding = 32;
+
+  if (tables.length === 3) {
+    const [first, second, third] = tables;
+    const createHeight = (table: SqlSandboxTable) =>
+      64 + table.columns.length * 34;
+
+    return [
+      {
+        table: first,
+        x: padding,
+        y: 168,
+        width: cardWidth,
+        height: createHeight(first),
+      },
+      {
+        table: second,
+        x: 342,
+        y: 112,
+        width: cardWidth,
+        height: createHeight(second),
+      },
+      {
+        table: third,
+        x: 342,
+        y: 342,
+        width: cardWidth,
+        height: createHeight(third),
+      },
+    ];
+  }
+
+  const columns = tables.length <= 2 ? tables.length : 2;
+  return tables.map((table, index) => {
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    const height = 64 + table.columns.length * 34;
+
+    return {
+      table,
+      x: padding + column * 312,
+      y: 72 + row * 222,
+      width: cardWidth,
+      height,
+    };
+  });
+}
+
+function getSqlDiagramLayout(tables: SqlSandboxTable[]) {
+  const cards = buildSqlDiagramCards(tables);
+  const relations = inferSqlRelations(tables);
+  const width =
+    Math.max(...cards.map((card) => card.x + card.width), 0) + 120;
+  const height =
+    Math.max(...cards.map((card) => card.y + card.height), 0) + 120;
+
+  return {
+    cards,
+    relations,
+    width: Math.max(900, width),
+    height: Math.max(720, height),
+  };
+}
+
 function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
   if (appPreset === "click-super-app-installment-widget-v1") {
     return <ClickSuperAppInstallmentWidgetPreset />;
@@ -287,6 +425,7 @@ export function TestRunner({
   deadlineAt: string;
   questions: Question[];
 }) {
+  const t = useTranslations("InternTest");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState(
@@ -362,6 +501,17 @@ export function TestRunner({
           }),
       ),
   );
+  const [sqlViewports, setSqlViewports] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => [
+            question.id,
+            { scale: 0.92, x: 0, y: 0 } satisfies SqlViewport,
+          ]),
+      ),
+  );
   const [remainingMs, setRemainingMs] = useState(
     Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
   );
@@ -370,6 +520,13 @@ export function TestRunner({
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
   const devtoolsAutosaveRef = useRef<number | null>(null);
+  const sqlDragRef = useRef<{
+    questionId: string;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
   const currentQuestion = questions[currentIndex];
   const currentTrack = getQuestionTrackMeta(currentQuestion?.track);
   const answeredCount = questions.filter((question) => {
@@ -578,6 +735,49 @@ export function TestRunner({
         });
       });
     });
+  }
+
+  function updateSqlViewport(questionId: string, patch: Partial<SqlViewport>) {
+    setSqlViewports((prev) => {
+      const next = new Map(prev);
+      const current = next.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function nudgeSqlZoom(questionId: string, delta: number) {
+    const current = sqlViewports.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+    const scale = Math.min(1.65, Math.max(0.7, Number((current.scale + delta).toFixed(2))));
+    updateSqlViewport(questionId, { scale });
+  }
+
+  function startSqlDrag(
+    event: MouseEvent<HTMLDivElement>,
+    questionId: string,
+  ) {
+    const current = sqlViewports.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+    sqlDragRef.current = {
+      questionId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: current.x,
+      originY: current.y,
+    };
+  }
+
+  function moveSqlDrag(event: MouseEvent<HTMLDivElement>) {
+    const drag = sqlDragRef.current;
+    if (!drag) return;
+
+    updateSqlViewport(drag.questionId, {
+      x: drag.originX + (event.clientX - drag.startX),
+      y: drag.originY + (event.clientY - drag.startY),
+    });
+  }
+
+  function endSqlDrag() {
+    sqlDragRef.current = null;
   }
 
   function sendApiRequest() {
@@ -973,6 +1173,14 @@ export function TestRunner({
               ""),
         ) ?? currentSqlConfig.tables[0]
       : null;
+  const currentSqlViewport =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? (sqlViewports.get(currentQuestion.id) ?? { scale: 0.92, x: 0, y: 0 })
+      : null;
+  const currentSqlLayout =
+    currentQuestion.type === "SQL_SANDBOX" && currentSqlConfig
+      ? getSqlDiagramLayout(currentSqlConfig.tables)
+      : null;
   const currentManualQaDraft =
     currentQuestion.type === "MANUAL_QA_SANDBOX"
       ? (manualQaDrafts.get(currentQuestion.id) ??
@@ -1114,29 +1322,22 @@ export function TestRunner({
               <div className="sql-workspace">
                 <div className="sql-center-column stack">
                   <div className="surface sql-editor-panel stack">
-                    <div
-                      className="nav-row"
-                      style={{ justifyContent: "space-between" }}
-                    >
-                      <div className="stack" style={{ gap: 8 }}>
-                        <strong>SQL Query</strong>
-                        <div className="nav-row">
-                          <span className="type-chip">{currentSqlConfig.dialect}</span>
-                          {currentSqlConfig.expectedResult.columns.map((column) => (
-                            <span className="type-chip" key={column}>
-                              {column}
-                            </span>
-                          ))}
-                        </div>
+                    <div className="sql-panel-header">
+                      <div className="stack sql-panel-heading">
+                        <span className="sql-kicker">{currentSqlConfig.dialect}</span>
+                        <strong>{t("sql.queryTitle")}</strong>
+                        <p className="body-2 muted m-0">{t("sql.queryHint")}</p>
                       </div>
                       {currentSqlDraft.submissionCount > 0 ? (
                         <Badge
                           variant={currentSqlDraft.isCorrect ? "success" : "warning"}
                         >
-                          {currentSqlDraft.isCorrect ? "зачтено" : "нужно исправить"}
+                          {currentSqlDraft.isCorrect
+                            ? t("sql.statusPassed")
+                            : t("sql.statusFix")}
                         </Badge>
                       ) : (
-                        <Badge variant="muted">есть результат</Badge>
+                        <Badge variant="muted">{t("sql.statusIdle")}</Badge>
                       )}
                     </div>
 
@@ -1148,14 +1349,11 @@ export function TestRunner({
                           query: event.target.value,
                         })
                       }
-                      placeholder="Введите SQL-запрос"
+                      placeholder={t("sql.placeholder")}
                       value={currentSqlDraft.query}
                     />
 
-                    <div
-                      className="nav-row"
-                      style={{ justifyContent: "space-between" }}
-                    >
+                    <div className="sql-runbar">
                       <div className="nav-row">
                         <Button
                           disabled={isPending || !currentSqlDraft.query.trim()}
@@ -1163,30 +1361,35 @@ export function TestRunner({
                           type="button"
                         >
                           <Send size={18} />
-                          Выполнить
+                          {t("sql.run")}
                         </Button>
-                        <span className="body-2 muted">
-                          Запусков: {currentSqlDraft.submissionCount}
+                        <span className="body-2 muted sql-run-count">
+                          {t("sql.runs", { count: currentSqlDraft.submissionCount })}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="surface sql-result-panel stack">
-                    <div
-                      className="nav-row"
-                      style={{ justifyContent: "space-between" }}
-                    >
-                      <strong>Результат запроса</strong>
+                    <div className="sql-panel-header">
+                      <div className="stack sql-panel-heading">
+                        <strong>{t("sql.resultTitle")}</strong>
+                        <p className="body-2 muted m-0">{t("sql.resultHint")}</p>
+                      </div>
                       {currentSqlDraft.response?.rows ? (
                         <Badge variant="success">
-                          {currentSqlDraft.response.rows.length} rows
+                          {t("sql.rows", {
+                            count: currentSqlDraft.response.rows.length,
+                          })}
                         </Badge>
                       ) : null}
                     </div>
 
                     {currentSqlDraft.response?.error ? (
-                      <div className="soft-panel" style={{ color: "var(--destructive)" }}>
+                      <div
+                        className="soft-panel"
+                        style={{ color: "var(--destructive)" }}
+                      >
                         {currentSqlDraft.response.error}
                       </div>
                     ) : currentSqlDraft.response &&
@@ -1215,97 +1418,148 @@ export function TestRunner({
                       </div>
                     ) : (
                       <p className="body-2 muted m-0">
-                        Здесь будет результат вашего SQL-запроса.
+                        {t("sql.resultEmpty")}
                       </p>
                     )}
                   </div>
                 </div>
 
                 <div className="surface sql-schema-panel stack">
-                  <div
-                    className="nav-row"
-                    style={{ justifyContent: "space-between" }}
-                  >
-                    <strong>Связанные таблицы</strong>
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>{t("sql.tablesTitle")}</strong>
+                      <p className="body-2 muted m-0">{t("sql.tablesHint")}</p>
+                    </div>
                     <Badge variant="muted">{currentSqlConfig.tables.length}</Badge>
                   </div>
 
-                  <div className="sql-table-tabs">
-                    {currentSqlConfig.tables.map((table) => {
-                      const active = currentSqlTable?.name === table.name;
-                      return (
-                        <Button
-                          className={`sql-table-tab ${active ? "active" : ""}`}
-                          key={table.name}
-                          onClick={() =>
-                            setSelectedSqlTables((prev) => {
-                              const next = new Map(prev);
-                              next.set(currentQuestion.id, table.name);
-                              return next;
-                            })
-                          }
-                          type="button"
-                          variant={active ? "default" : "secondary"}
-                        >
-                          {table.name}
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  {currentSqlTable ? (
-                    <div className="soft-panel stack">
-                      <div
-                        className="nav-row"
-                        style={{ justifyContent: "space-between" }}
-                      >
-                        <strong>{currentSqlTable.name}</strong>
-                        <Badge variant="muted">
-                          {currentSqlTable.rows.length} rows
-                        </Badge>
-                      </div>
-
-                      <div className="stack">
-                        <p className="body-2 muted m-0">Поля таблицы</p>
-                        <div className="stack">
-                          {currentSqlTable.columns.map((column) => (
-                            <div
-                              className="surface nav-row"
-                              key={column.name}
-                              style={{ justifyContent: "space-between", padding: "16px 18px" }}
+                  {currentSqlLayout ? (
+                    <div className="sql-diagram-shell">
+                      <div className="sql-diagram-toolbar">
+                        {currentSqlViewport ? (
+                          <div className="sql-diagram-controls">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => nudgeSqlZoom(currentQuestion.id, -0.1)}
                             >
-                              <strong>{column.name}</strong>
-                              <span className="body-2 muted">{column.type}</span>
-                            </div>
-                          ))}
-                        </div>
+                              <Minus size={15} />
+                            </Button>
+                            <span className="sql-diagram-scale">
+                              {Math.round(currentSqlViewport.scale * 100)}%
+                            </span>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => nudgeSqlZoom(currentQuestion.id, 0.1)}
+                            >
+                              <Plus size={15} />
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
 
-                      <div className="stack">
-                        <p className="body-2 muted m-0">Пример данных</p>
-                        <div className="sql-table-preview table-wrap">
-                          <table className="table">
-                            <thead>
-                              <tr>
-                                {currentSqlTable.columns.map((column) => (
-                                  <th key={column.name}>{column.name}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {currentSqlTable.rows.map((row, rowIndex) => (
-                                <tr key={rowIndex}>
-                                  {currentSqlTable.columns.map((column) => (
-                                    <td key={`${rowIndex}-${column.name}`}>
-                                      {row[column.name] === null
-                                        ? "NULL"
-                                        : String(row[column.name] ?? "")}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      <div
+                        className="sql-diagram-viewport"
+                        onMouseDown={(event) => startSqlDrag(event, currentQuestion.id)}
+                        onMouseMove={moveSqlDrag}
+                        onMouseUp={endSqlDrag}
+                        onMouseLeave={endSqlDrag}
+                      >
+                        <div
+                          className="sql-diagram-scene"
+                          style={{
+                            width: currentSqlLayout.width,
+                            height: currentSqlLayout.height,
+                            transform: `translate(${currentSqlViewport?.x ?? 0}px, ${
+                              currentSqlViewport?.y ?? 0
+                            }px) scale(${currentSqlViewport?.scale ?? 1})`,
+                          }}
+                        >
+                          <svg
+                            className="sql-diagram-links"
+                            viewBox={`0 0 ${currentSqlLayout.width} ${currentSqlLayout.height}`}
+                          >
+                            {currentSqlLayout.relations.map((relation) => {
+                              const source = currentSqlLayout.cards.find(
+                                (card) => card.table.name === relation.fromTable,
+                              );
+                              const target = currentSqlLayout.cards.find(
+                                (card) => card.table.name === relation.toTable,
+                              );
+                              if (!source || !target) return null;
+
+                              const startX = source.x;
+                              const startY = source.y + source.height / 2;
+                              const endX = target.x + target.width;
+                              const endY = target.y + target.height / 2;
+                              const midX = (startX + endX) / 2;
+                              const path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
+
+                              return (
+                                <path
+                                  key={`${relation.fromTable}-${relation.fromColumn}-${relation.toTable}`}
+                                  d={path}
+                                />
+                              );
+                            })}
+                          </svg>
+
+                          {currentSqlLayout.cards.map((card) => {
+                            const active = currentSqlTable?.name === card.table.name;
+                            return (
+                              <button
+                                key={card.table.name}
+                                type="button"
+                                className={`sql-diagram-card ${active ? "active" : ""}`}
+                                style={{
+                                  width: card.width,
+                                  minHeight: card.height,
+                                  left: card.x,
+                                  top: card.y,
+                                }}
+                                onClick={() =>
+                                  setSelectedSqlTables((prev) => {
+                                    const next = new Map(prev);
+                                    next.set(currentQuestion.id, card.table.name);
+                                    return next;
+                                  })
+                                }
+                              >
+                                <div className="sql-diagram-card-header">
+                                  <strong>{card.table.name}</strong>
+                                </div>
+                                <div className="sql-diagram-card-body">
+                                  {card.table.columns.map((column) => {
+                                    const isPrimary = column.name === "id";
+                                    const isLinked =
+                                      column.name !== "id" &&
+                                      currentSqlLayout.relations.some(
+                                        (relation) =>
+                                          relation.fromTable === card.table.name &&
+                                          relation.fromColumn === column.name,
+                                      );
+
+                                    return (
+                                      <div className="sql-diagram-row" key={column.name}>
+                                        <span
+                                          className={`sql-diagram-key ${
+                                            isPrimary || isLinked ? "linked" : ""
+                                          }`}
+                                        >
+                                          {isPrimary ? "PK" : isLinked ? "FK" : ""}
+                                        </span>
+                                        <strong>{column.name}</strong>
+                                        <span>{column.type}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

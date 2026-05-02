@@ -95,10 +95,10 @@ export default async function AdminInternsPage({
       kind: "profile",
       internProfileId: intern.id,
       accessLabel: activeAttempt
-        ? "идёт попытка"
+        ? "IN_PROGRESS"
         : (latestInvitation?.status ?? "profile"),
       attemptLabel: activeAttempt
-        ? "идёт попытка"
+        ? t("status.IN_PROGRESS")
         : formatDateTime(latest?.submittedAt, locale),
       resultLabel: latest
         ? formatPercent(latest.scorePercent)

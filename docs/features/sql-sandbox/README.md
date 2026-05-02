@@ -7,7 +7,7 @@
 ## Scope
 
 - админ может создавать и редактировать SQL sandbox-вопросы
-- стажёр видит трёхпанельный экран: описание, редактор/результат, связанные таблицы
+- стажёр видит SQL workspace с редактором/результатом слева и diagram-панелью таблиц справа
 - SQL-запрос выполняется в изолированной временной SQLite-базе
 - перед выполнением запрос проверяется парсером `node-sql-parser`
 - результат сверяется с эталонным набором колонок и строк
@@ -35,6 +35,10 @@
 6. Ответ и результат сохраняются в `AssessmentAnswer`, после чего вопрос считается отвеченным.
 7. Админ видит SQL-ответ в `app/admin/attempts/[attemptId]/page.tsx` и PDF-отчёте.
 
+- в заголовке SQL-редактора показывается только контекст движка и статус проверки, без шильдиков ожидаемых колонок
+- правая панель показывает диаграмму таблиц со связями, выбором активной таблицы и pan/zoom управлением
+- sample data выбранной таблицы вынесены в отдельный компактный preview под диаграммой
+
 ## Touched Files
 
 - `prisma/schema.prisma`
@@ -46,6 +50,7 @@
 - `components/admin/question-form.tsx`
 - `components/admin/question-create-modal.tsx`
 - `components/intern/test-runner.tsx`
+- `app/globals.css`
 - `app/admin/questions/page.tsx`
 - `app/admin/attempts/[attemptId]/page.tsx`
 - `src/lib/attempt-report-pdf.ts`

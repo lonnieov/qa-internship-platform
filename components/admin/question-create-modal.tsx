@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,15 @@ type QuestionType =
   | "DEVTOOLS_SANDBOX"
   | "MANUAL_QA_SANDBOX";
 
-function typeLabel(type: QuestionType) {
-  if (type === "API_SANDBOX") return "API Sandbox";
-  if (type === "SQL_SANDBOX") return "SQL Sandbox";
-  if (type === "DEVTOOLS_SANDBOX") return "DevTools Sandbox";
-  if (type === "MANUAL_QA_SANDBOX") return "Manual QA Sandbox";
-  return "Quiz";
+function typeLabel(
+  t: ReturnType<typeof useTranslations>,
+  type: QuestionType,
+) {
+  if (type === "API_SANDBOX") return t("typeLabels.api");
+  if (type === "SQL_SANDBOX") return t("typeLabels.sql");
+  if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtools");
+  if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  return t("typeLabels.quiz");
 }
 
 export function QuestionCreateModal({
@@ -30,13 +34,14 @@ export function QuestionCreateModal({
   initialTrackId?: string;
   tracks: TrackSummary[];
 }) {
+  const t = useTranslations("AdminQuestions");
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <Button type="button" onClick={() => setIsOpen(true)}>
         <Plus size={18} />
-        Добавить
+        {t("add")}
       </Button>
 
       {isOpen ? (
@@ -54,12 +59,12 @@ export function QuestionCreateModal({
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id="create-question-title">
-                  Новый вопрос
+                  {t("newQuestion")}
                 </h2>
-                <p className="body-2 muted m-0">{typeLabel(initialType)}</p>
+                <p className="body-2 muted m-0">{typeLabel(t, initialType)}</p>
               </div>
               <Button
-                aria-label="Закрыть модальное окно"
+                aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
                 onClick={() => setIsOpen(false)}

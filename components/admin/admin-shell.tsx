@@ -50,7 +50,7 @@ export function AdminShell({
           </span>
         </Link>
 
-        <nav className="admin-sidebar-nav" aria-label="Админ навигация">
+        <nav className="admin-sidebar-nav" aria-label={t("navLabel")}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.exact

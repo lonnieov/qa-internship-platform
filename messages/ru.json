@@ -2,6 +2,7 @@
   "AdminShell": {
     "brand": "Click Assessment",
     "tagline": "Never gonna give you up",
+    "navLabel": "Админ навигация",
     "nav": {
       "overview": "Обзор",
       "interns": "Стажёры",
@@ -47,6 +48,7 @@
     "revealCopyTitle": "Наведите, чтобы увидеть токен. Нажмите, чтобы скопировать.",
     "copied": "Скопировано",
     "copy": "Скопировать",
+    "copyHint": "Нажмите, чтобы скопировать",
     "revoke": "Отозвать",
     "result": "Результат",
     "openResult": "Результат",
@@ -80,11 +82,351 @@
     },
     "noProfile": "профиль не создан",
     "noAttemptsShort": "нет попыток",
-    "dash": "—"
+    "dash": "—",
+    "retake": {
+      "retry": "Перепройти",
+      "issueNew": "Выдать новый токен"
+    }
+  },
+  "AdminOverview": {
+    "title": "Панель администратора",
+    "description": "Управляйте доступом, вопросами и результатами стажёров.",
+    "grantAccess": "Выдать доступ",
+    "cards": {
+      "interns": "Стажёры",
+      "inDatabase": "в базе",
+      "activeQuestions": "Активные вопросы",
+      "active": "активно",
+      "timeLimit": "Лимит времени",
+      "minutes": "минут"
+    },
+    "recentAttempts": {
+      "title": "Последние попытки",
+      "open": "Открыть",
+      "empty": "Пока нет попыток.",
+      "table": {
+        "intern": "Стажёр",
+        "started": "Начал тест",
+        "submitted": "Прошёл тест",
+        "status": "Статус",
+        "result": "Результат",
+        "progress": "Прогресс"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "идёт попытка",
+      "SUBMITTED": "завершена",
+      "AUTO_SUBMITTED": "завершена автоматически",
+      "EXPIRED": "истекла"
+    }
+  },
+  "AdminSettings": {
+    "title": "Настройки",
+    "description": "Лимит применяется к новым попыткам. Результат считается как процент верных ответов.",
+    "save": "Сохранить",
+    "closeModal": "Закрыть модальное окно",
+    "timeCard": {
+      "title": "Общее время",
+      "minutesLabel": "Минут на весь тест"
+    },
+    "admins": {
+      "title": "Администраторы",
+      "noName": "Без имени",
+      "current": "текущий",
+      "manageTitle": "Редактировать администратора",
+      "manageAria": "Управлять администратором {admin}",
+      "seedProtected": "Сидового администратора нельзя редактировать или удалить.",
+      "table": {
+        "admin": "Администратор",
+        "created": "Создан",
+        "email": "Email"
+      },
+      "form": {
+        "firstName": "Имя",
+        "lastName": "Фамилия",
+        "password": "Пароль",
+        "newPassword": "Новый пароль",
+        "passwordPlaceholder": "Оставьте пустым, чтобы не менять",
+        "create": "Создать администратора",
+        "email": "Email"
+      },
+      "delete": {
+        "title": "Удаление",
+        "description": "Учётная запись исчезнет из списка и больше не сможет войти.",
+        "currentDisabled": "Нельзя удалить текущую учётную запись",
+        "action": "Удалить администратора"
+      }
+    }
+  },
+  "AdminQuestions": {
+    "title": "Банк вопросов",
+    "description": "Вопросы классифицируются по трекам и типам задач.",
+    "add": "Добавить",
+    "newQuestion": "Новый вопрос",
+    "closeModal": "Закрыть модальное окно",
+    "edit": "Редактировать",
+    "hide": "Скрыть",
+    "activate": "Активировать",
+    "delete": "Удалить",
+    "dragQuestion": "Перетащить вопрос",
+    "deleteConfirm": "Удалить вопрос без возможности восстановления?",
+    "empty": "Пока нет вопросов в выбранном срезе.",
+    "status": {
+      "active": "активен",
+      "hidden": "скрыт"
+    },
+    "sections": {
+      "quiz": {
+        "description": "Классические тестовые вопросы с вариантами ответов."
+      },
+      "api": {
+        "description": "Задачи на ручную отправку и проверку API-запросов."
+      },
+      "sql": {
+        "description": "Задачи на написание SQL-запросов по связанным таблицам и данным."
+      },
+      "devtools": {
+        "description": "Задачи на работу с Network и ответами из DevTools."
+      },
+      "manualQa": {
+        "description": "Практические задания на поиск и оформление багов в mobile/webview miniapp."
+      }
+    },
+    "openQuestion": {
+      "label": "Открытый вопрос",
+      "reviewerHint": "Подсказка проверяющему",
+      "reviewerHintMissing": "Подсказка для проверяющего не указана."
+    },
+    "toast": {
+      "title": "Вопрос добавлен",
+      "description": "Новая запись уже доступна в банке вопросов."
+    },
+    "tracks": {
+      "title": "Треки",
+      "all": "Все треки",
+      "newTrackAria": "Название нового трека",
+      "newTrackPlaceholder": "Новый трек",
+      "manageAria": "Управлять треком {name}",
+      "manageTitle": "Редактировать трек",
+      "questionsCount": "{count} вопросов",
+      "name": "Название",
+      "order": "Порядок",
+      "statusDeleteTitle": "Статус и удаление",
+      "statusDeleteDescription": "Скрытый трек не предлагается при создании новых вопросов.",
+      "deleteTitle": "Удалить трек",
+      "deleteBlockedTitle": "Сначала переместите или удалите вопросы",
+      "deleteBlockedDescription": "Трек можно удалить только после переноса или удаления всех вопросов."
+    },
+    "typeLabels": {
+      "quiz": "Quiz",
+      "api": "API Sandbox",
+      "sql": "SQL Sandbox",
+      "devtools": "DevTools Sandbox",
+      "devtoolsShort": "DevTools",
+      "manualQa": "Manual QA"
+    },
+    "meta": {
+      "tables": "{count} tables",
+      "knownBugs": "{count} known bugs",
+      "status": "status {status}"
+    },
+    "ai": {
+      "title": "AI-подсказки вопросов",
+      "topic": "Тема",
+      "generate": "Сгенерировать варианты",
+      "defaultTopic": "QA теория для стажёров",
+      "error": "Не удалось получить предложения.",
+      "correctSuffix": "— верный"
+    }
+  },
+  "AdminAttemptReport": {
+    "title": "Отчёт по ассессменту",
+    "subtitle": "{name} · вход по токену без email",
+    "download": "Скачать MD",
+    "summary": {
+      "totalTime": "Общее время",
+      "averageTime": "Среднее на вопрос",
+      "result": "Итог",
+      "status": "Статус",
+      "correctAnswers": "Верные ответы"
+    },
+    "table": {
+      "title": "Время по вопросам",
+      "question": "Вопрос",
+      "answer": "Ответ",
+      "time": "Время",
+      "result": "Результат",
+      "notFilled": "не заполнен",
+      "notSelected": "не выбран",
+      "apiRequest": "API request",
+      "submissions": "отправок: {count}",
+      "internComment": "Комментарий стажёра",
+      "bugsCount": "{count} багов",
+      "noBugsFound": "баги не найдены",
+      "knownBugs": "known",
+      "steps": "Steps",
+      "actual": "Actual",
+      "expected": "Expected",
+      "resultManual": "ручная проверка",
+      "resultUngraded": "без оценки",
+      "resultCorrect": "верно",
+      "resultWrong": "0 баллов"
+    },
+    "status": {
+      "IN_PROGRESS": "идёт попытка",
+      "SUBMITTED": "завершена",
+      "AUTO_SUBMITTED": "завершена автоматически",
+      "EXPIRED": "истекла"
+    }
+  },
+  "AdminQuestionForm": {
+    "title": {
+      "edit": "Редактировать вопрос",
+      "new": "Новый вопрос"
+    },
+    "submit": {
+      "save": "Сохранить изменения",
+      "add": "Добавить вопрос"
+    },
+    "questionType": "Тип вопроса",
+    "classification": "Классификация",
+    "createTrackFirst": "Создайте активный трек перед добавлением вопроса.",
+    "fields": {
+      "questionText": "Текст вопроса",
+      "sqlMission": "Описание SQL-задачи",
+      "manualMission": "Миссия для стажёра",
+      "apiMission": "Описание API-задачи"
+    },
+    "quizMode": "Формат Quiz-вопроса",
+    "quizModes": {
+      "choice": "С вариантами",
+      "openText": "Открытый ответ"
+    },
+    "open": {
+      "answerKey": "Эталонный ответ",
+      "answerKeyPlaceholder": "Необязательно. Можно оставить подсказку для проверяющего.",
+      "answerLabel": "Подпись поля для стажёра",
+      "answerLabelPlaceholder": "Опишите ответ своими словами",
+      "placeholder": "Введите ответ",
+      "placeholderLabel": "Placeholder"
+    },
+    "choice": {
+      "option": "Вариант",
+      "correct": "верный"
+    },
+    "api": {
+      "expectedMethod": "Ожидаемый method",
+      "successStatus": "Успешный status code",
+      "expectedPath": "Ожидаемый path",
+      "expectedQuery": "Ожидаемый query string",
+      "requiredHeaders": "Обязательные request headers",
+      "expectedBody": "Ожидаемый JSON body",
+      "successBody": "Успешный response body"
+    },
+    "sql": {
+      "taskTitle": "Название задания",
+      "tables": "Связанные таблицы и данные",
+      "expectedResult": "Ожидаемый результат",
+      "autoTitle": "SQL sandbox проверяется автоматически",
+      "autoDescription": "Стажёр пишет один SELECT или WITH запрос к таблицам из задания, а система валидирует синтаксис и сверяет результат по смыслу."
+    },
+    "manual": {
+      "preset": "Preset приложения",
+      "scenarioTitle": "Название сценария",
+      "recommendedMinutes": "Рекоменд. минуты",
+      "categories": "Категории через запятую",
+      "reviewTitle": "Этот тип требует ручной проверки",
+      "reviewDescription": "Стажёр будет искать баги в miniapp и оформлять баг-репорты. Known bugs нужны для рубрики проверяющего и будущей полуавтоматической оценки.",
+      "viewportWidth": "Ширина viewport",
+      "viewportHeight": "Высота viewport",
+      "knownBugsRubric": "Рубрика known bugs"
+    },
+    "devtools": {
+      "networkMethod": "Method запроса в Network",
+      "responseStatus": "Status ответа",
+      "buttonLabel": "Текст кнопки для стажёра",
+      "buttonDefault": "Отправить запрос",
+      "endpointName": "Имя endpoint в Network",
+      "endpointQuery": "Query string для endpoint",
+      "requestBody": "Request JSON body, который уйдёт при клике",
+      "responseBody": "JSON response body для DevTools",
+      "answerPath": "Путь параметра в response",
+      "expectedAnswer": "Ожидаемый ответ стажёра",
+      "answerLabel": "Подпись поля ответа",
+      "answerLabelDefault": "Введите значение поля message из response",
+      "responseHeaders": "Response headers"
+    },
+    "adminNote": "Пояснение для админа",
+    "defaults": {
+      "quizPrompt": "Что проверяет smoke testing?",
+      "apiPrompt": "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201.",
+      "devtoolsPrompt": "Нажмите кнопку, найдите request в Network и впишите значение поля message из response.",
+      "choiceA": "Быстрая проверка критичного функционала после сборки",
+      "choiceB": "Полная проверка всех требований проекта",
+      "choiceC": "Проверка только визуального слоя интерфейса",
+      "choiceD": "Нагрузочное тестирование API"
+    },
+    "typeLabels": {
+      "quiz": "Quiz",
+      "api": "API Sandbox",
+      "sql": "SQL Sandbox",
+      "devtools": "DevTools",
+      "manualQa": "Manual QA"
+    }
+  },
+  "AdminAuth": {
+    "brand": "QA Internship platform",
+    "badge": "Администратор",
+    "title": "Вход администратора",
+    "description": "Вход администратора хранит пароль и сессию в базе данных и не пересекается со входом стажёра по токену.",
+    "password": "Пароль",
+    "signIn": "Войти",
+    "heroTitle": "Админ-панель ассессмента",
+    "heroDescription": "Управляйте стажёрами, токенами доступа, банком вопросов и результатами прохождения.",
+    "heroStats": {
+      "questions": "банк вопросов",
+      "reports": "AI-отчёты",
+      "tokens": "доступ стажёров"
+    },
+    "footer": "© 2026 · Внутренняя QA-платформа",
+    "email": "Email"
+  },
+  "AuthRoleTabs": {
+    "intern": "Стажёр",
+    "admin": "Администратор"
+  },
+  "PasswordInput": {
+    "show": "Показать пароль",
+    "hide": "Скрыть пароль"
+  },
+  "ThemeToggle": {
+    "toggle": "Переключить тему"
   },
   "LanguageSwitcher": {
     "label": "Язык",
     "ru": "Рус",
     "uz": "O‘z"
+  },
+  "InternTest": {
+    "sql": {
+      "queryTitle": "SQL Query",
+      "queryHint": "Напишите SELECT-запрос и проверьте результат перед отправкой.",
+      "placeholder": "Введите SQL-запрос",
+      "run": "Выполнить",
+      "runs": "Запусков: {count}",
+      "resultTitle": "Результат запроса",
+      "resultHint": "Система покажет строки, которые вернул текущий запрос.",
+      "resultEmpty": "Здесь появится результат вашего SQL-запроса.",
+      "tablesTitle": "Связанные таблицы",
+      "tablesHint": "Выберите таблицу и изучите её поля и тестовые данные.",
+      "fieldsTitle": "Поля таблицы",
+      "sampleDataTitle": "Пример данных",
+      "schemaPreview": "Схема и доступные строки для этой задачи.",
+      "statusPassed": "зачтено",
+      "statusFix": "нужно исправить",
+      "statusIdle": "ещё не проверено",
+      "rows": "{count} rows",
+      "resetView": "Сбросить"
+    }
   }
 }

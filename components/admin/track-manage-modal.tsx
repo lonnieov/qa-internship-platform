@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeOff, MoreHorizontal, Trash2, X } from "lucide-react";
 import {
   deleteTrackAction,
@@ -19,6 +20,7 @@ type TrackManageModalProps = {
 };
 
 export function TrackManageModal({ track }: TrackManageModalProps) {
+  const t = useTranslations("AdminQuestions");
   const [isOpen, setIsOpen] = useState(false);
   const meta = getQuestionTrackMeta(track);
   const canDelete = track.questionCount === 0;
@@ -26,7 +28,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
   return (
     <>
       <button
-        aria-label={`Управлять треком ${track.name}`}
+        aria-label={t("tracks.manageAria", { name: track.name })}
         className="track-manage-trigger"
         type="button"
         onClick={() => setIsOpen(true)}
@@ -49,15 +51,15 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id={`track-modal-title-${track.id}`}>
-                  Редактировать трек
+                  {t("tracks.manageTitle")}
                 </h2>
                 <p className="track-modal-meta body-2 muted m-0">
-                  <span className={meta.dotClassName} /> {track.questionCount}{" "}
-                  вопросов
+                  <span className={meta.dotClassName} />{" "}
+                  {t("tracks.questionsCount", { count: track.questionCount })}
                 </p>
               </div>
               <Button
-                aria-label="Закрыть модальное окно"
+                aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
                 onClick={() => setIsOpen(false)}
@@ -75,7 +77,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                       className="body-2 muted"
                       htmlFor={`track-name-${track.id}`}
                     >
-                      Название
+                      {t("tracks.name")}
                     </label>
                     <Input
                       id={`track-name-${track.id}`}
@@ -89,7 +91,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                       className="body-2 muted"
                       htmlFor={`track-order-${track.id}`}
                     >
-                      Порядок
+                      {t("tracks.order")}
                     </label>
                     <Input
                       id={`track-order-${track.id}`}
@@ -102,15 +104,15 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                   </div>
                 </div>
                 <div className="modal-actions">
-                  <Button type="submit">Сохранить</Button>
+                  <Button type="submit">{t("save")}</Button>
                 </div>
               </form>
 
               <div className="track-modal-danger-zone">
                 <div>
-                  <strong>Статус и удаление</strong>
+                  <strong>{t("tracks.statusDeleteTitle")}</strong>
                   <p className="body-2 muted m-0">
-                    Скрытый трек не предлагается при создании новых вопросов.
+                    {t("tracks.statusDeleteDescription")}
                   </p>
                 </div>
                 <div className="track-modal-actions">
@@ -131,7 +133,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                       ) : (
                         <Eye size={16} />
                       )}
-                      {track.isActive ? "Скрыть" : "Активировать"}
+                      {track.isActive ? t("hide") : t("activate")}
                     </Button>
                   </form>
                   <form action={deleteTrackAction}>
@@ -146,19 +148,18 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
                       disabled={!canDelete}
                       title={
                         canDelete
-                          ? "Удалить трек"
-                          : "Сначала переместите или удалите вопросы"
+                          ? t("tracks.deleteTitle")
+                          : t("tracks.deleteBlockedTitle")
                       }
                     >
                       <Trash2 size={16} />
-                      Удалить
+                      {t("delete")}
                     </Button>
                   </form>
                 </div>
                 {!canDelete ? (
                   <p className="body-2 muted m-0">
-                    Трек можно удалить только после переноса или удаления всех
-                    вопросов.
+                    {t("tracks.deleteBlockedDescription")}
                   </p>
                 ) : null}
               </div>

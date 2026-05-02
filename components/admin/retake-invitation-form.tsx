@@ -17,8 +17,8 @@ const initialState: InvitationState = {
 
 export function RetakeInvitationForm({
   internProfileId,
-  buttonLabel = "Перепройти",
-  issuedButtonLabel = "Выдать новый",
+  buttonLabel,
+  issuedButtonLabel,
   onCreated,
 }: {
   internProfileId: string;
@@ -54,7 +54,9 @@ export function RetakeInvitationForm({
           disabled={isPending}
         >
           <RotateCcw size={15} />
-          {state.inviteCode ? issuedButtonLabel : buttonLabel}
+          {state.inviteCode
+            ? issuedButtonLabel ?? t("retake.issueNew")
+            : buttonLabel ?? t("retake.retry")}
         </Button>
       </form>
       {state.message ? (

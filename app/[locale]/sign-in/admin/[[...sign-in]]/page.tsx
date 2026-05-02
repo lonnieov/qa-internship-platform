@@ -1,52 +1,52 @@
+import { getTranslations } from "next-intl/server";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
 import { AuthRoleTabs } from "@/components/auth-role-tabs";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 
-export default function AdminSignInPage() {
+export default async function AdminSignInPage() {
+  const t = await getTranslations("AdminAuth");
   return (
     <main className="auth-shell" data-auth-role="admin">
       <section className="auth-brand-panel">
         <div className="auth-brand">
           <ServiceLogo />
-          <strong>QA Internship platform</strong>
+          <strong>{t("brand")}</strong>
         </div>
         <div>
-          <h1>Админ-панель ассессмента</h1>
+          <h1>{t("heroTitle")}</h1>
           <p>
-            Управляйте стажёрами, токенами доступа, банком вопросов и
-            результатами прохождения.
+            {t("heroDescription")}
           </p>
           <div className="auth-stats">
             <div>
               <strong>CRUD</strong>
-              <span>банк вопросов</span>
+              <span>{t("heroStats.questions")}</span>
             </div>
             <div>
               <strong>MD</strong>
-              <span>AI-отчёты</span>
+              <span>{t("heroStats.reports")}</span>
             </div>
             <div>
               <strong>Token</strong>
-              <span>доступ стажёров</span>
+              <span>{t("heroStats.tokens")}</span>
             </div>
           </div>
         </div>
-        <small>© 2026 · Внутренняя QA-платформа</small>
+        <small>{t("footer")}</small>
       </section>
 
       <section className="auth-form-panel">
         <div className="auth-form-card">
           <div className="auth-form-top">
-            <Badge variant="warning">Администратор</Badge>
+            <Badge variant="warning">{t("badge")}</Badge>
             <ThemeToggle />
           </div>
           <div className="stack">
-            <h2 className="head-1">Вход администратора</h2>
+            <h2 className="head-1">{t("title")}</h2>
             <p className="body-1 muted m-0">
-              Вход администратора хранит пароль и сессию в базе данных и не
-              пересекается со входом стажёра по токену.
+              {t("description")}
             </p>
           </div>
           <AuthRoleTabs activeRole="admin" />
