@@ -23,6 +23,10 @@ import {
   summarizeManualQaAnswer,
 } from "@/lib/manual-qa-sandbox";
 import {
+  getAutotestSandboxConfig,
+  summarizeAutotestAnswer,
+} from "@/lib/autotest-sandbox";
+import {
   getSqlSandboxConfig,
 } from "@/lib/sql-sandbox-config";
 import { executeSqlSandboxQuery } from "@/lib/sql-sandbox";
@@ -775,6 +779,78 @@ export async function submitDevtoolsAnswerAction(input: {
 
   revalidatePath("/intern/test");
   return { ok: true, expired: false };
+}
+
+export async function submitAutotestAnswerAction(input: {
+  attemptId: string;
+  questionId: string;
+  code: string;
+  timeSpentMs: number;
+}) {
+  const profile = await requireIntern();
+  const attempt = await prisma.assessmentAttempt.findFirst({
+    where: {
+      id: input.attemptId,
+      internProfileId: profile.internProfile.id,
+    },
+  });
+
+  if (!attempt) return { ok: false, expired: false };
+
+  const checked = await expireAttemptIfNeeded(attempt.id);
+  if (!checked || checked.status !== "IN_PROGRESS") {
+    return { ok: false, expired: true };
+  }
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    include: { question: true },
+  });
+
+  if (
+    !answer ||
+    answer.question.type !== "AUTOTEST_SANDBOX" ||
+    !answer.question.apiConfig
+  ) {
+    return { ok: false, expired: false };
+  }
+
+  const config = getAutotestSandboxConfig(answer.question.apiConfig);
+  const summary = summarizeAutotestAnswer(input.code, config);
+  const hasAnswer = input.code.trim().length > 0;
+
+  await prisma.assessmentAnswer.update({
+    where: {
+      attemptId_questionId: {
+        attemptId: input.attemptId,
+        questionId: input.questionId,
+      },
+    },
+    data: {
+      apiRequest: mergeInternComment(
+        {
+          mode: "AUTOTEST_SANDBOX",
+          code: input.code,
+        },
+        getInternComment(answer.apiRequest),
+      ),
+      apiResponse: summary,
+      isCorrect: false,
+      answeredAt: hasAnswer ? new Date() : null,
+      submissionCount: hasAnswer ? Math.max(1, answer.submissionCount) : 0,
+      timeSpentMs: {
+        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      },
+    },
+  });
+
+  revalidatePath("/intern/test");
+  return { ok: true, expired: false, summary };
 }
 
 export async function submitManualQaAnswerAction(input: {

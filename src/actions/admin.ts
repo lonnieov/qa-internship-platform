@@ -21,6 +21,11 @@ import {
   type ManualQaKnownBug,
 } from "@/lib/manual-qa-sandbox";
 import {
+  autotestPresetOptions,
+  clickAvtoTintingPresetConfig,
+  type AutotestScenario,
+} from "@/lib/autotest-sandbox";
+import {
   getSqlSandboxConfig,
   sampleSqlSandboxConfig,
 } from "@/lib/sql-sandbox-config";
@@ -95,6 +100,7 @@ function questionRedirectUrl(
       questionType === "API_SANDBOX" ||
       questionType === "DEVTOOLS_SANDBOX" ||
       questionType === "MANUAL_QA_SANDBOX" ||
+      questionType === "AUTOTEST_SANDBOX" ||
       questionType === "SQL_SANDBOX"
         ? questionType
         : "QUIZ",
@@ -179,6 +185,58 @@ function readManualQaSandboxConfig(formData: FormData, text: string) {
       : preset.timeHintMinutes,
     bugCategories: categories.length > 0 ? categories : preset.bugCategories,
     knownBugs,
+  };
+}
+
+function readAutotestSandboxConfig(formData: FormData, text: string) {
+  const presetId = String(
+    formData.get("autotestPreset") ?? clickAvtoTintingPresetConfig.appPreset,
+  );
+  const preset =
+    autotestPresetOptions.find((option) => option.value === presetId)?.config ??
+    clickAvtoTintingPresetConfig;
+  const scenarioTitle = String(
+    formData.get("autotestScenarioTitle") ?? preset.scenarioTitle,
+  ).trim();
+  const timeHintMinutes = Number(formData.get("autotestTimeHintMinutes"));
+  const scenariosText = String(
+    formData.get("autotestExpectedScenarios") ?? "",
+  ).trim();
+
+  let expectedScenarios: AutotestScenario[] = preset.expectedScenarios;
+  if (scenariosText) {
+    const parsed = JSON.parse(scenariosText);
+    if (!Array.isArray(parsed)) {
+      throw new Error("Expected scenarios must be an array.");
+    }
+
+    expectedScenarios = parsed
+      .filter(
+        (item): item is Partial<AutotestScenario> =>
+          Boolean(item) && typeof item === "object" && !Array.isArray(item),
+      )
+      .map((item) => ({
+        id: String(item.id ?? "").trim(),
+        title: String(item.title ?? "").trim(),
+        required: item.required !== false,
+        matchKeywords: Array.isArray(item.matchKeywords)
+          ? item.matchKeywords.map((kw) => String(kw)).filter(Boolean)
+          : [],
+      }))
+      .filter((item) => item.id && item.title);
+  }
+
+  return {
+    mode: "AUTOTEST_SANDBOX" as const,
+    scenarioTitle: scenarioTitle || preset.scenarioTitle,
+    mission: text || preset.mission,
+    appPreset: preset.appPreset,
+    timeHintMinutes: Number.isFinite(timeHintMinutes)
+      ? Math.min(Math.max(Math.round(timeHintMinutes), 5), 60)
+      : preset.timeHintMinutes,
+    availableMethods: preset.availableMethods,
+    expectedScenarios,
+    exampleCode: preset.exampleCode,
   };
 }
 
@@ -343,6 +401,30 @@ export async function createQuestionAction(formData: FormData) {
     await prisma.question.create({
       data: {
         type: "MANUAL_QA_SANDBOX",
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        order: (lastQuestion?.order ?? 0) + 1,
+        createdById: admin.id,
+        apiConfig,
+      },
+    });
+  } else if (questionType === "AUTOTEST_SANDBOX") {
+    if (!text) {
+      return;
+    }
+
+    let apiConfig;
+    try {
+      apiConfig = readAutotestSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.create({
+      data: {
+        type: "AUTOTEST_SANDBOX",
         text,
         track: track.trackName,
         trackId: track.trackId,
@@ -565,6 +647,24 @@ export async function updateQuestionAction(formData: FormData) {
         apiConfig,
       },
     });
+  } else if (questionType === "AUTOTEST_SANDBOX") {
+    let apiConfig;
+    try {
+      apiConfig = readAutotestSandboxConfig(formData, text);
+    } catch {
+      return;
+    }
+
+    await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        text,
+        track: track.trackName,
+        trackId: track.trackId,
+        explanation: explanation || null,
+        apiConfig,
+      },
+    });
   } else if (
     questionType === "API_SANDBOX" ||
     questionType === "DEVTOOLS_SANDBOX"
@@ -727,6 +827,52 @@ export async function updateQuestionAction(formData: FormData) {
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
+}
+
+export async function reviewAnswerAction(input: {
+  answerId: string;
+  passed: boolean;
+  note: string;
+}) {
+  await requireAdmin();
+
+  const answer = await prisma.assessmentAnswer.findUnique({
+    where: { id: input.answerId },
+    include: { question: { select: { type: true } } },
+  });
+
+  if (
+    !answer ||
+    (answer.question.type !== "MANUAL_QA_SANDBOX" &&
+      answer.question.type !== "AUTOTEST_SANDBOX")
+  ) {
+    return { ok: false };
+  }
+
+  const prevResponse =
+    answer.apiResponse &&
+    typeof answer.apiResponse === "object" &&
+    !Array.isArray(answer.apiResponse)
+      ? (answer.apiResponse as Record<string, unknown>)
+      : {};
+
+  await prisma.assessmentAnswer.update({
+    where: { id: input.answerId },
+    data: {
+      isCorrect: input.passed,
+      apiResponse: {
+        ...prevResponse,
+        adminReview: {
+          passed: input.passed,
+          note: input.note.trim().slice(0, 500),
+          at: new Date().toISOString(),
+        },
+      },
+    },
+  });
+
+  revalidatePath(`/admin/attempts/${answer.attemptId}`);
+  return { ok: true };
 }
 
 export async function toggleQuestionAction(formData: FormData) {

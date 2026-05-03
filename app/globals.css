@@ -4367,6 +4367,91 @@ button {
   gap: 14px;
 }
 
+/* ── Autotest Sandbox ─────────────────────────────────────────── */
+
+.autotest-task-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.autotest-methods-panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+}
+
+.autotest-methods-list {
+  display: grid;
+  gap: 8px;
+}
+
+.autotest-method-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--coin-code-bg);
+}
+
+.autotest-method-signature {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--primary);
+  word-break: break-all;
+}
+
+.autotest-method-example {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted-foreground);
+  word-break: break-all;
+}
+
+.autotest-editor-panel {
+  min-width: 0;
+}
+
+.autotest-editor {
+  min-height: 320px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.autotest-example-code {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  white-space: pre-wrap;
+  color: var(--muted-foreground);
+}
+
+.test-page-compact.autotest-test-page {
+  width: min(1400px, calc(100% - 24px));
+  padding-top: 10px;
+}
+
+.test-page-compact .autotest-task-layout {
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  .autotest-task-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .autotest-methods-panel {
+    max-height: 260px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+
 .test-page-compact .manual-qa-phone {
   height: clamp(560px, calc(100vh - 190px), 720px);
   min-height: 0;
@@ -4635,6 +4720,48 @@ button {
   border-radius: var(--radius-garden);
   background: rgba(224, 165, 0, 0.08);
 }
+
+/* ── Answer manual review ─────────────────────────────────────── */
+
+.answer-review-form {
+  padding: 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--coin-code-bg);
+}
+
+.answer-review-note {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.autotest-report-summary {
+  min-width: 0;
+}
+
+.autotest-scenario-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.autotest-scenario-keywords {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.autotest-code-preview {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: var(--radius-garden);
+  background: var(--muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
 
 .question-comment-dialog {
   width: min(560px, calc(100vw - 32px));

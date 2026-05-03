@@ -192,7 +192,10 @@
         "description": "DevTools ichidagi Network va response bilan ishlash vazifalari."
       },
       "manualQa": {
-        "description": "mobile/webview miniapp ichida bug topish va rasmiylashtirish bo‘yicha amaliy vazifalar."
+        "description": "mobile/webview miniapp ichida bug topish va rasmiylashtirish bo’yicha amaliy vazifalar."
+      },
+      "autotest": {
+        "description": "Mobil stsenariylar uchun psevdokod autotest yozish vazifalari."
       }
     },
     "openQuestion": {
@@ -226,7 +229,8 @@
       "sql": "SQL Sandbox",
       "devtools": "DevTools Sandbox",
       "devtoolsShort": "DevTools",
-      "manualQa": "Manual QA"
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
     },
     "meta": {
       "tables": "{count} ta jadval",
@@ -298,6 +302,7 @@
       "questionText": "Savol matni",
       "sqlMission": "SQL vazifa tavsifi",
       "manualMission": "Stajyor uchun missiya",
+      "autotestMission": "Autotest vazifasi uchun missiya",
       "apiMission": "API vazifa tavsifi"
     },
     "quizMode": "Quiz savol formati",
@@ -344,6 +349,14 @@
       "viewportHeight": "Viewport balandligi",
       "knownBugsRubric": "Known bugs rubricasi"
     },
+    "autotest": {
+      "preset": "Stsenariy preseti",
+      "scenarioTitle": "Stsenariy nomi",
+      "recommendedMinutes": "Tavsiya dakikalar",
+      "expectedScenarios": "Kutilgan stsenariylar (JSON)",
+      "reviewTitle": "Bu tur qo'lda tekshirishni talab qiladi",
+      "reviewDescription": "Stajyor psevdokod yozadi. Keyword matching asosiy tekshiruvni bajaradi — yakuniy baho tekshiruvchi tomonidan beriladi."
+    },
     "devtools": {
       "networkMethod": "Network ichidagi so‘rov method'i",
       "responseStatus": "Javob status'i",
@@ -374,7 +387,8 @@
       "api": "API Sandbox",
       "sql": "SQL Sandbox",
       "devtools": "DevTools",
-      "manualQa": "Manual QA"
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
     }
   },
   "AdminAuth": {
