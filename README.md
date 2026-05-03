@@ -10,6 +10,7 @@ Next.js App Router проект для ассессмента кандидато
 - PostgreSQL через `DATABASE_URL`
 - shadcn/ui-style компоненты и Coin design tokens
 - OpenAI Responses API для опциональных подсказок вопросов
+- Groq Chat API для AI overview по MD-отчётам попыток
 
 ## Локальный запуск
 
@@ -69,6 +70,19 @@ npm run db:push
 ```bash
 npm run build:deploy
 ```
+
+## AI overview
+
+Для сводки результатов через Groq задайте на сервере:
+
+```bash
+GROQ_API_KEY=
+GROQ_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+GROQ_BASE_URL=https://api.groq.com/openai/v1
+```
+
+Кнопка `Ai overview` доступна на странице результата попытки рядом со
+скачиванием MD-отчёта.
 
 ## Что реализовано
 

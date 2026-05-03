@@ -250,6 +250,32 @@
     "title": "Отчёт по ассессменту",
     "subtitle": "{name} · вход по токену без email",
     "download": "Скачать MD",
+    "aiOverview": {
+      "button": "Ai overview",
+      "title": "AI overview",
+      "description": "Groq проанализирует MD-отчёт и вернёт сводку.",
+      "meta": "Groq · {model}",
+      "loading": "Groq анализирует отчёт...",
+      "empty": "Сводка пока не сформирована.",
+      "error": "Не удалось получить AI overview.",
+      "close": "Закрыть AI overview"
+    },
+    "aiReview": {
+      "title": "AI-проверка",
+      "pending": "генерируется",
+      "generating": "Groq оценивает ответы ручной проверки: {count}",
+      "error": "Не удалось получить AI-проверку.",
+      "score": "{score}/100",
+      "provider": "Groq · {model}",
+      "strengths": "Сильные стороны",
+      "issues": "Риски",
+      "recommendation": "Рекомендация",
+      "verdict": {
+        "pass": "рекомендует принять",
+        "fail": "рекомендует отклонить",
+        "needs_review": "нужна ручная проверка"
+      }
+    },
     "summary": {
       "totalTime": "Общее время",
       "averageTime": "Среднее на вопрос",
@@ -274,6 +300,9 @@
       "steps": "Steps",
       "actual": "Actual",
       "expected": "Expected",
+      "toggleReview": "Проверка",
+      "toggleReviewForQuestion": "Показать или скрыть проверку вопроса {number}",
+      "reviewForQuestion": "Проверка вопроса {number}",
       "resultManual": "ручная проверка",
       "resultUngraded": "без оценки",
       "resultCorrect": "верно",

@@ -33,7 +33,7 @@
 4. `src/actions/intern.ts` запускает проверку через `src/lib/sql-sandbox.ts`.
 5. `src/lib/sql-sandbox.ts` сначала валидирует синтаксис SQL и проверяет, что используются только таблицы из задания.
 6. Ответ и результат сохраняются в `AssessmentAnswer`, после чего вопрос считается отвеченным.
-7. Админ видит SQL-ответ в `app/admin/attempts/[attemptId]/page.tsx` и PDF-отчёте.
+7. Админ видит SQL-ответ в `app/[locale]/admin/attempts/[attemptId]/page.tsx` и Markdown-отчёте.
 
 - в заголовке SQL-редактора показывается только контекст движка и статус проверки, без шильдиков ожидаемых колонок
 - правая панель показывает диаграмму таблиц со связями, выбором активной таблицы и pan/zoom управлением
@@ -51,9 +51,9 @@
 - `components/admin/question-create-modal.tsx`
 - `components/intern/test-runner.tsx`
 - `app/globals.css`
-- `app/admin/questions/page.tsx`
-- `app/admin/attempts/[attemptId]/page.tsx`
-- `src/lib/attempt-report-pdf.ts`
+- `app/[locale]/admin/questions/page.tsx`
+- `app/[locale]/admin/attempts/[attemptId]/page.tsx`
+- `src/lib/attempt-report-md.ts`
 
 ## Constraints
 

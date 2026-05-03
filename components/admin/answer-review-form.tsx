@@ -56,19 +56,21 @@ export function AnswerReviewForm({
 
       <div className="nav-row">
         <Button
+          className={`answer-review-action answer-review-accept${submitted === true ? " is-selected" : ""}`}
           disabled={isPending}
           onClick={() => submit(true)}
           type="button"
-          variant={submitted === true ? "default" : "secondary"}
+          variant="secondary"
         >
           <CheckCircle2 size={16} />
           Принять
         </Button>
         <Button
+          className={`answer-review-action answer-review-reject${submitted === false ? " is-selected" : ""}`}
           disabled={isPending}
           onClick={() => submit(false)}
           type="button"
-          variant={submitted === false ? "default" : "secondary"}
+          variant="secondary"
         >
           <XCircle size={16} />
           Отклонить

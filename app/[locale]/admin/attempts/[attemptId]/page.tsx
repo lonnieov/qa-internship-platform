@@ -1,6 +1,11 @@
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Clock3, Route, TimerReset } from "lucide-react";
+import { ChevronDown, Clock3, Route, TimerReset } from "lucide-react";
+import {
+  getAiAnswerReview,
+  isAiReviewableAnswer,
+} from "@/lib/ai-answer-review";
 import { getInternComment } from "@/lib/answer-comment";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import {
@@ -15,6 +20,9 @@ import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
 import { AnswerReviewForm } from "@/components/admin/answer-review-form";
+import { AnswerAiReviewCard } from "@/components/admin/answer-ai-review-card";
+import { AttemptAiReviewsLoader } from "@/components/admin/attempt-ai-reviews-loader";
+import { AiOverviewButton } from "@/components/admin/ai-overview-button";
 import { ReportDownloadButton } from "@/components/admin/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,22 +88,24 @@ export default async function AttemptDetailsPage({
     return null;
   }
 
+  function isManualReviewAnswer(answer: (typeof safeAttempt.answers)[number]) {
+    return isAiReviewableAnswer(answer);
+  }
+
   function formatQuestionResult(answer: (typeof safeAttempt.answers)[number]) {
-    if (
-      answer.question.type === "MANUAL_QA_SANDBOX" ||
-      answer.question.type === "AUTOTEST_SANDBOX"
-    ) {
+    if (isManualReviewAnswer(answer)) {
       const review = getAdminReview(answer);
       if (!review) return t("table.resultManual");
       return review.passed ? t("table.resultCorrect") : t("table.resultWrong");
     }
 
-    if (getOpenQuizConfig(answer.question.apiConfig)) {
-      return t("table.resultUngraded");
-    }
-
     return answer.isCorrect ? t("table.resultCorrect") : t("table.resultWrong");
   }
+
+  const missingAiReviewCount = safeAttempt.answers.filter(
+    (answer) =>
+      isManualReviewAnswer(answer) && !getAiAnswerReview(answer.apiResponse),
+  ).length;
 
   return (
     <main className="page stack-lg report-print-area">
@@ -110,9 +120,15 @@ export default async function AttemptDetailsPage({
           <Badge variant={score >= 100 ? "success" : "danger"}>
             {formatPercent(score)}
           </Badge>
+          <AiOverviewButton attemptId={safeAttempt.id} />
           <ReportDownloadButton attemptId={safeAttempt.id} />
         </div>
       </div>
+
+      <AttemptAiReviewsLoader
+        attemptId={safeAttempt.id}
+        missingCount={missingAiReviewCount}
+      />
 
       <section className="grid-2">
         <Card>
@@ -149,7 +165,9 @@ export default async function AttemptDetailsPage({
               <strong>{formatAttemptStatus(safeAttempt.status)}</strong>
             </div>
             <div>
-              <span className="body-2 muted">{t("summary.correctAnswers")}</span>
+              <span className="body-2 muted">
+                {t("summary.correctAnswers")}
+              </span>
               <strong>
                 {safeAttempt.correctCount}/{safeAttempt.questionCount}
               </strong>
@@ -182,269 +200,328 @@ export default async function AttemptDetailsPage({
               </thead>
               <tbody>
                 {safeAttempt.answers.map((answer, index) => (
-                  <tr key={answer.id}>
-                    <td>
-                      <strong>
-                        {index + 1}. {answer.question.text}
-                      </strong>
-                    </td>
-                    <td>
-                      {(() => {
-                        const internComment = getInternComment(answer.apiRequest);
+                  <Fragment key={answer.id}>
+                    <tr
+                      className={
+                        isManualReviewAnswer(answer)
+                          ? "attempt-answer-row has-review"
+                          : undefined
+                      }
+                    >
+                      <td>
+                        <div className="attempt-question-cell">
+                          <strong>
+                            {index + 1}. {answer.question.text}
+                          </strong>
+                          {isManualReviewAnswer(answer) ? (
+                            <>
+                              <input
+                                className="attempt-review-toggle"
+                                id={`attempt-review-toggle-${answer.id}`}
+                                type="checkbox"
+                              />
+                              <label
+                                aria-label={t("table.toggleReviewForQuestion", {
+                                  number: index + 1,
+                                })}
+                                className="attempt-review-toggle-label"
+                                htmlFor={`attempt-review-toggle-${answer.id}`}
+                              >
+                                <span>{t("table.toggleReview")}</span>
+                                <ChevronDown size={18} />
+                              </label>
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td>
+                        {(() => {
+                          const internComment = getInternComment(
+                            answer.apiRequest,
+                          );
 
-                        return (
-                          <div className="stack">
-                            <div>
-                              {answer.question.type === "MANUAL_QA_SANDBOX" ? (
-                                (() => {
-                                  const payload = getManualQaAnswerPayload(
-                                    answer.apiRequest,
-                                  );
-                                  const config = getManualQaSandboxConfig(
-                                    answer.question.apiConfig,
-                                  );
-                                  const summary =
-                                    answer.apiResponse &&
-                                    typeof answer.apiResponse === "object" &&
-                                    !Array.isArray(answer.apiResponse)
-                                      ? (answer.apiResponse as {
-                                          matchedKnownBugIds?: string[];
-                                        })
-                                      : null;
-
-                                  if (!payload) {
-                                    return t("table.notFilled");
-                                  }
-
-                                  return (
-                                    <div className="manual-qa-report-summary">
-                                      <div className="nav-row">
-                                        <Badge variant="muted">
-                                          {t("table.bugsCount", {
-                                            count: payload.reports.length,
-                                          })}
-                                        </Badge>
-                                        {payload.noBugsFound ? (
-                                          <Badge variant="warning">
-                                            {t("table.noBugsFound")}
-                                          </Badge>
-                                        ) : null}
-                                        <Badge variant="muted">
-                                          {summary?.matchedKnownBugIds
-                                            ?.length ?? 0}
-                                          /{config?.knownBugs.length ?? 0}{" "}
-                                          {t("table.knownBugs")}
-                                        </Badge>
-                                      </div>
-                                      {payload.reports.map(
-                                        (report, reportIndex) => (
-                                          <div
-                                            className="manual-qa-report-result"
-                                            key={report.id}
-                                          >
-                                            <div className="nav-row">
-                                              <strong>
-                                                {reportIndex + 1}.{" "}
-                                                {report.title}
-                                              </strong>
-                                              <Badge variant="muted">
-                                                {report.severity}
-                                              </Badge>
-                                              <Badge variant="muted">
-                                                {report.category}
-                                              </Badge>
-                                            </div>
-                                            <p className="body-2 m-0">
-                                              <strong>{t("table.steps")}:</strong>{" "}
-                                              {report.steps}
-                                            </p>
-                                            <p className="body-2 m-0">
-                                              <strong>{t("table.actual")}:</strong>{" "}
-                                              {report.actual}
-                                            </p>
-                                            <p className="body-2 m-0">
-                                              <strong>{t("table.expected")}:</strong>{" "}
-                                              {report.expected}
-                                            </p>
-                                            {report.note ? (
-                                              <p className="body-2 muted m-0">
-                                                {report.note}
-                                              </p>
-                                            ) : null}
-                                          </div>
-                                        ),
-                                      )}
-                                    </div>
-                                  );
-                                })()
-                              ) : answer.question.type === "AUTOTEST_SANDBOX" ? (
-                                (() => {
-                                  const payload = getAutotestAnswerPayload(
-                                    answer.apiRequest,
-                                  );
-                                  const config = getAutotestSandboxConfig(
-                                    answer.question.apiConfig,
-                                  );
-                                  const summary =
-                                    answer.apiResponse &&
-                                    typeof answer.apiResponse === "object" &&
-                                    !Array.isArray(answer.apiResponse)
-                                      ? (answer.apiResponse as {
-                                          matchedScenarioIds?: string[];
-                                          requiredTotal?: number;
-                                          requiredMatched?: number;
-                                        })
-                                      : null;
-
-                                  if (!payload?.code.trim()) {
-                                    return (
-                                      <span className="body-2 muted">
-                                        {t("table.notFilled")}
-                                      </span>
+                          return (
+                            <div className="stack">
+                              <div>
+                                {answer.question.type ===
+                                "MANUAL_QA_SANDBOX" ? (
+                                  (() => {
+                                    const payload = getManualQaAnswerPayload(
+                                      answer.apiRequest,
                                     );
-                                  }
+                                    const config = getManualQaSandboxConfig(
+                                      answer.question.apiConfig,
+                                    );
+                                    const summary =
+                                      answer.apiResponse &&
+                                      typeof answer.apiResponse === "object" &&
+                                      !Array.isArray(answer.apiResponse)
+                                        ? (answer.apiResponse as {
+                                            matchedKnownBugIds?: string[];
+                                          })
+                                        : null;
 
-                                  return (
-                                    <div className="autotest-report-summary stack">
-                                      {summary ? (
+                                    if (!payload) {
+                                      return t("table.notFilled");
+                                    }
+
+                                    return (
+                                      <div className="manual-qa-report-summary">
                                         <div className="nav-row">
                                           <Badge variant="muted">
-                                            сценарии:{" "}
-                                            {summary.requiredMatched ?? 0}/
-                                            {summary.requiredTotal ?? 0}{" "}
-                                            обязательных
+                                            {t("table.bugsCount", {
+                                              count: payload.reports.length,
+                                            })}
                                           </Badge>
+                                          {payload.noBugsFound ? (
+                                            <Badge variant="warning">
+                                              {t("table.noBugsFound")}
+                                            </Badge>
+                                          ) : null}
                                           <Badge variant="muted">
-                                            {summary.matchedScenarioIds?.length ?? 0}{" "}
-                                            из{" "}
-                                            {config?.expectedScenarios.length ?? 0}{" "}
-                                            всего
+                                            {summary?.matchedKnownBugIds
+                                              ?.length ?? 0}
+                                            /{config?.knownBugs.length ?? 0}{" "}
+                                            {t("table.knownBugs")}
                                           </Badge>
                                         </div>
-                                      ) : null}
-
-                                      {config?.expectedScenarios.map(
-                                        (scenario) => {
-                                          const matched =
-                                            summary?.matchedScenarioIds?.includes(
-                                              scenario.id,
-                                            ) ?? false;
-                                          return (
+                                        {payload.reports.map(
+                                          (report, reportIndex) => (
                                             <div
-                                              className="autotest-scenario-row"
-                                              key={scenario.id}
+                                              className="manual-qa-report-result"
+                                              key={report.id}
                                             >
-                                              <Badge
-                                                variant={
-                                                  matched ? "success" : "danger"
-                                                }
-                                              >
-                                                {matched ? "✓" : "✗"}
-                                              </Badge>
-                                              <span className="body-2">
-                                                {scenario.title}
-                                              </span>
-                                              {scenario.required ? (
+                                              <div className="nav-row">
+                                                <strong>
+                                                  {reportIndex + 1}.{" "}
+                                                  {report.title}
+                                                </strong>
                                                 <Badge variant="muted">
-                                                  обязательный
+                                                  {report.severity}
                                                 </Badge>
+                                                <Badge variant="muted">
+                                                  {report.category}
+                                                </Badge>
+                                              </div>
+                                              <p className="body-2 m-0">
+                                                <strong>
+                                                  {t("table.steps")}:
+                                                </strong>{" "}
+                                                {report.steps}
+                                              </p>
+                                              <p className="body-2 m-0">
+                                                <strong>
+                                                  {t("table.actual")}:
+                                                </strong>{" "}
+                                                {report.actual}
+                                              </p>
+                                              <p className="body-2 m-0">
+                                                <strong>
+                                                  {t("table.expected")}:
+                                                </strong>{" "}
+                                                {report.expected}
+                                              </p>
+                                              {report.note ? (
+                                                <p className="body-2 muted m-0">
+                                                  {report.note}
+                                                </p>
                                               ) : null}
-                                              <span className="body-2 muted autotest-scenario-keywords">
-                                                {scenario.matchKeywords.join(
-                                                  ", ",
-                                                )}
-                                              </span>
                                             </div>
-                                          );
-                                        },
-                                      )}
+                                          ),
+                                        )}
+                                      </div>
+                                    );
+                                  })()
+                                ) : answer.question.type ===
+                                  "AUTOTEST_SANDBOX" ? (
+                                  (() => {
+                                    const payload = getAutotestAnswerPayload(
+                                      answer.apiRequest,
+                                    );
+                                    const config = getAutotestSandboxConfig(
+                                      answer.question.apiConfig,
+                                    );
+                                    const summary =
+                                      answer.apiResponse &&
+                                      typeof answer.apiResponse === "object" &&
+                                      !Array.isArray(answer.apiResponse)
+                                        ? (answer.apiResponse as {
+                                            matchedScenarioIds?: string[];
+                                            requiredTotal?: number;
+                                            requiredMatched?: number;
+                                          })
+                                        : null;
 
-                                      <details>
-                                        <summary className="body-2 muted" style={{ cursor: "pointer" }}>
-                                          Код стажёра
-                                        </summary>
-                                        <pre className="body-2 m-0 whitespace-pre-wrap autotest-code-preview">
-                                          {payload.code}
-                                        </pre>
-                                      </details>
-                                    </div>
-                                  );
-                                })()
-                              ) : answer.question.type === "API_SANDBOX" ||
-                                answer.question.type === "DEVTOOLS_SANDBOX" ? (
-                                <div className="stack">
-                                  <strong>
-                                    {answer.apiResponse &&
-                                    typeof answer.apiResponse === "object"
-                                      ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
-                                      : t("table.apiRequest")}
-                                  </strong>
-                                  <span className="body-2 muted">
-                                    {t("table.submissions", {
-                                      count: answer.submissionCount,
-                                    })}
-                                  </span>
-                                  {answer.apiRequest ? (
-                                    <pre className="body-2 m-0 whitespace-pre-wrap">
-                                      {stringifyPrettyJson(answer.apiRequest)}
-                                    </pre>
-                                  ) : null}
-                                </div>
-                              ) : getOpenQuizConfig(
-                                  answer.question.apiConfig,
-                                ) ? (
-                                ((
-                                  answer.apiRequest as
-                                    | { answerText?: string }
-                                    | null
-                                    | undefined
-                                )?.answerText ?? t("table.notFilled"))
-                              ) : (
-                                answer.selectedOption?.text ?? t("table.notSelected")
-                              )}
-                            </div>
-                            {internComment ? (
-                              <div className="intern-comment-result">
-                                <strong>{t("table.internComment")}</strong>
-                                <p className="body-2 m-0">{internComment}</p>
+                                    if (!payload?.code.trim()) {
+                                      return (
+                                        <span className="body-2 muted">
+                                          {t("table.notFilled")}
+                                        </span>
+                                      );
+                                    }
+
+                                    return (
+                                      <div className="autotest-report-summary stack">
+                                        {summary ? (
+                                          <div className="nav-row">
+                                            <Badge variant="muted">
+                                              сценарии:{" "}
+                                              {summary.requiredMatched ?? 0}/
+                                              {summary.requiredTotal ?? 0}{" "}
+                                              обязательных
+                                            </Badge>
+                                            <Badge variant="muted">
+                                              {summary.matchedScenarioIds
+                                                ?.length ?? 0}{" "}
+                                              из{" "}
+                                              {config?.expectedScenarios
+                                                .length ?? 0}{" "}
+                                              всего
+                                            </Badge>
+                                          </div>
+                                        ) : null}
+
+                                        {config?.expectedScenarios.map(
+                                          (scenario) => {
+                                            const matched =
+                                              summary?.matchedScenarioIds?.includes(
+                                                scenario.id,
+                                              ) ?? false;
+                                            return (
+                                              <div
+                                                className="autotest-scenario-row"
+                                                key={scenario.id}
+                                              >
+                                                <Badge
+                                                  variant={
+                                                    matched
+                                                      ? "success"
+                                                      : "danger"
+                                                  }
+                                                >
+                                                  {matched ? "✓" : "✗"}
+                                                </Badge>
+                                                <span className="body-2">
+                                                  {scenario.title}
+                                                </span>
+                                                {scenario.required ? (
+                                                  <Badge variant="muted">
+                                                    обязательный
+                                                  </Badge>
+                                                ) : null}
+                                                <span className="body-2 muted autotest-scenario-keywords">
+                                                  {scenario.matchKeywords.join(
+                                                    ", ",
+                                                  )}
+                                                </span>
+                                              </div>
+                                            );
+                                          },
+                                        )}
+
+                                        <details>
+                                          <summary
+                                            className="body-2 muted"
+                                            style={{ cursor: "pointer" }}
+                                          >
+                                            Код стажёра
+                                          </summary>
+                                          <pre className="body-2 m-0 whitespace-pre-wrap autotest-code-preview">
+                                            {payload.code}
+                                          </pre>
+                                        </details>
+                                      </div>
+                                    );
+                                  })()
+                                ) : answer.question.type === "API_SANDBOX" ||
+                                  answer.question.type ===
+                                    "DEVTOOLS_SANDBOX" ? (
+                                  <div className="stack">
+                                    <strong>
+                                      {answer.apiResponse &&
+                                      typeof answer.apiResponse === "object"
+                                        ? `status ${(answer.apiResponse as { status?: number }).status ?? "-"}`
+                                        : t("table.apiRequest")}
+                                    </strong>
+                                    <span className="body-2 muted">
+                                      {t("table.submissions", {
+                                        count: answer.submissionCount,
+                                      })}
+                                    </span>
+                                    {answer.apiRequest ? (
+                                      <pre className="body-2 m-0 whitespace-pre-wrap">
+                                        {stringifyPrettyJson(answer.apiRequest)}
+                                      </pre>
+                                    ) : null}
+                                  </div>
+                                ) : getOpenQuizConfig(
+                                    answer.question.apiConfig,
+                                  ) ? (
+                                  ((
+                                    answer.apiRequest as
+                                      | { answerText?: string }
+                                      | null
+                                      | undefined
+                                  )?.answerText ?? t("table.notFilled"))
+                                ) : (
+                                  (answer.selectedOption?.text ??
+                                  t("table.notSelected"))
+                                )}
                               </div>
-                            ) : null}
-
-                            {(answer.question.type === "MANUAL_QA_SANDBOX" ||
-                              answer.question.type === "AUTOTEST_SANDBOX") ? (
+                              {internComment ? (
+                                <div className="intern-comment-result">
+                                  <strong>{t("table.internComment")}</strong>
+                                  <p className="body-2 m-0">{internComment}</p>
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="attempt-time-cell">
+                        {formatDuration(answer.timeSpentMs)}
+                      </td>
+                      <td>
+                        <Badge
+                          variant={
+                            isManualReviewAnswer(answer)
+                              ? getAdminReview(answer) === null
+                                ? "warning"
+                                : getAdminReview(answer)?.passed
+                                  ? "success"
+                                  : "danger"
+                              : answer.isCorrect
+                                ? "success"
+                                : "danger"
+                          }
+                        >
+                          {formatQuestionResult(answer)}
+                        </Badge>
+                      </td>
+                    </tr>
+                    {isManualReviewAnswer(answer) ? (
+                      <tr className="attempt-review-row">
+                        <td colSpan={4}>
+                          <div className="attempt-review-panel">
+                            <div className="attempt-review-context">
+                              {t("table.reviewForQuestion", {
+                                number: index + 1,
+                              })}
+                            </div>
+                            <div className="attempt-review-strip">
+                              <AnswerAiReviewCard
+                                review={getAiAnswerReview(answer.apiResponse)}
+                              />
                               <AnswerReviewForm
                                 answerId={answer.id}
                                 existingReview={getAdminReview(answer)}
                               />
-                            ) : null}
+                            </div>
                           </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="attempt-time-cell">
-                      {formatDuration(answer.timeSpentMs)}
-                    </td>
-                    <td>
-                      <Badge
-                        variant={
-                          answer.question.type === "MANUAL_QA_SANDBOX" ||
-                          answer.question.type === "AUTOTEST_SANDBOX"
-                            ? getAdminReview(answer) === null
-                              ? "warning"
-                              : getAdminReview(answer)?.passed
-                                ? "success"
-                                : "danger"
-                            : getOpenQuizConfig(answer.question.apiConfig)
-                              ? "muted"
-                              : answer.isCorrect
-                                ? "success"
-                                : "danger"
-                        }
-                      >
-                        {formatQuestionResult(answer)}
-                      </Badge>
-                    </td>
-                  </tr>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

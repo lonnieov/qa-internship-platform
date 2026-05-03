@@ -430,7 +430,10 @@ button {
   min-width: 190px;
 }
 
-.auth-shell[data-auth-role="intern"] .auth-form-top .theme-toggle-control button,
+.auth-shell[data-auth-role="intern"]
+  .auth-form-top
+  .theme-toggle-control
+  button,
 .topbar .theme-toggle-control button {
   min-height: 28px;
   padding: 0 8px;
@@ -1798,9 +1801,15 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   background:
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.04) 1px, transparent 1.5px),
+    radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1.5px
+    ),
     linear-gradient(180deg, #232427 0%, #1b1c1f 100%);
-  background-size: 32px 32px, cover;
+  background-size:
+    32px 32px,
+    cover;
   cursor: grab;
 }
 
@@ -1900,7 +1909,11 @@ button {
 
 .sql-schema-panel {
   background:
-    radial-gradient(circle at top right, rgba(0, 119, 255, 0.06), transparent 32%),
+    radial-gradient(
+      circle at top right,
+      rgba(0, 119, 255, 0.06),
+      transparent 32%
+    ),
     linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
 }
 
@@ -3259,6 +3272,260 @@ button {
   overflow: auto;
 }
 
+.ai-overview-modal {
+  width: min(940px, calc(100vw - 48px));
+  max-height: min(820px, calc(100vh - 48px));
+  overflow: hidden;
+}
+
+.ai-overview-body {
+  padding: 20px;
+  max-height: calc(min(820px, 100vh - 48px) - 92px);
+  overflow: auto;
+}
+
+.ai-overview-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  line-height: 1.65;
+}
+
+.ai-overview-loading,
+.ai-overview-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 18px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.ai-overview-error {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.ai-review-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: var(--radius-garden);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--foreground);
+}
+
+.answer-ai-review-card {
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: var(--attempt-review-radius, 18px);
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+  overflow: hidden;
+}
+
+.answer-ai-review-card.pending {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-color: var(--surface-border);
+}
+
+.answer-ai-review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: 52px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.answer-ai-review-summary::-webkit-details-marker {
+  display: none;
+}
+
+.answer-ai-review-summary::after {
+  content: "Развернуть";
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.answer-ai-review-card[open] .answer-ai-review-summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.answer-ai-review-card[open] .answer-ai-review-summary::after {
+  content: "Скрыть";
+}
+
+.answer-ai-review-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.answer-ai-review-list {
+  display: grid;
+  gap: 6px;
+}
+
+.answer-ai-review-list ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted-foreground);
+}
+
+.attempt-answer-row.has-review td {
+  border-bottom-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  background: color-mix(in srgb, var(--primary) 3%, transparent);
+}
+
+.attempt-question-cell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.attempt-review-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.attempt-review-toggle-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: var(--radius-garden);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.attempt-review-toggle-label:hover {
+  border-color: color-mix(in srgb, var(--primary) 62%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.attempt-review-toggle-label svg {
+  transition: transform 0.18s ease;
+}
+
+.attempt-answer-row:has(.attempt-review-toggle:focus-visible)
+  .attempt-review-toggle-label {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.attempt-answer-row:has(.attempt-review-toggle:checked)
+  .attempt-review-toggle-label {
+  border-color: color-mix(in srgb, var(--primary) 68%, transparent);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.attempt-answer-row:has(.attempt-review-toggle:checked)
+  .attempt-review-toggle-label
+  svg {
+  transform: rotate(180deg);
+}
+
+.attempt-answer-row:has(.attempt-review-toggle:not(:checked))
+  + .attempt-review-row {
+  display: none;
+}
+
+.attempt-review-row td {
+  padding: 0 28px 22px;
+  border-top: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 7%, transparent),
+    transparent 72%
+  );
+}
+
+.attempt-review-panel {
+  display: grid;
+  gap: 10px;
+  padding-left: 20px;
+  border-left: 2px solid color-mix(in srgb, var(--primary) 80%, transparent);
+}
+
+.attempt-review-context {
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  border-radius: var(--radius-garden);
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.attempt-review-strip {
+  --attempt-review-radius: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 14px;
+  max-width: 980px;
+  padding: 0 0 16px;
+}
+
+.attempt-review-strip > .answer-ai-review-card,
+.attempt-review-strip > .answer-review-form {
+  flex: 1 1 360px;
+  min-width: min(100%, 280px);
+}
+
+.attempt-review-strip > .answer-ai-review-card {
+  max-width: 460px;
+}
+
+.attempt-review-strip > .answer-review-form {
+  max-width: 520px;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .candidate-modal-body {
   display: grid;
   gap: 0;
@@ -3342,8 +3609,9 @@ button {
 
 .masked-token-reveal {
   font: inherit;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas,
-    "Liberation Mono", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono",
+    monospace;
   cursor: pointer;
 }
 
@@ -4726,13 +4994,41 @@ button {
 .answer-review-form {
   padding: 12px;
   border: 1px solid var(--surface-border);
-  border-radius: var(--radius-garden);
+  border-radius: var(--attempt-review-radius, 18px);
   background: var(--coin-code-bg);
 }
 
 .answer-review-note {
   min-height: 64px;
   resize: vertical;
+}
+
+.answer-review-action {
+  border: 1px solid transparent;
+}
+
+.answer-review-action.answer-review-accept {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--secondary));
+  color: var(--accent);
+}
+
+.answer-review-action.answer-review-accept:hover,
+.answer-review-action.answer-review-accept.is-selected {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.answer-review-action.answer-review-reject {
+  border-color: color-mix(in srgb, var(--destructive) 34%, transparent);
+  background: color-mix(in srgb, var(--destructive) 12%, var(--secondary));
+  color: var(--destructive);
+}
+
+.answer-review-action.answer-review-reject:hover,
+.answer-review-action.answer-review-reject.is-selected {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 
 .autotest-report-summary {

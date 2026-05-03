@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { requireAdmin } from "@/lib/auth";
+import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { normalizeLegacyTrack } from "@/lib/question-classification";
 import {
   encryptInviteCode,
@@ -59,9 +60,7 @@ function getInvitationExpiryDays() {
 }
 
 function getInvitationExpiresAt() {
-  return new Date(
-    Date.now() + getInvitationExpiryDays() * 24 * 60 * 60 * 1000,
-  );
+  return new Date(Date.now() + getInvitationExpiryDays() * 24 * 60 * 60 * 1000);
 }
 
 function formatInvitationDateTime(value: Date | null | undefined) {
@@ -838,13 +837,14 @@ export async function reviewAnswerAction(input: {
 
   const answer = await prisma.assessmentAnswer.findUnique({
     where: { id: input.answerId },
-    include: { question: { select: { type: true } } },
+    include: { question: { select: { type: true, apiConfig: true } } },
   });
 
   if (
     !answer ||
     (answer.question.type !== "MANUAL_QA_SANDBOX" &&
-      answer.question.type !== "AUTOTEST_SANDBOX")
+      answer.question.type !== "AUTOTEST_SANDBOX" &&
+      !getOpenQuizConfig(answer.question.apiConfig))
   ) {
     return { ok: false };
   }

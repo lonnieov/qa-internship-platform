@@ -1,11 +1,17 @@
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
+import { getAiAnswerReview } from "@/lib/ai-answer-review";
 import { getInternComment } from "@/lib/answer-comment";
+import {
+  getAutotestAnswerPayload,
+  getAutotestSandboxConfig,
+} from "@/lib/autotest-sandbox";
 import {
   getManualQaAnswerPayload,
   getManualQaSandboxConfig,
 } from "@/lib/manual-qa-sandbox";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
+import { getSqlSandboxConfig } from "@/lib/sql-sandbox-config";
 import { formatDuration, formatPercent } from "@/lib/utils";
 
 function formatDateTime(value: Date | null | undefined) {
@@ -71,12 +77,15 @@ type AttemptReportData = NonNullable<
 type AttemptAnswer = AttemptReportData["answers"][number];
 
 function getQuestionResult(answer: AttemptAnswer) {
-  if (answer.question.type === "MANUAL_QA_SANDBOX") {
+  if (getOpenQuizConfig(answer.question.apiConfig)) {
     return "manual_review";
   }
 
-  if (getOpenQuizConfig(answer.question.apiConfig)) {
-    return "unscored_open_text";
+  if (
+    answer.question.type === "MANUAL_QA_SANDBOX" ||
+    answer.question.type === "AUTOTEST_SANDBOX"
+  ) {
+    return "manual_review";
   }
 
   return answer.isCorrect ? "correct" : "incorrect";
@@ -174,6 +183,50 @@ function renderAnswerDetails(answer: AttemptAnswer) {
     return renderManualQaAnswer(answer);
   }
 
+  if (answer.question.type === "AUTOTEST_SANDBOX") {
+    const payload = getAutotestAnswerPayload(answer.apiRequest);
+    const config = getAutotestSandboxConfig(answer.question.apiConfig);
+
+    return [
+      "#### Autotest Payload",
+      "",
+      bullet("scenario_title", config?.scenarioTitle ?? ""),
+      bullet("preset", config?.appPreset ?? "unknown"),
+      bullet("expected_scenarios_total", config?.expectedScenarios.length ?? 0),
+      "",
+      "Submitted pseudocode:",
+      codeBlock(payload?.code ?? ""),
+      "",
+      "Stored evaluation:",
+      codeBlock(answer.apiResponse, "json"),
+      "",
+      "Expected scenarios:",
+      codeBlock(config?.expectedScenarios ?? [], "json"),
+      "",
+    ].join("\n");
+  }
+
+  if (answer.question.type === "SQL_SANDBOX") {
+    const config = getSqlSandboxConfig(answer.question.apiConfig);
+
+    return [
+      "#### SQL Payload",
+      "",
+      bullet("task_title", config?.taskTitle ?? ""),
+      bullet("dialect", config?.dialect ?? ""),
+      "",
+      "Submitted query:",
+      codeBlock(isRecord(answer.apiRequest) ? answer.apiRequest.query : ""),
+      "",
+      "Execution result:",
+      codeBlock(answer.apiResponse, "json"),
+      "",
+      "Expected result:",
+      codeBlock(config?.expectedResult ?? null, "json"),
+      "",
+    ].join("\n");
+  }
+
   if (
     answer.question.type === "API_SANDBOX" ||
     answer.question.type === "DEVTOOLS_SANDBOX"
@@ -205,6 +258,11 @@ function renderAnswerDetails(answer: AttemptAnswer) {
     codeBlock(getSelectedOptionSummary(answer), "json"),
     "",
   ].join("\n");
+}
+
+function getAdminReview(value: unknown) {
+  if (!isRecord(value) || !isRecord(value.adminReview)) return null;
+  return value.adminReview;
 }
 
 function buildMachineSummary(
@@ -249,9 +307,19 @@ function buildMachineSummary(
       submissionCount: answer.submissionCount,
       answeredAt: formatDateTime(answer.answeredAt),
       internComment: getInternComment(answer.apiRequest) || null,
+      adminReview: getAdminReview(answer.apiResponse),
+      aiReview: getAiAnswerReview(answer.apiResponse),
       selectedOption: getSelectedOptionSummary(answer),
       openTextAnswer: getOpenTextAnswer(answer),
       manualQa: getManualQaAnswerPayload(answer.apiRequest),
+      autotest: getAutotestAnswerPayload(answer.apiRequest),
+      sql:
+        answer.question.type === "SQL_SANDBOX"
+          ? {
+              request: answer.apiRequest,
+              response: answer.apiResponse,
+            }
+          : null,
     })),
   };
 }
@@ -352,6 +420,16 @@ export async function generateAttemptReportMarkdown(attemptId: string) {
 
     if (internComment) {
       lines.push("#### Intern Comment", "", codeBlock(internComment), "");
+    }
+
+    const aiReview = getAiAnswerReview(answer.apiResponse);
+    if (aiReview) {
+      lines.push("#### AI Review", "", codeBlock(aiReview, "json"), "");
+    }
+
+    const adminReview = getAdminReview(answer.apiResponse);
+    if (adminReview) {
+      lines.push("#### Admin Review", "", codeBlock(adminReview, "json"), "");
     }
 
     if (answer.question.options.length > 0) {
