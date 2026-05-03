@@ -25,7 +25,10 @@ export async function calculateAttemptScore(attemptId: string) {
     },
   });
   const scoredAnswers = answers.filter((answer) => {
-    if (answer.question.type === "MANUAL_QA_SANDBOX") {
+    if (
+      answer.question.type === "MANUAL_QA_SANDBOX" ||
+      answer.question.type === "AUTOTEST_SANDBOX"
+    ) {
       return false;
     }
 

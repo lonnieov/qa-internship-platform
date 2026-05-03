@@ -12,7 +12,8 @@ type QuestionType =
   | "API_SANDBOX"
   | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
-  | "MANUAL_QA_SANDBOX";
+  | "MANUAL_QA_SANDBOX"
+  | "AUTOTEST_SANDBOX";
 
 function typeLabel(
   t: ReturnType<typeof useTranslations>,
@@ -22,6 +23,7 @@ function typeLabel(
   if (type === "SQL_SANDBOX") return t("typeLabels.sql");
   if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtools");
   if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  if (type === "AUTOTEST_SANDBOX") return t("typeLabels.autotest");
   return t("typeLabels.quiz");
 }
 

@@ -23,6 +23,12 @@ import {
   manualQaPresetOptions,
 } from "@/lib/manual-qa-sandbox";
 import {
+  autotestPresetOptions,
+  clickAvtoTintingPresetConfig,
+  getAutotestPresetConfig,
+  getAutotestSandboxConfig,
+} from "@/lib/autotest-sandbox";
+import {
   getSqlSandboxConfig,
   sampleSqlSandboxConfig,
 } from "@/lib/sql-sandbox-config";
@@ -32,7 +38,8 @@ type QuestionType =
   | "API_SANDBOX"
   | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
-  | "MANUAL_QA_SANDBOX";
+  | "MANUAL_QA_SANDBOX"
+  | "AUTOTEST_SANDBOX";
 type JsonRecord = Record<string, unknown>;
 type EditableQuestion = {
   id: string;
@@ -93,6 +100,7 @@ function getQuestionTypeLabel(t: ReturnType<typeof useTranslations>, type: Quest
   if (type === "SQL_SANDBOX") return t("typeLabels.sql");
   if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtools");
   if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  if (type === "AUTOTEST_SANDBOX") return t("typeLabels.autotest");
   return t("typeLabels.quiz");
 }
 
@@ -152,6 +160,16 @@ export function QuestionForm({
     draftManualQaPresetId === initialManualQaConfig.appPreset
       ? initialManualQaConfig
       : selectedManualQaPresetConfig;
+
+  const initialAutotestConfig =
+    getAutotestSandboxConfig(question?.apiConfig) ?? clickAvtoTintingPresetConfig;
+  const [draftAutotestPresetId, setDraftAutotestPresetId] = useState(
+    initialAutotestConfig.appPreset,
+  );
+  const autotestConfig =
+    draftAutotestPresetId === initialAutotestConfig.appPreset
+      ? initialAutotestConfig
+      : getAutotestPresetConfig(draftAutotestPresetId);
   const isEditing = Boolean(question);
   const sortedOptions = [...(question?.options ?? [])].sort(
     (left, right) => left.order - right.order,
@@ -164,16 +182,21 @@ export function QuestionForm({
     questionType === "MANUAL_QA_SANDBOX" &&
     draftManualQaPresetId !== initialManualQaConfig.appPreset
       ? manualQaConfig.mission
-      : (question?.text ??
-        (questionType === "QUIZ"
-          ? t("defaults.quizPrompt")
-          : questionType === "API_SANDBOX"
-            ? t("defaults.apiPrompt")
-            : questionType === "SQL_SANDBOX"
-              ? sqlSandboxConfig.mission
-            : questionType === "MANUAL_QA_SANDBOX"
-              ? manualQaConfig.mission
-              : t("defaults.devtoolsPrompt")));
+      : questionType === "AUTOTEST_SANDBOX" &&
+          draftAutotestPresetId !== initialAutotestConfig.appPreset
+        ? autotestConfig.mission
+        : (question?.text ??
+          (questionType === "QUIZ"
+            ? t("defaults.quizPrompt")
+            : questionType === "API_SANDBOX"
+              ? t("defaults.apiPrompt")
+              : questionType === "SQL_SANDBOX"
+                ? sqlSandboxConfig.mission
+                : questionType === "MANUAL_QA_SANDBOX"
+                  ? manualQaConfig.mission
+                  : questionType === "AUTOTEST_SANDBOX"
+                    ? autotestConfig.mission
+                    : t("defaults.devtoolsPrompt")));
   const form = (
     <form action={action} className="form-grid">
       {question ? (
@@ -200,6 +223,7 @@ export function QuestionForm({
               ["SQL_SANDBOX", t("typeLabels.sql")],
               ["DEVTOOLS_SANDBOX", t("typeLabels.devtools")],
               ["MANUAL_QA_SANDBOX", t("typeLabels.manualQa")],
+              ["AUTOTEST_SANDBOX", t("typeLabels.autotest")],
             ].map(([value, label]) => (
               <label className="question-form-choice" key={value}>
                 <input
@@ -256,9 +280,11 @@ export function QuestionForm({
             ? t("fields.questionText")
             : questionType === "SQL_SANDBOX"
               ? t("fields.sqlMission")
-            : questionType === "MANUAL_QA_SANDBOX"
-              ? t("fields.manualMission")
-              : t("fields.apiMission")}
+              : questionType === "MANUAL_QA_SANDBOX"
+                ? t("fields.manualMission")
+                : questionType === "AUTOTEST_SANDBOX"
+                  ? t("fields.autotestMission")
+                  : t("fields.apiMission")}
         </Label>
         <Textarea
           id="text"
@@ -635,6 +661,74 @@ export function QuestionForm({
             <strong>{t("manual.reviewTitle")}</strong>
             <p className="body-2 muted m-0">
               {t("manual.reviewDescription")}
+            </p>
+          </div>
+        </div>
+      ) : questionType === "AUTOTEST_SANDBOX" ? (
+        <div className="stack">
+          <div className="form-grid">
+            <Label htmlFor="autotestPreset">{t("autotest.preset")}</Label>
+            <Select
+              id="autotestPreset"
+              name="autotestPreset"
+              onChange={(event) => setDraftAutotestPresetId(event.target.value)}
+              value={draftAutotestPresetId}
+            >
+              {autotestPresetOptions.map((preset) => (
+                <option key={preset.value} value={preset.value}>
+                  {preset.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="form-grid" key={autotestConfig.appPreset}>
+            <div className="form-grid">
+              <Label htmlFor="autotestScenarioTitle">
+                {t("autotest.scenarioTitle")}
+              </Label>
+              <Input
+                id="autotestScenarioTitle"
+                name="autotestScenarioTitle"
+                defaultValue={autotestConfig.scenarioTitle}
+                required
+              />
+            </div>
+
+            <div className="form-grid">
+              <Label htmlFor="autotestTimeHintMinutes">
+                {t("autotest.recommendedMinutes")}
+              </Label>
+              <Input
+                id="autotestTimeHintMinutes"
+                name="autotestTimeHintMinutes"
+                type="number"
+                min="5"
+                max="60"
+                defaultValue={autotestConfig.timeHintMinutes}
+                required
+              />
+            </div>
+
+            <div className="form-grid">
+              <Label htmlFor="autotestExpectedScenarios">
+                {t("autotest.expectedScenarios")}
+              </Label>
+              <JsonEditor
+                id="autotestExpectedScenarios"
+                name="autotestExpectedScenarios"
+                defaultValue={stringifyJson(
+                  autotestConfig.expectedScenarios,
+                  "[]",
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="soft-panel stack">
+            <strong>{t("autotest.reviewTitle")}</strong>
+            <p className="body-2 muted m-0">
+              {t("autotest.reviewDescription")}
             </p>
           </div>
         </div>

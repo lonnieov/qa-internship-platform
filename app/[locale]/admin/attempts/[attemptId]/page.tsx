@@ -7,9 +7,14 @@ import {
   getManualQaAnswerPayload,
   getManualQaSandboxConfig,
 } from "@/lib/manual-qa-sandbox";
+import {
+  getAutotestAnswerPayload,
+  getAutotestSandboxConfig,
+} from "@/lib/autotest-sandbox";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
+import { AnswerReviewForm } from "@/components/admin/answer-review-form";
 import { ReportDownloadButton } from "@/components/admin/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,9 +66,28 @@ export default async function AttemptDetailsPage({
     return t(`status.${status}`);
   }
 
+  function getAdminReview(answer: (typeof safeAttempt.answers)[number]) {
+    if (
+      answer.apiResponse &&
+      typeof answer.apiResponse === "object" &&
+      !Array.isArray(answer.apiResponse)
+    ) {
+      const r = (answer.apiResponse as Record<string, unknown>).adminReview;
+      if (r && typeof r === "object" && !Array.isArray(r)) {
+        return r as { passed: boolean; note: string; at: string };
+      }
+    }
+    return null;
+  }
+
   function formatQuestionResult(answer: (typeof safeAttempt.answers)[number]) {
-    if (answer.question.type === "MANUAL_QA_SANDBOX") {
-      return t("table.resultManual");
+    if (
+      answer.question.type === "MANUAL_QA_SANDBOX" ||
+      answer.question.type === "AUTOTEST_SANDBOX"
+    ) {
+      const review = getAdminReview(answer);
+      if (!review) return t("table.resultManual");
+      return review.passed ? t("table.resultCorrect") : t("table.resultWrong");
     }
 
     if (getOpenQuizConfig(answer.question.apiConfig)) {
@@ -253,6 +277,99 @@ export default async function AttemptDetailsPage({
                                     </div>
                                   );
                                 })()
+                              ) : answer.question.type === "AUTOTEST_SANDBOX" ? (
+                                (() => {
+                                  const payload = getAutotestAnswerPayload(
+                                    answer.apiRequest,
+                                  );
+                                  const config = getAutotestSandboxConfig(
+                                    answer.question.apiConfig,
+                                  );
+                                  const summary =
+                                    answer.apiResponse &&
+                                    typeof answer.apiResponse === "object" &&
+                                    !Array.isArray(answer.apiResponse)
+                                      ? (answer.apiResponse as {
+                                          matchedScenarioIds?: string[];
+                                          requiredTotal?: number;
+                                          requiredMatched?: number;
+                                        })
+                                      : null;
+
+                                  if (!payload?.code.trim()) {
+                                    return (
+                                      <span className="body-2 muted">
+                                        {t("table.notFilled")}
+                                      </span>
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="autotest-report-summary stack">
+                                      {summary ? (
+                                        <div className="nav-row">
+                                          <Badge variant="muted">
+                                            сценарии:{" "}
+                                            {summary.requiredMatched ?? 0}/
+                                            {summary.requiredTotal ?? 0}{" "}
+                                            обязательных
+                                          </Badge>
+                                          <Badge variant="muted">
+                                            {summary.matchedScenarioIds?.length ?? 0}{" "}
+                                            из{" "}
+                                            {config?.expectedScenarios.length ?? 0}{" "}
+                                            всего
+                                          </Badge>
+                                        </div>
+                                      ) : null}
+
+                                      {config?.expectedScenarios.map(
+                                        (scenario) => {
+                                          const matched =
+                                            summary?.matchedScenarioIds?.includes(
+                                              scenario.id,
+                                            ) ?? false;
+                                          return (
+                                            <div
+                                              className="autotest-scenario-row"
+                                              key={scenario.id}
+                                            >
+                                              <Badge
+                                                variant={
+                                                  matched ? "success" : "danger"
+                                                }
+                                              >
+                                                {matched ? "✓" : "✗"}
+                                              </Badge>
+                                              <span className="body-2">
+                                                {scenario.title}
+                                              </span>
+                                              {scenario.required ? (
+                                                <Badge variant="muted">
+                                                  обязательный
+                                                </Badge>
+                                              ) : null}
+                                              <span className="body-2 muted autotest-scenario-keywords">
+                                                {scenario.matchKeywords.join(
+                                                  ", ",
+                                                )}
+                                              </span>
+                                            </div>
+                                          );
+                                        },
+                                      )}
+
+                                      <details>
+                                        <summary className="body-2 muted" style={{ cursor: "pointer" }}>
+                                          Код стажёра
+                                        </summary>
+                                        <pre className="body-2 m-0 whitespace-pre-wrap autotest-code-preview">
+                                          {payload.code}
+                                        </pre>
+                                      </details>
+                                    </div>
+                                  );
+                                })()
                               ) : answer.question.type === "API_SANDBOX" ||
                                 answer.question.type === "DEVTOOLS_SANDBOX" ? (
                                 <div className="stack">
@@ -292,6 +409,14 @@ export default async function AttemptDetailsPage({
                                 <p className="body-2 m-0">{internComment}</p>
                               </div>
                             ) : null}
+
+                            {(answer.question.type === "MANUAL_QA_SANDBOX" ||
+                              answer.question.type === "AUTOTEST_SANDBOX") ? (
+                              <AnswerReviewForm
+                                answerId={answer.id}
+                                existingReview={getAdminReview(answer)}
+                              />
+                            ) : null}
                           </div>
                         );
                       })()}
@@ -302,8 +427,13 @@ export default async function AttemptDetailsPage({
                     <td>
                       <Badge
                         variant={
-                          answer.question.type === "MANUAL_QA_SANDBOX"
-                            ? "warning"
+                          answer.question.type === "MANUAL_QA_SANDBOX" ||
+                          answer.question.type === "AUTOTEST_SANDBOX"
+                            ? getAdminReview(answer) === null
+                              ? "warning"
+                              : getAdminReview(answer)?.passed
+                                ? "success"
+                                : "danger"
                             : getOpenQuizConfig(answer.question.apiConfig)
                               ? "muted"
                               : answer.isCorrect

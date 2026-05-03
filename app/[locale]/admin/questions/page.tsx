@@ -29,7 +29,8 @@ type QuestionType =
   | "API_SANDBOX"
   | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
-  | "MANUAL_QA_SANDBOX";
+  | "MANUAL_QA_SANDBOX"
+  | "AUTOTEST_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
 async function getQuestions() {
@@ -76,6 +77,12 @@ function sectionMeta(
         title: t("typeLabels.manualQa"),
         description: t("sections.manualQa.description"),
       };
+    case "AUTOTEST_SANDBOX":
+      return {
+        id: "autotest-sandbox",
+        title: t("typeLabels.autotest"),
+        description: t("sections.autotest.description"),
+      };
     default:
       return {
         id: "quiz",
@@ -93,6 +100,7 @@ function typeLabel(
   if (type === "SQL_SANDBOX") return t("typeLabels.sql");
   if (type === "DEVTOOLS_SANDBOX") return t("typeLabels.devtoolsShort");
   if (type === "MANUAL_QA_SANDBOX") return t("typeLabels.manualQa");
+  if (type === "AUTOTEST_SANDBOX") return t("typeLabels.autotest");
   return t("typeLabels.quiz");
 }
 
@@ -297,6 +305,7 @@ export default async function AdminQuestionsPage({
     resolvedSearchParams.type === "SQL_SANDBOX" ||
     resolvedSearchParams.type === "DEVTOOLS_SANDBOX" ||
     resolvedSearchParams.type === "MANUAL_QA_SANDBOX" ||
+    resolvedSearchParams.type === "AUTOTEST_SANDBOX" ||
     resolvedSearchParams.type === "QUIZ"
       ? resolvedSearchParams.type
       : "QUIZ";
@@ -329,12 +338,16 @@ export default async function AdminQuestionsPage({
   const manualQaSandboxQuestions = filteredByTrack.filter(
     (question) => question.type === "MANUAL_QA_SANDBOX",
   );
+  const autotestSandboxQuestions = filteredByTrack.filter(
+    (question) => question.type === "AUTOTEST_SANDBOX",
+  );
   const sections: Array<{ type: QuestionType; items: AdminQuestion[] }> = [
     { type: "QUIZ" as const, items: quizQuestions },
     { type: "API_SANDBOX" as const, items: apiSandboxQuestions },
     { type: "SQL_SANDBOX" as const, items: sqlSandboxQuestions },
     { type: "DEVTOOLS_SANDBOX" as const, items: devtoolsSandboxQuestions },
     { type: "MANUAL_QA_SANDBOX" as const, items: manualQaSandboxQuestions },
+    { type: "AUTOTEST_SANDBOX" as const, items: autotestSandboxQuestions },
   ];
   const activeSection =
     sections.find((section) => section.type === selectedType) ?? sections[0];

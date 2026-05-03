@@ -19,6 +19,7 @@ import {
   saveQuestionCommentAction,
   selectAnswerAction,
   submitManualQaAnswerAction,
+  submitAutotestAnswerAction,
   submitOpenQuizAnswerAction,
   submitSqlSandboxAction,
   submitDevtoolsAnswerAction,
@@ -42,6 +43,10 @@ import {
   getManualQaSandboxConfig,
   type ManualQaBugReport,
 } from "@/lib/manual-qa-sandbox";
+import {
+  getAutotestAnswerPayload,
+  getAutotestSandboxConfig,
+} from "@/lib/autotest-sandbox";
 import {
   getSqlSandboxConfig,
   type SqlSandboxExecutionResult,
@@ -79,7 +84,8 @@ type Question = {
     | "API_SANDBOX"
     | "SQL_SANDBOX"
     | "DEVTOOLS_SANDBOX"
-    | "MANUAL_QA_SANDBOX";
+    | "MANUAL_QA_SANDBOX"
+    | "AUTOTEST_SANDBOX";
   track: string;
   text: string;
   explanation: string | null;
@@ -122,6 +128,12 @@ type DevtoolsConfig = {
 type ManualQaDraft = {
   reports: ManualQaBugReport[];
   noBugsFound: boolean;
+  submissionCount: number;
+  answerSaveStatus: "idle" | "saving" | "saved";
+};
+
+type AutotestDraft = {
+  code: string;
   submissionCount: number;
   answerSaveStatus: "idle" | "saving" | "saved";
 };
@@ -234,6 +246,16 @@ function createInitialManualQaDraft(question: Question): ManualQaDraft {
   return {
     reports: payload?.reports ?? [],
     noBugsFound: payload?.noBugsFound ?? false,
+    submissionCount: question.submissionCount,
+    answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
+  };
+}
+
+function createInitialAutotestDraft(question: Question): AutotestDraft {
+  const payload = getAutotestAnswerPayload(question.apiRequest);
+
+  return {
+    code: payload?.code ?? "",
     submissionCount: question.submissionCount,
     answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
   };
@@ -493,6 +515,17 @@ export function TestRunner({
           .map((question) => [question.id, createInitialSqlDraft(question)]),
       ),
   );
+  const [autotestDrafts, setAutotestDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "AUTOTEST_SANDBOX")
+          .map((question) => [
+            question.id,
+            createInitialAutotestDraft(question),
+          ]),
+      ),
+  );
   const [selectedSqlTables, setSelectedSqlTables] = useState(
     () =>
       new Map(
@@ -547,6 +580,10 @@ export function TestRunner({
       return hasCompleteManualQaAnswer(manualQaDrafts.get(question.id));
     }
 
+    if (question.type === "AUTOTEST_SANDBOX") {
+      return Boolean(autotestDrafts.get(question.id)?.code.trim());
+    }
+
     if (getOpenQuizConfig(question.apiConfig)) {
       return Boolean(textAnswers.get(question.id)?.trim());
     }
@@ -588,6 +625,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
       saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     setCurrentIndex(index);
@@ -1071,6 +1111,70 @@ export function TestRunner({
     });
   }
 
+  function updateAutotestCode(value: string) {
+    if (currentQuestion.type !== "AUTOTEST_SANDBOX") return;
+
+    setAutotestDrafts((prev) => {
+      const next = new Map(prev);
+      const current =
+        next.get(currentQuestion.id) ??
+        createInitialAutotestDraft(currentQuestion);
+      next.set(currentQuestion.id, {
+        ...current,
+        code: value,
+        answerSaveStatus: "idle",
+      });
+      return next;
+    });
+  }
+
+  function saveAutotestAnswer(
+    question = currentQuestion,
+    options: { timeSpentMs?: number } = {},
+  ) {
+    if (question.type !== "AUTOTEST_SANDBOX") return;
+
+    const draft =
+      autotestDrafts.get(question.id) ?? createInitialAutotestDraft(question);
+    const timeSpentMs =
+      typeof options.timeSpentMs === "number"
+        ? options.timeSpentMs
+        : Date.now() - enteredAtRef.current;
+
+    if (typeof options.timeSpentMs !== "number") {
+      enteredAtRef.current = Date.now();
+    }
+
+    setAutotestDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(question.id, { ...draft, answerSaveStatus: "saving" });
+      return next;
+    });
+
+    startTransition(() => {
+      void submitAutotestAnswerAction({
+        attemptId,
+        questionId: question.id,
+        code: draft.code,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setAutotestDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(question.id) ?? draft;
+          const hasAnswer = current.code.trim().length > 0;
+          next.set(question.id, {
+            ...current,
+            submissionCount: hasAnswer ? Math.max(1, current.submissionCount) : 0,
+            answerSaveStatus: "saved",
+          });
+          return next;
+        });
+      });
+    });
+  }
+
   function submit(auto = false) {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -1083,6 +1187,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
       saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     startTransition(() => {
@@ -1100,6 +1207,9 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
       saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     setIsSubmitDialogOpen(true);
   }
@@ -1197,6 +1307,15 @@ export function TestRunner({
     currentQuestion.type === "DEVTOOLS_SANDBOX"
       ? getDevtoolsConfig(currentQuestion)
       : null;
+  const currentAutotestDraft =
+    currentQuestion.type === "AUTOTEST_SANDBOX"
+      ? (autotestDrafts.get(currentQuestion.id) ??
+        createInitialAutotestDraft(currentQuestion))
+      : null;
+  const currentAutotestConfig =
+    currentQuestion.type === "AUTOTEST_SANDBOX"
+      ? getAutotestSandboxConfig(currentQuestion.apiConfig)
+      : null;
 
   return (
     <main
@@ -1204,8 +1323,10 @@ export function TestRunner({
         currentQuestion.type === "SQL_SANDBOX"
           ? "test-page-sql"
           : currentQuestion.type === "MANUAL_QA_SANDBOX"
-          ? "manual-qa-test-page"
-          : ""
+            ? "manual-qa-test-page"
+            : currentQuestion.type === "AUTOTEST_SANDBOX"
+              ? "autotest-test-page"
+              : ""
       }`}
     >
       <section
@@ -1230,9 +1351,11 @@ export function TestRunner({
                       ? "API Sandbox"
                       : currentQuestion.type === "SQL_SANDBOX"
                         ? "SQL Sandbox"
-                      : currentQuestion.type === "MANUAL_QA_SANDBOX"
-                        ? "Manual QA"
-                        : "Quiz"}
+                        : currentQuestion.type === "MANUAL_QA_SANDBOX"
+                          ? "Manual QA"
+                          : currentQuestion.type === "AUTOTEST_SANDBOX"
+                            ? "Autotest"
+                            : "Quiz"}
                 </span>
               </div>
               <Button
@@ -1773,6 +1896,88 @@ export function TestRunner({
                   </div>
                 </div>
               </div>
+            ) : currentAutotestDraft && currentAutotestConfig ? (
+              <div className="autotest-task-layout">
+                <div className="autotest-methods-panel">
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>Доступные методы</strong>
+                      <p className="body-2 muted m-0">Используйте эти методы в псевдокоде</p>
+                    </div>
+                    <Badge variant="muted">
+                      {currentAutotestConfig.availableMethods.length}
+                    </Badge>
+                  </div>
+                  <div className="autotest-methods-list">
+                    {currentAutotestConfig.availableMethods.map((method) => (
+                      <div className="autotest-method-item" key={method.name}>
+                        <code className="autotest-method-signature">
+                          {method.signature}
+                        </code>
+                        <span className="body-2 muted">{method.description}</span>
+                        <code className="autotest-method-example">
+                          {method.example}
+                        </code>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="autotest-editor-panel stack">
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>Псевдокод</strong>
+                      <p className="body-2 muted m-0">
+                        {currentAutotestConfig.mission}
+                      </p>
+                    </div>
+                    {currentAutotestDraft.submissionCount > 0 ? (
+                      <Badge variant="success">Сохранено</Badge>
+                    ) : (
+                      <Badge variant="muted">Не сохранено</Badge>
+                    )}
+                  </div>
+
+                  {currentAutotestConfig.exampleCode && !currentAutotestDraft.code.trim() ? (
+                    <div className="soft-panel">
+                      <p className="body-2 muted m-0" style={{ marginBottom: "4px" }}>
+                        Пример структуры:
+                      </p>
+                      <pre className="body-2 m-0 autotest-example-code">
+                        {currentAutotestConfig.exampleCode}
+                      </pre>
+                    </div>
+                  ) : null}
+
+                  <Textarea
+                    className="autotest-editor"
+                    data-track="autotest-code"
+                    onChange={(event) => updateAutotestCode(event.target.value)}
+                    placeholder={`// Напишите псевдокод автотестов\n\ntest('Описание сценария', () => {\n  navigateTo('Экран')\n  tap('Элемент')\n  expect('Результат').toBeVisible()\n})`}
+                    value={currentAutotestDraft.code}
+                  />
+
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <Badge variant="muted">
+                      {currentAutotestDraft.answerSaveStatus === "saving"
+                        ? "Сохраняется..."
+                        : currentAutotestDraft.answerSaveStatus === "saved"
+                          ? "Сохранено"
+                          : "Не сохранено"}
+                    </Badge>
+                    <Button
+                      disabled={isPending || !currentAutotestDraft.code.trim()}
+                      onClick={() => saveAutotestAnswer()}
+                      type="button"
+                    >
+                      Сохранить ответ
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : currentApiDraft && currentDevtoolsConfig ? (
               <div className="stack">
                 <div className="soft-panel stack">
@@ -2057,7 +2262,9 @@ export function TestRunner({
                         ? hasCompleteManualQaAnswer(
                             manualQaDrafts.get(question.id),
                           )
-                        : Boolean(answers.get(question.id));
+                        : question.type === "AUTOTEST_SANDBOX"
+                          ? Boolean(autotestDrafts.get(question.id)?.code.trim())
+                          : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
                   const commented = Boolean(
                     commentDrafts.get(question.id)?.trim(),

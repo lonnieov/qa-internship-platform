@@ -193,6 +193,9 @@
       },
       "manualQa": {
         "description": "Практические задания на поиск и оформление багов в mobile/webview miniapp."
+      },
+      "autotest": {
+        "description": "Задания на написание псевдокода автотестов для мобильных сценариев."
       }
     },
     "openQuestion": {
@@ -226,7 +229,8 @@
       "sql": "SQL Sandbox",
       "devtools": "DevTools Sandbox",
       "devtoolsShort": "DevTools",
-      "manualQa": "Manual QA"
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
     },
     "meta": {
       "tables": "{count} tables",
@@ -298,6 +302,7 @@
       "questionText": "Текст вопроса",
       "sqlMission": "Описание SQL-задачи",
       "manualMission": "Миссия для стажёра",
+      "autotestMission": "Миссия для автотест-задачи",
       "apiMission": "Описание API-задачи"
     },
     "quizMode": "Формат Quiz-вопроса",
@@ -344,6 +349,14 @@
       "viewportHeight": "Высота viewport",
       "knownBugsRubric": "Рубрика known bugs"
     },
+    "autotest": {
+      "preset": "Пресет сценария",
+      "scenarioTitle": "Название сценария",
+      "recommendedMinutes": "Рекоменд. минуты",
+      "expectedScenarios": "Ожидаемые сценарии (JSON)",
+      "reviewTitle": "Этот тип требует ручной проверки",
+      "reviewDescription": "Стажёр напишет псевдокод автотестов. Keyword matching покрывает базу — финальную оценку даёт ревьюер."
+    },
     "devtools": {
       "networkMethod": "Method запроса в Network",
       "responseStatus": "Status ответа",
@@ -374,7 +387,8 @@
       "api": "API Sandbox",
       "sql": "SQL Sandbox",
       "devtools": "DevTools",
-      "manualQa": "Manual QA"
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
     }
   },
   "AdminAuth": {

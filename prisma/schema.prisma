@@ -32,6 +32,7 @@ enum QuestionType {
   SQL_SANDBOX
   DEVTOOLS_SANDBOX
   MANUAL_QA_SANDBOX
+  AUTOTEST_SANDBOX
 }
 
 enum TrackingEventType {

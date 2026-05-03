@@ -3,7 +3,8 @@ type QuestionType =
   | "API_SANDBOX"
   | "SQL_SANDBOX"
   | "DEVTOOLS_SANDBOX"
-  | "MANUAL_QA_SANDBOX";
+  | "MANUAL_QA_SANDBOX"
+  | "AUTOTEST_SANDBOX";
 
 const questionTypePriority: Record<QuestionType, number> = {
   QUIZ: 0,
@@ -11,6 +12,7 @@ const questionTypePriority: Record<QuestionType, number> = {
   SQL_SANDBOX: 2,
   DEVTOOLS_SANDBOX: 3,
   MANUAL_QA_SANDBOX: 4,
+  AUTOTEST_SANDBOX: 5,
 };
 
 type OrderedQuestionLike = {
