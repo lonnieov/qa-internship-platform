@@ -1,11 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { createTrackAction, toggleQuestionAction } from "@/actions/admin";
+import { toggleQuestionAction } from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import {
   getQuestionTrackMeta,
-  getTrackSlug,
   type TrackSummary,
 } from "@/lib/question-classification";
 import { ensureTracks } from "@/lib/tracks";
@@ -20,9 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
-import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
-import { TrackManageModal } from "@/components/admin/track-manage-modal";
+import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
+import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 
 type QuestionType =
   | "QUIZ"
@@ -33,8 +32,9 @@ type QuestionType =
   | "AUTOTEST_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
-async function getQuestions() {
+async function getQuestions(trackIds?: string[] | null) {
   return prisma.question.findMany({
+    where: trackIds ? { trackId: { in: trackIds } } : undefined,
     orderBy: [
       { trackRef: { order: "asc" } },
       { track: "asc" },
@@ -135,7 +135,6 @@ function renderQuestionCard(
   tracks: TrackSummary[],
   t: Awaited<ReturnType<typeof getTranslations>>,
 ) {
-  const track = getQuestionTrackMeta(question.trackRef ?? question.track);
   const summary = apiSummary(question);
   const manualQaConfig = getManualQaSandboxConfig(question.apiConfig);
   const sqlConfig = getSqlSandboxConfig(question.apiConfig);
@@ -145,7 +144,6 @@ function renderQuestionCard(
       <div className="question-index">{indexLabel.padStart(2, "0")}</div>
       <div className="stack">
         <div className="nav-row">
-          <span className={track.className}>{track.label}</span>
           <span className="type-chip">{typeLabel(question.type, t)}</span>
           <Badge variant={question.isActive ? "success" : "muted"}>
             {question.isActive ? t("status.active") : t("status.hidden")}
@@ -297,10 +295,40 @@ export default async function AdminQuestionsPage({
 }) {
   await params;
   const t = await getTranslations("AdminQuestions");
+  const profile = await requireAdminAccess();
+  const manageableTrackIds = await getManageableTrackIds(profile);
   const resolvedSearchParams = await searchParams;
-  const tracks = await ensureTracks();
-  const questions = await getQuestions();
-  const selectedType =
+  const allTracks = await ensureTracks();
+  const tracks = manageableTrackIds
+    ? allTracks.filter((track) => manageableTrackIds.includes(track.id))
+    : allTracks;
+  if (tracks.length === 0) {
+    redirect("/admin/tracks");
+  }
+
+  const requestedTrack = resolvedSearchParams.track;
+  const requestedTrackRecord = tracks.find(
+    (track) => track.slug === requestedTrack,
+  );
+  const selectedTrackRecord = manageableTrackIds
+    ? (requestedTrackRecord ?? tracks[0])
+    : (requestedTrackRecord ?? null);
+
+  if (
+    manageableTrackIds &&
+    (!requestedTrack || requestedTrack !== selectedTrackRecord?.slug)
+  ) {
+    redirect(`/admin/questions?track=${selectedTrackRecord?.slug}`);
+  }
+
+  const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
+  const allAccessibleQuestions = await getQuestions(manageableTrackIds);
+  const questions = selectedTrackRecord
+    ? allAccessibleQuestions.filter(
+        (question) => question.trackId === selectedTrackRecord.id,
+      )
+    : allAccessibleQuestions;
+  const requestedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
     resolvedSearchParams.type === "SQL_SANDBOX" ||
     resolvedSearchParams.type === "DEVTOOLS_SANDBOX" ||
@@ -309,20 +337,12 @@ export default async function AdminQuestionsPage({
     resolvedSearchParams.type === "QUIZ"
       ? resolvedSearchParams.type
       : "QUIZ";
-  const selectedTrack =
-    resolvedSearchParams.track === "all" || !resolvedSearchParams.track
-      ? "all"
-      : resolvedSearchParams.track;
-  const selectedTrackRecord =
-    selectedTrack === "all"
-      ? null
-      : (tracks.find((track) => track.slug === selectedTrack) ?? null);
-  const filteredByTrack =
-    selectedTrack === "all"
-      ? questions
-      : questions.filter(
-          (question) => getTrackSlug(question) === selectedTrack,
-        );
+  const selectedType =
+    selectedTrackRecord &&
+    !isQuestionTypeAllowedForTrack(requestedType, selectedTrackRecord.slug)
+      ? "QUIZ"
+      : requestedType;
+  const filteredByTrack = questions;
   const quizQuestions = filteredByTrack.filter(
     (question) => question.type === "QUIZ",
   );
@@ -348,16 +368,20 @@ export default async function AdminQuestionsPage({
     { type: "DEVTOOLS_SANDBOX" as const, items: devtoolsSandboxQuestions },
     { type: "MANUAL_QA_SANDBOX" as const, items: manualQaSandboxQuestions },
     { type: "AUTOTEST_SANDBOX" as const, items: autotestSandboxQuestions },
-  ];
+  ].filter(
+    (section) =>
+      !selectedTrackRecord ||
+      isQuestionTypeAllowedForTrack(section.type, selectedTrackRecord.slug),
+  );
   const activeSection =
     sections.find((section) => section.type === selectedType) ?? sections[0];
   const activeMeta = sectionMeta(activeSection.type, t);
   const allTypeCount = (type: QuestionType) =>
-    questions.filter((question) => question.type === type).length;
+    filteredByTrack.filter((question) => question.type === type).length;
   const trackCounts = Object.fromEntries(
     tracks.map((track) => [
       track.id,
-      questions.filter((question) => getTrackSlug(question) === track.slug)
+      allAccessibleQuestions.filter((question) => question.trackId === track.id)
         .length,
     ]),
   ) as Record<string, number>;
@@ -376,57 +400,51 @@ export default async function AdminQuestionsPage({
         <div>
           <h1 className="head-1">{t("title")}</h1>
           <p className="body-1 muted m-0">
-            {t("description")}
+            {selectedTrackRecord?.name ?? t("tracks.all")} · {t("description")}
           </p>
         </div>
       </div>
 
       <section className="surface question-bank-layout">
-        <aside className="question-filter-rail">
-          <div className="question-filter-title-row">
-            <div className="question-filter-title">{t("tracks.title")}</div>
-          </div>
-          <form action={createTrackAction} className="track-create-form">
-            <Input
-              aria-label={t("tracks.newTrackAria")}
-              name="name"
-              placeholder={t("tracks.newTrackPlaceholder")}
-              required
-            />
-            <Button type="submit" size="sm">
-              <Plus size={16} />
-            </Button>
-          </form>
-          <Link
-            className={`question-filter-item ${selectedTrack === "all" ? "active" : ""}`}
-            href={filterUrl(activeSection.type, "all")}
-          >
-            <span>{t("tracks.all")}</span>
-            <span>{questions.length}</span>
-          </Link>
-          {tracks.map((track) => {
-            const meta = getQuestionTrackMeta(track);
-            const questionCount = trackCounts[track.id] ?? 0;
-            const active = selectedTrackRecord?.id === track.id;
-            return (
-              <div className="track-filter-row" key={track.id}>
-                <Link
-                  className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
-                  href={filterUrl(activeSection.type, track.slug)}
-                >
-                  <span className="nav-row">
-                    <span className={meta.dotClassName} />
-                    {meta.label}
-                  </span>
-                  <span>{questionCount}</span>
-                </Link>
-                <TrackManageModal track={{ ...track, questionCount }} />
-              </div>
-            );
-          })}
-        </aside>
+        {profile.role === "ADMIN" ? (
+          <aside className="question-filter-rail">
+            <div className="question-filter-title-row">
+              <div className="question-filter-title">{t("tracks.title")}</div>
+            </div>
+            <Link
+              className={`question-filter-item ${selectedTrackSlug === "all" ? "active" : ""}`}
+              href={filterUrl(activeSection.type, "all")}
+            >
+              <span>{t("tracks.all")}</span>
+              <span>{allAccessibleQuestions.length}</span>
+            </Link>
+            {tracks.map((track) => {
+              const meta = getQuestionTrackMeta(track);
+              const questionCount = trackCounts[track.id] ?? 0;
+              const active = selectedTrackRecord?.id === track.id;
 
-        <div className="question-list-panel">
+              return (
+                <div className="track-filter-row" key={track.id}>
+                  <Link
+                    className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
+                    href={filterUrl(activeSection.type, track.slug)}
+                  >
+                    <span className="nav-row">
+                      <span className={meta.dotClassName} />
+                      {meta.label}
+                    </span>
+                    <span>{questionCount}</span>
+                  </Link>
+                </div>
+              );
+            })}
+          </aside>
+        ) : null}
+
+        <div
+          className="question-list-panel"
+          style={profile.role === "ADMIN" ? undefined : { gridColumn: "1 / -1" }}
+        >
           <div className="nav-row">
             {sections.map(({ type }) => {
               const meta = sectionMeta(type, t);
@@ -439,7 +457,7 @@ export default async function AdminQuestionsPage({
                   size="sm"
                   variant={active ? "default" : "outline"}
                 >
-                  <Link href={filterUrl(type, selectedTrack)}>
+                  <Link href={filterUrl(type, selectedTrackSlug)}>
                     {meta.title} ({allTypeCount(type)})
                   </Link>
                 </Button>

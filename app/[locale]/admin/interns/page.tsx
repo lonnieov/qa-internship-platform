@@ -11,6 +11,8 @@ import {
 import { InternSearchForm } from "@/components/admin/intern-search-form";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ensureTracks } from "@/lib/tracks";
+import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 
 function formatDateTime(value: Date | null | undefined, locale: Locale) {
   if (!value) return "—";
@@ -53,30 +55,52 @@ export default async function AdminInternsPage({
   const { locale: localeParam } = await params;
   const locale = isLocale(localeParam) ? localeParam : routing.defaultLocale;
   const t = await getTranslations("AdminInterns");
+  const profile = await requireAdminAccess();
+  const manageableTrackIds = await getManageableTrackIds(profile);
+  const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
   const { q } = await searchParams;
   const internSearch = String(q ?? "").trim();
 
-  const [initialInvitations, interns] = await Promise.all([
+  await ensureTracks();
+
+  const [initialInvitations, interns, tracks] = await Promise.all([
     prisma.invitation.findMany({
+      where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
       include: { acceptedByProfile: true },
     }),
     prisma.internProfile.findMany({
-      where: internSearch
-        ? {
-            fullName: {
-              contains: internSearch,
-              mode: "insensitive",
-            },
-          }
-        : undefined,
+      where: {
+        ...trackWhere,
+        ...(internSearch
+          ? {
+              fullName: {
+                contains: internSearch,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+      },
       orderBy: { createdAt: "desc" },
       include: {
         profile: true,
         attempts: {
           orderBy: { startedAt: "desc" },
           take: 10,
+        },
+      },
+    }),
+    prisma.track.findMany({
+      where: {
+        isActive: true,
+        ...(manageableTrackIds ? { id: { in: manageableTrackIds } } : {}),
+      },
+      orderBy: [{ order: "asc" }, { name: "asc" }],
+      include: {
+        waves: {
+          where: { isActive: true },
+          orderBy: [{ order: "asc" }, { name: "asc" }],
         },
       },
     }),
@@ -108,6 +132,7 @@ export default async function AdminInternsPage({
 
   if (expiredAttemptById.size > 0) {
     invitations = await prisma.invitation.findMany({
+      where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
       include: { acceptedByProfile: true },
@@ -263,7 +288,13 @@ export default async function AdminInternsPage({
             {t("pageDescription")}
           </p>
         </div>
-        <InvitationCreateModal />
+        <InvitationCreateModal
+          tracks={tracks.map((track) => ({
+            id: track.id,
+            name: track.name,
+            waves: track.waves.map((wave) => ({ id: wave.id, name: wave.name })),
+          }))}
+        />
       </div>
 
       <Card className="admin-interns-card">

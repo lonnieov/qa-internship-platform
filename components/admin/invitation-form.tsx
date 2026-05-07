@@ -14,11 +14,18 @@ const initialState: InvitationState = {
   message: "",
 };
 
-type InvitationFormProps = {
-  embedded?: boolean;
+type InvitationScopeOption = {
+  id: string;
+  name: string;
+  waves: { id: string; name: string }[];
 };
 
-export function InvitationForm({ embedded = false }: InvitationFormProps) {
+type InvitationFormProps = {
+  embedded?: boolean;
+  tracks?: InvitationScopeOption[];
+};
+
+export function InvitationForm({ embedded = false, tracks = [] }: InvitationFormProps) {
   const t = useTranslations("AdminInterns");
   const [state, action, isPending] = useActionState(
     createInvitationAction,
@@ -36,6 +43,20 @@ export function InvitationForm({ embedded = false }: InvitationFormProps) {
             placeholder={t("candidatePlaceholder")}
           />
         </div>
+        {tracks.some((track) => track.waves.length > 0) ? (
+          <div className="form-grid">
+            <Label htmlFor="waveId">Wave</Label>
+            <select className="input" id="waveId" name="waveId">
+              {tracks.flatMap((track) =>
+                track.waves.map((wave) => (
+                  <option key={wave.id} value={wave.id}>
+                    {track.name} / {wave.name}
+                  </option>
+                )),
+              )}
+            </select>
+          </div>
+        ) : null}
         <Button disabled={isPending} type="submit">
           {t("createIntern")}
         </Button>

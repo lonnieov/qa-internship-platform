@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   BarChart3,
+  Layers3,
   ListChecks,
   LogOut,
   Settings,
@@ -20,11 +21,13 @@ type AdminShellProps = {
   children: React.ReactNode;
   adminName: string;
   adminEmail: string | null;
+  role: "ADMIN" | "TRACK_MASTER" | "INTERN";
 };
 
 const navItems = [
   { href: "/admin", labelKey: "overview", icon: BarChart3, exact: true },
   { href: "/admin/interns", labelKey: "interns", icon: UsersRound },
+  { href: "/admin/tracks", labelKey: "tracks", icon: Layers3 },
   { href: "/admin/questions", labelKey: "questions", icon: ListChecks },
   { href: "/admin/settings", labelKey: "settings", icon: Settings },
 ];
@@ -33,6 +36,7 @@ export function AdminShell({
   children,
   adminName,
   adminEmail,
+  role,
 }: AdminShellProps) {
   const pathname = usePathname();
   const locale = useLocale();
@@ -51,7 +55,9 @@ export function AdminShell({
         </Link>
 
         <nav className="admin-sidebar-nav" aria-label={t("navLabel")}>
-          {navItems.map((item) => {
+          {navItems
+            .filter((item) => role === "ADMIN" || item.href !== "/admin/settings")
+            .map((item) => {
             const Icon = item.icon;
             const active = item.exact
               ? pathnameWithoutLocale === item.href
@@ -79,6 +85,7 @@ export function AdminShell({
             <div>
               <strong>{adminName}</strong>
               {adminEmail ? <small>{adminEmail}</small> : null}
+              <small>{role === "TRACK_MASTER" ? "Track master" : "Admin"}</small>
             </div>
           </div>
           <LanguageSwitcher />

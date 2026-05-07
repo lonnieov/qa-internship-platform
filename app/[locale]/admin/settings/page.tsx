@@ -46,6 +46,7 @@ export default async function AdminSettingsPage({
           {t("description")}
         </p>
       </div>
+
       <Card>
         <CardHeader>
           <CardTitle>{t("timeCard.title")}</CardTitle>
@@ -107,9 +108,9 @@ export default async function AdminSettingsPage({
                         {admin.createdAt.toLocaleDateString(
                           locale === "uz" ? "uz-UZ" : "ru-RU",
                           {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
                           },
                         )}
                       </td>

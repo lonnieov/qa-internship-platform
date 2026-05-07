@@ -15,8 +15,18 @@ export default async function InternHomePage() {
   const profile = await requireIntern();
   const [settings, activeQuestionCount, latestAttempt, inProgress, invitation] =
     await Promise.all([
-      getSettings(),
-      prisma.question.count({ where: { isActive: true } }),
+      getSettings({
+        trackId: profile.internProfile.trackId,
+        waveId: profile.internProfile.waveId,
+      }),
+      prisma.question.count({
+        where: {
+          isActive: true,
+          ...(profile.internProfile.trackId
+            ? { trackId: profile.internProfile.trackId }
+            : {}),
+        },
+      }),
       prisma.assessmentAttempt.findFirst({
         where: { internProfileId: profile.internProfile.id },
         orderBy: { startedAt: "desc" },

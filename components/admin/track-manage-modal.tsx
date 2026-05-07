@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff, MoreHorizontal, Trash2, X } from "lucide-react";
 import {
@@ -36,7 +37,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
         <MoreHorizontal size={18} />
       </button>
 
-      {isOpen ? (
+      {isOpen ? createPortal(
         <div
           aria-labelledby={`track-modal-title-${track.id}`}
           aria-modal="true"
@@ -165,7 +166,8 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </>
   );

@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { prisma } from "../src/lib/prisma";
 import { seedAdminEmail } from "../src/lib/admin-constants";
 import { defaultTracks } from "../src/lib/question-classification";
+import { ensureDefaultWave } from "../src/lib/waves";
 
 const seedAdmin = {
   email: seedAdminEmail,
@@ -10,6 +11,41 @@ const seedAdmin = {
   firstName: "Test",
   lastName: "Admin",
 };
+
+const seedTrackMasterPassword = "TrackMaster123";
+
+const seedTrackMasters = [
+  {
+    trackSlug: "qa",
+    email: "qa-master@example.com",
+    firstName: "QA",
+    lastName: "Master",
+  },
+  {
+    trackSlug: "hr",
+    email: "hr-master@example.com",
+    firstName: "HR",
+    lastName: "Master",
+  },
+  {
+    trackSlug: "mobile",
+    email: "mobile-master@example.com",
+    firstName: "Mobile",
+    lastName: "Master",
+  },
+  {
+    trackSlug: "backend",
+    email: "backend-master@example.com",
+    firstName: "Backend",
+    lastName: "Master",
+  },
+  {
+    trackSlug: "frontend",
+    email: "frontend-master@example.com",
+    firstName: "Frontend",
+    lastName: "Master",
+  },
+];
 
 function hashPassword(password: string) {
   const iterations = 310000;
@@ -53,7 +89,7 @@ const sampleQuestions = [
 ];
 
 const sampleApiQuestion = {
-  track: "API",
+  track: "QA",
   text: "Отправьте запрос на создание пользователя Ali Valiyev и добейтесь ответа 201 Created.",
   explanation:
     "Проверяется сборка POST-запроса, header авторизации и корректный JSON body.",
@@ -100,26 +136,69 @@ async function main() {
     create: { id: "global", totalTimeMinutes: 30 },
   });
 
-  const count = await prisma.question.count();
-  if (count > 0) return;
+  const savedTracks = await Promise.all(
+    defaultTracks.map(async (track) => {
+      const saved = await prisma.track.upsert({
+        where: { slug: track.slug },
+        update: {
+          name: track.name,
+          order: track.order,
+          isActive: true,
+        },
+        create: track,
+      });
+
+      await ensureDefaultWave(saved.id);
+
+      return saved;
+    }),
+  );
 
   const tracks = new Map<string, { id: string }>(
-    await Promise.all(
-      defaultTracks.map(async (track) => {
-        const saved = await prisma.track.upsert({
-          where: { slug: track.slug },
-          update: {
-            name: track.name,
-            order: track.order,
-            isActive: true,
-          },
-          create: track,
-        });
-
-        return [track.name, saved] as const;
-      }),
-    ),
+    savedTracks.map((track) => [track.name, track]),
   );
+  const tracksBySlug = new Map(savedTracks.map((track) => [track.slug, track]));
+
+  for (const master of seedTrackMasters) {
+    const track = tracksBySlug.get(master.trackSlug);
+    if (!track) continue;
+
+    const profile = await prisma.profile.upsert({
+      where: { email: master.email },
+      update: {
+        firstName: master.firstName,
+        lastName: master.lastName,
+        role: "TRACK_MASTER",
+        passwordHash: hashPassword(seedTrackMasterPassword),
+      },
+      create: {
+        email: master.email,
+        firstName: master.firstName,
+        lastName: master.lastName,
+        role: "TRACK_MASTER",
+        passwordHash: hashPassword(seedTrackMasterPassword),
+      },
+    });
+
+    await prisma.trackMember.upsert({
+      where: {
+        profileId_trackId_role: {
+          profileId: profile.id,
+          trackId: track.id,
+          role: "TRACK_MASTER",
+        },
+      },
+      update: {},
+      create: {
+        profileId: profile.id,
+        trackId: track.id,
+        role: "TRACK_MASTER",
+      },
+    });
+  }
+
+  const count = await prisma.question.count();
+  if (count > 0) return;
 
   for (const [index, question] of sampleQuestions.entries()) {
     await prisma.question.create({

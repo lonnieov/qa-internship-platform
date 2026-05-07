@@ -1,7 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 
-export async function getSettings() {
+export async function getSettings(scope?: {
+  trackId?: string | null;
+  waveId?: string | null;
+}) {
+  if (scope?.waveId) {
+    const waveSettings = await prisma.assessmentSettings.findFirst({
+      where: { waveId: scope.waveId },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (waveSettings) return waveSettings;
+  }
+
+  if (scope?.trackId) {
+    const trackSettings = await prisma.assessmentSettings.findFirst({
+      where: { trackId: scope.trackId, waveId: null },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (trackSettings) return trackSettings;
+  }
+
   return prisma.assessmentSettings.upsert({
     where: { id: "global" },
     update: {},

@@ -6,7 +6,15 @@ import { useTranslations } from "next-intl";
 import { InvitationForm } from "@/components/admin/invitation-form";
 import { Button } from "@/components/ui/button";
 
-export function InvitationCreateModal() {
+type InvitationCreateModalProps = {
+  tracks?: {
+    id: string;
+    name: string;
+    waves: { id: string; name: string }[];
+  }[];
+};
+
+export function InvitationCreateModal({ tracks = [] }: InvitationCreateModalProps) {
   const t = useTranslations("AdminInterns");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -48,7 +56,7 @@ export function InvitationCreateModal() {
               </Button>
             </div>
 
-            <InvitationForm embedded />
+            <InvitationForm embedded tracks={tracks} />
           </div>
         </div>
       ) : null}

@@ -9,7 +9,12 @@ datasource db {
 
 enum Role {
   ADMIN
+  TRACK_MASTER
   INTERN
+}
+
+enum TrackMemberRole {
+  TRACK_MASTER
 }
 
 enum InvitationStatus {
@@ -51,18 +56,19 @@ enum TrackingEventType {
 }
 
 model Profile {
-  id          String   @id @default(cuid())
+  id                String   @id @default(cuid())
   legacyAuthSubject String?  @unique
-  email       String?  @unique
-  passwordHash String?
-  firstName   String?
-  lastName    String?
-  role        Role
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  email             String?  @unique
+  passwordHash      String?
+  firstName         String?
+  lastName          String?
+  role              Role
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   internProfile      InternProfile?
   adminSessions      AdminSession[]
+  trackMemberships   TrackMember[]
   createdInvitations Invitation[]   @relation("InvitationCreator")
   acceptedInvitation Invitation?    @relation("InvitationAccepted")
   createdQuestions   Question[]     @relation("QuestionCreator")
@@ -88,12 +94,19 @@ model InternProfile {
   phone        String?
   source       String?
   invitationId String?  @unique
+  trackId      String?
+  waveId       String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   profile    Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
   invitation Invitation?         @relation(fields: [invitationId], references: [id])
+  track      Track?              @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  wave       Wave?               @relation(fields: [waveId], references: [id], onDelete: SetNull)
   attempts   AssessmentAttempt[]
+
+  @@index([trackId])
+  @@index([waveId])
 }
 
 model Invitation {
@@ -109,19 +122,33 @@ model Invitation {
   updatedAt           DateTime         @updatedAt
   createdById         String
   acceptedByProfileId String?          @unique
+  trackId             String?
+  waveId              String?
 
   createdBy         Profile        @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
   acceptedByProfile Profile?       @relation("InvitationAccepted", fields: [acceptedByProfileId], references: [id])
+  track             Track?         @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  wave              Wave?          @relation(fields: [waveId], references: [id], onDelete: SetNull)
   internProfile     InternProfile?
 
   @@index([status])
+  @@index([trackId])
+  @@index([waveId])
 }
 
 model AssessmentSettings {
   id               String   @id @default("global")
+  trackId          String?
+  waveId           String?
   totalTimeMinutes Int      @default(30)
   passingScore     Int      @default(100)
   updatedAt        DateTime @updatedAt
+
+  track Track? @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  wave  Wave?  @relation(fields: [waveId], references: [id], onDelete: Cascade)
+
+  @@index([trackId])
+  @@index([waveId])
 }
 
 model Track {
@@ -133,9 +160,52 @@ model Track {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  questions Question[]
+  members     TrackMember[]
+  waves       Wave[]
+  invitations Invitation[]
+  interns     InternProfile[]
+  settings    AssessmentSettings[]
+  questions   Question[]
+  attempts    AssessmentAttempt[]
 
   @@index([isActive, order])
+}
+
+model TrackMember {
+  id        String          @id @default(cuid())
+  profileId String
+  trackId   String
+  role      TrackMemberRole @default(TRACK_MASTER)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  track   Track   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, trackId, role])
+  @@index([trackId])
+}
+
+model Wave {
+  id        String    @id @default(cuid())
+  trackId   String
+  slug      String
+  name      String
+  startsAt  DateTime?
+  endsAt    DateTime?
+  isActive  Boolean   @default(true)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  track       Track                @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  invitations Invitation[]
+  interns     InternProfile[]
+  attempts    AssessmentAttempt[]
+  settings    AssessmentSettings[]
+
+  @@unique([trackId, slug])
+  @@index([trackId, isActive, order])
 }
 
 model Question {
@@ -182,6 +252,8 @@ model QuestionOption {
 model AssessmentAttempt {
   id               String        @id @default(cuid())
   internProfileId  String
+  trackId          String?
+  waveId           String?
   status           AttemptStatus @default(IN_PROGRESS)
   startedAt        DateTime      @default(now())
   submittedAt      DateTime?
@@ -194,10 +266,14 @@ model AssessmentAttempt {
   updatedAt        DateTime      @updatedAt
 
   internProfile InternProfile      @relation(fields: [internProfileId], references: [id], onDelete: Cascade)
+  track         Track?             @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  wave          Wave?              @relation(fields: [waveId], references: [id], onDelete: SetNull)
   answers       AssessmentAnswer[]
   events        TrackingEvent[]
 
   @@index([internProfileId, status])
+  @@index([trackId])
+  @@index([waveId])
   @@index([startedAt])
 }
 

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 
 function formatDateTime(value: Date | null | undefined, locale: "ru" | "uz") {
   if (!value) return "--";
@@ -28,12 +29,16 @@ export default async function AdminPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("AdminOverview");
+  const profile = await requireAdminAccess();
+  const manageableTrackIds = await getManageableTrackIds(profile);
+  const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
   const [settings, internCount, activeQuestionCount, attempts] =
     await Promise.all([
       getSettings(),
-      prisma.internProfile.count(),
-      prisma.question.count({ where: { isActive: true } }),
+      prisma.internProfile.count({ where: trackWhere }),
+      prisma.question.count({ where: { isActive: true, ...trackWhere } }),
       prisma.assessmentAttempt.findMany({
+        where: trackWhere,
         orderBy: { startedAt: "desc" },
         take: 6,
         include: {

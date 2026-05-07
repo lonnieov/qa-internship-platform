@@ -148,14 +148,23 @@ export async function loginInternByTokenAction(
         return { ok: false, message: "Токен уже привязан к другому профилю." };
       }
 
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: {
-          status: "ACCEPTED",
-          acceptedAt: new Date(),
-          acceptedByProfileId: profile.id,
-        },
-      });
+      await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id: invitation.id },
+          data: {
+            status: "ACCEPTED",
+            acceptedAt: new Date(),
+            acceptedByProfileId: profile.id,
+          },
+        }),
+        prisma.internProfile.update({
+          where: { id: invitation.internProfile.id },
+          data: {
+            trackId: invitation.internProfile.trackId ?? invitation.trackId,
+            waveId: invitation.internProfile.waveId ?? invitation.waveId,
+          },
+        }),
+      ]);
     }
   }
 
@@ -171,6 +180,8 @@ export async function loginInternByTokenAction(
           create: {
             fullName: invitation.candidateName,
             invitationId: invitation.id,
+            trackId: invitation.trackId,
+            waveId: invitation.waveId,
           },
         },
       },
@@ -248,7 +259,12 @@ export async function startAttemptAction() {
   }
 
   const questions = await prisma.question.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(profile.internProfile.trackId
+        ? { trackId: profile.internProfile.trackId }
+        : {}),
+    },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: { options: true },
   });
@@ -258,7 +274,10 @@ export async function startAttemptAction() {
     redirect("/intern");
   }
 
-  const settings = await getSettings();
+  const settings = await getSettings({
+    trackId: profile.internProfile.trackId,
+    waveId: profile.internProfile.waveId,
+  });
   const now = new Date();
   const deadlineAt = new Date(
     now.getTime() + settings.totalTimeMinutes * 60 * 1000,
@@ -267,6 +286,8 @@ export async function startAttemptAction() {
   const attempt = await prisma.assessmentAttempt.create({
     data: {
       internProfileId: profile.internProfile.id,
+      trackId: profile.internProfile.trackId,
+      waveId: profile.internProfile.waveId,
       startedAt: now,
       deadlineAt,
       questionCount: questions.length,

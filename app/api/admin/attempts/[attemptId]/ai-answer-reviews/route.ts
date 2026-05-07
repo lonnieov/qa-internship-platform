@@ -5,7 +5,7 @@ import {
   getAiAnswerReview,
   isAiReviewableAnswer,
 } from "@/lib/ai-answer-review";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getManageableTrackIds } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function POST(
 ) {
   const profile = await getCurrentProfile();
 
-  if (!profile || profile.role !== "ADMIN") {
+  if (!profile || (profile.role !== "ADMIN" && profile.role !== "TRACK_MASTER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -54,6 +54,14 @@ export async function POST(
 
   if (!attempt) {
     return NextResponse.json({ error: "Попытка не найдена." }, { status: 404 });
+  }
+
+  const manageableTrackIds = await getManageableTrackIds(profile);
+  if (
+    manageableTrackIds &&
+    (!attempt.trackId || !manageableTrackIds.includes(attempt.trackId))
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const reviewableAnswers = attempt.answers.filter(isAiReviewableAnswer);

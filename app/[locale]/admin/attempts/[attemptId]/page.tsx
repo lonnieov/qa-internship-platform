@@ -27,6 +27,7 @@ import { ReportDownloadButton } from "@/components/admin/report-download-button"
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 
 export default async function AttemptDetailsPage({
   params,
@@ -35,6 +36,8 @@ export default async function AttemptDetailsPage({
 }) {
   const { attemptId } = await params;
   const t = await getTranslations("AdminAttemptReport");
+  const profile = await requireAdminAccess();
+  const manageableTrackIds = await getManageableTrackIds(profile);
   const attempt = await prisma.assessmentAttempt.findUnique({
     where: { id: attemptId },
     include: {
@@ -50,6 +53,12 @@ export default async function AttemptDetailsPage({
   });
 
   if (!attempt) notFound();
+  if (
+    manageableTrackIds &&
+    (!attempt.trackId || !manageableTrackIds.includes(attempt.trackId))
+  ) {
+    notFound();
+  }
   const safeAttempt = attempt;
 
   const score = safeAttempt.scorePercent ?? 0;

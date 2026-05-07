@@ -8,10 +8,10 @@ export type TrackSummary = {
 
 export const defaultTracks = [
   { slug: "qa", name: "QA", order: 1 },
-  { slug: "api", name: "API", order: 2 },
-  { slug: "grpc", name: "gRPC", order: 3 },
-  { slug: "mobile", name: "Mobile", order: 4 },
-  { slug: "web", name: "Web", order: 5 },
+  { slug: "hr", name: "HR", order: 2 },
+  { slug: "mobile", name: "Mobile", order: 3 },
+  { slug: "backend", name: "Backend", order: 4 },
+  { slug: "frontend", name: "Frontend", order: 5 },
 ] as const;
 
 export const fallbackTrack = defaultTracks[0];
@@ -73,7 +73,9 @@ export function getQuestionTrackMeta(
       ? (value.name ?? value.slug ?? fallbackTrack.name)
       : normalizeLegacyTrack(value);
 
-  const tone = ["api", "grpc", "mobile", "web"].includes(slug) ? slug : "qa";
+  const tone = ["hr", "mobile", "backend", "frontend"].includes(slug)
+    ? slug
+    : "qa";
 
   return {
     label: name,

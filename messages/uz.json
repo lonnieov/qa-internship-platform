@@ -6,6 +6,7 @@
     "nav": {
       "overview": "Umumiy",
       "interns": "Stajyorlar",
+      "tracks": "Treklar",
       "questions": "Savollar",
       "settings": "Sozlamalar"
     },
@@ -170,7 +171,8 @@
     "edit": "Tahrirlash",
     "hide": "Yashirish",
     "activate": "Faollashtirish",
-    "delete": "O‘chirish",
+    "save": "Saqlash",
+    "delete": "O’chirish",
     "dragQuestion": "Savolni sudrash",
     "deleteConfirm": "Savolni qayta tiklab bo‘lmaydigan tarzda o‘chirish kerakmi?",
     "empty": "Tanlangan kesimda hali savollar yo‘q.",

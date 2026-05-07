@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getManageableTrackIds } from "@/lib/auth";
 import { generateGroqAttemptOverview } from "@/lib/groq-overview";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -10,11 +11,21 @@ export async function POST(
 ) {
   const profile = await getCurrentProfile();
 
-  if (!profile || profile.role !== "ADMIN") {
+  if (!profile || (profile.role !== "ADMIN" && profile.role !== "TRACK_MASTER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { attemptId } = await params;
+  const manageableTrackIds = await getManageableTrackIds(profile);
+  if (manageableTrackIds) {
+    const attempt = await prisma.assessmentAttempt.findUnique({
+      where: { id: attemptId },
+      select: { trackId: true },
+    });
+    if (!attempt?.trackId || !manageableTrackIds.includes(attempt.trackId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   if (!process.env.GROQ_API_KEY) {
     return NextResponse.json(
