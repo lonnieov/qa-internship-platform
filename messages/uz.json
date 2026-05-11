@@ -252,32 +252,6 @@
     "title": "Assessment hisoboti",
     "subtitle": "{name} · emailsiz token orqali kirish",
     "download": "MD yuklab olish",
-    "aiOverview": {
-      "button": "Ai overview",
-      "title": "AI overview",
-      "description": "Groq MD hisobotni tahlil qilib, qisqa xulosa qaytaradi.",
-      "meta": "Groq · {model}",
-      "loading": "Groq hisobotni tahlil qilmoqda...",
-      "empty": "Xulosa hali yaratilmagan.",
-      "error": "AI overview olishning imkoni bo‘lmadi.",
-      "close": "AI overview oynasini yopish"
-    },
-    "aiReview": {
-      "title": "AI tekshiruv",
-      "pending": "yaratilmoqda",
-      "generating": "Groq qo‘lda tekshiriladigan javoblarni baholamoqda: {count}",
-      "error": "AI tekshiruvni olishning imkoni bo‘lmadi.",
-      "score": "{score}/100",
-      "provider": "Groq · {model}",
-      "strengths": "Kuchli tomonlar",
-      "issues": "Xatarlar",
-      "recommendation": "Tavsiya",
-      "verdict": {
-        "pass": "qabul qilish tavsiya etiladi",
-        "fail": "rad etish tavsiya etiladi",
-        "needs_review": "qo‘lda tekshirish kerak"
-      }
-    },
     "summary": {
       "totalTime": "Umumiy vaqt",
       "averageTime": "Bir savolga o‘rtacha",
@@ -433,7 +407,7 @@
     "heroDescription": "Stajyorlar, ruxsat tokenlari, savollar banki va topshirish natijalarini boshqaring.",
     "heroStats": {
       "questions": "savollar banki",
-      "reports": "AI-hisobotlar",
+      "reports": "MD-hisobotlar",
       "tokens": "stajyor ruxsatlari"
     },
     "footer": "© 2026 · Ichki QA platformasi",

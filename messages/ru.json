@@ -252,32 +252,6 @@
     "title": "Отчёт по ассессменту",
     "subtitle": "{name} · вход по токену без email",
     "download": "Скачать MD",
-    "aiOverview": {
-      "button": "Ai overview",
-      "title": "AI overview",
-      "description": "Groq проанализирует MD-отчёт и вернёт сводку.",
-      "meta": "Groq · {model}",
-      "loading": "Groq анализирует отчёт...",
-      "empty": "Сводка пока не сформирована.",
-      "error": "Не удалось получить AI overview.",
-      "close": "Закрыть AI overview"
-    },
-    "aiReview": {
-      "title": "AI-проверка",
-      "pending": "генерируется",
-      "generating": "Groq оценивает ответы ручной проверки: {count}",
-      "error": "Не удалось получить AI-проверку.",
-      "score": "{score}/100",
-      "provider": "Groq · {model}",
-      "strengths": "Сильные стороны",
-      "issues": "Риски",
-      "recommendation": "Рекомендация",
-      "verdict": {
-        "pass": "рекомендует принять",
-        "fail": "рекомендует отклонить",
-        "needs_review": "нужна ручная проверка"
-      }
-    },
     "summary": {
       "totalTime": "Общее время",
       "averageTime": "Среднее на вопрос",
@@ -433,7 +407,7 @@
     "heroDescription": "Управляйте стажёрами, токенами доступа, банком вопросов и результатами прохождения.",
     "heroStats": {
       "questions": "банк вопросов",
-      "reports": "AI-отчёты",
+      "reports": "MD-отчёты",
       "tokens": "доступ стажёров"
     },
     "footer": "© 2026 · Внутренняя QA-платформа",

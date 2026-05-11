@@ -9,6 +9,8 @@
 ## Smoke Check
 
 - Open `/admin/attempts/<attemptId>`.
+- Expected: page shows score, timing cards, answer table, `Проверка` controls for reviewable answers, and `Скачать MD`.
+- Expected: there is no `Ai overview`, `AI-проверка`, or generation banner.
 - Click `Скачать MD`.
 - Expected: browser downloads a `.md` file without opening the print dialog.
 
@@ -18,18 +20,22 @@
 - Expected: file contains `# Assessment Attempt Report`, candidate name, score, total time, and average question time.
 - Expected: file contains `## Machine Summary JSON` and `## Questions`.
 - Expected: Russian text is readable.
-- Click `Ai overview`.
-- Expected: overlay opens and shows a Groq-generated summary when `GROQ_API_KEY` is configured.
-- For open quiz, Manual QA, or Autotest answers, wait for `AI-проверка` cards.
-- Expected: each reviewable answer shows AI verdict, score, summary, and recommendation.
+- For an open/manual-review answer, click `Проверка`.
+- Add note `Хорошее объяснение, зачесть` and click `Принять`.
+- Expected: answer badge changes to `верно` and manual review badge changes to `Принято`.
+- Download MD again.
+- Expected: Markdown includes `#### Admin Review` for that answer.
 
 ## Negative Cases
 
 - Log out from admin.
 - Open `/admin/attempts/<attemptId>/md`.
 - Expected: user is redirected to admin sign-in or blocked by auth flow.
+- Search the page for `Ai overview` or `AI-проверка`.
+- Expected: no report AI controls are present.
 
 ## Regression Check
 
 - Open the attempt details page after Markdown download.
 - Expected: on-page report still renders normally.
+- Expected: manual review remains editable after reloading the page.

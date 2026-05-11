@@ -1,5 +1,4 @@
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
-import { getAiAnswerReview } from "@/lib/ai-answer-review";
 import { getInternComment } from "@/lib/answer-comment";
 import {
   getAutotestAnswerPayload,
@@ -312,7 +311,6 @@ function buildMachineSummary(
       answeredAt: formatDateTime(answer.answeredAt),
       internComment: getInternComment(answer.apiRequest) || null,
       adminReview: getAdminReview(answer.apiResponse),
-      aiReview: getAiAnswerReview(answer.apiResponse),
       selectedOption: getSelectedOptionSummary(answer),
       openTextAnswer: getOpenTextAnswer(answer),
       manualQa: getManualQaAnswerPayload(answer.apiRequest),
@@ -426,11 +424,6 @@ export async function generateAttemptReportMarkdown(attemptId: string) {
 
     if (internComment) {
       lines.push("#### Intern Comment", "", codeBlock(internComment), "");
-    }
-
-    const aiReview = getAiAnswerReview(answer.apiResponse);
-    if (aiReview) {
-      lines.push("#### AI Review", "", codeBlock(aiReview, "json"), "");
     }
 
     const adminReview = getAdminReview(answer.apiResponse);

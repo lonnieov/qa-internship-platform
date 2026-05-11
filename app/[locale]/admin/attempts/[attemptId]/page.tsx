@@ -2,10 +2,6 @@ import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ChevronDown, Clock3, Route, TimerReset } from "lucide-react";
-import {
-  getAiAnswerReview,
-  isAiReviewableAnswer,
-} from "@/lib/ai-answer-review";
 import { getInternComment } from "@/lib/answer-comment";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import {
@@ -20,9 +16,6 @@ import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { prisma } from "@/lib/prisma";
 import { formatDuration, formatPercent } from "@/lib/utils";
 import { AnswerReviewForm } from "@/components/admin/answer-review-form";
-import { AnswerAiReviewCard } from "@/components/admin/answer-ai-review-card";
-import { AttemptAiReviewsLoader } from "@/components/admin/attempt-ai-reviews-loader";
-import { AiOverviewButton } from "@/components/admin/ai-overview-button";
 import { ReportDownloadButton } from "@/components/admin/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +91,11 @@ export default async function AttemptDetailsPage({
   }
 
   function isManualReviewAnswer(answer: (typeof safeAttempt.answers)[number]) {
-    return isAiReviewableAnswer(answer);
+    return (
+      Boolean(getOpenQuizConfig(answer.question.apiConfig)) ||
+      answer.question.type === "MANUAL_QA_SANDBOX" ||
+      answer.question.type === "AUTOTEST_SANDBOX"
+    );
   }
 
   function formatQuestionResult(answer: (typeof safeAttempt.answers)[number]) {
@@ -110,11 +107,6 @@ export default async function AttemptDetailsPage({
 
     return answer.isCorrect ? t("table.resultCorrect") : t("table.resultWrong");
   }
-
-  const missingAiReviewCount = safeAttempt.answers.filter(
-    (answer) =>
-      isManualReviewAnswer(answer) && !getAiAnswerReview(answer.apiResponse),
-  ).length;
 
   return (
     <main className="page stack-lg report-print-area">
@@ -129,15 +121,9 @@ export default async function AttemptDetailsPage({
           <Badge variant={score >= 100 ? "success" : "danger"}>
             {formatPercent(score)}
           </Badge>
-          <AiOverviewButton attemptId={safeAttempt.id} />
           <ReportDownloadButton attemptId={safeAttempt.id} />
         </div>
       </div>
-
-      <AttemptAiReviewsLoader
-        attemptId={safeAttempt.id}
-        missingCount={missingAiReviewCount}
-      />
 
       <section className="grid-2">
         <Card>
@@ -518,9 +504,6 @@ export default async function AttemptDetailsPage({
                               })}
                             </div>
                             <div className="attempt-review-strip">
-                              <AnswerAiReviewCard
-                                review={getAiAnswerReview(answer.apiResponse)}
-                              />
                               <AnswerReviewForm
                                 answerId={answer.id}
                                 existingReview={getAdminReview(answer)}

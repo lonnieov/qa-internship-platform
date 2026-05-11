@@ -70,8 +70,6 @@ Legacy API/gRPC/Web tracks are treated as QA task categories during migration he
 - `app/[locale]/admin/questions/page.tsx`
 - `app/[locale]/admin/attempts/[attemptId]/page.tsx`
 - `app/[locale]/admin/attempts/[attemptId]/md/route.ts`
-- `app/api/admin/attempts/[attemptId]/ai-overview/route.ts`
-- `app/api/admin/attempts/[attemptId]/ai-answer-reviews/route.ts`
 - `src/lib/auth.ts`
 - `src/lib/admin-auth.ts`
 - `src/actions/admin-auth.ts`
