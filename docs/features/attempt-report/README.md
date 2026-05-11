@@ -9,6 +9,8 @@ Provide an admin-facing assessment report with a downloadable Markdown file opti
 - Admin attempt detail page shows candidate score, time summary, and answer timing.
 - `GET /admin/attempts/<attemptId>/md` generates a Markdown attachment.
 - The Markdown report includes metadata, machine summary JSON, per-question answers, timings, comments, sandbox payloads, Manual QA reports, and admin manual review data.
+- For `SQL_SANDBOX`, the attempt page and Markdown report show the saved SQL query, result table, or execution error.
+- If a question was submitted multiple times, the attempt page and Markdown report show a separate submission history without replacing the compact top-level row.
 - Reviewable answers show manual review controls on the attempt page.
 - Report page does not generate AI overview or per-answer AI reviews.
 

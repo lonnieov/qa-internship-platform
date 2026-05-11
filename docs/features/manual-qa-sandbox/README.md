@@ -32,6 +32,7 @@ Adds an admin workflow for creating manual functional QA tasks based on a mobile
 - The question appears in the Manual QA list with preset, viewport, and known bug count.
 - Intern starts an attempt and opens the Manual QA question.
 - Intern interacts with the embedded miniapp and adds bug reports.
+- После первого сохранения с хотя бы одним баг-репортом или флагом `Багов не найдено` вопрос считается отвеченным в навигации попытки.
 - Admin opens the attempt report and reviews submitted reports manually.
 
 ## Touched Files

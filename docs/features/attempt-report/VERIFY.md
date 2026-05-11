@@ -20,11 +20,14 @@
 - Expected: file contains `# Assessment Attempt Report`, candidate name, score, total time, and average question time.
 - Expected: file contains `## Machine Summary JSON` and `## Questions`.
 - Expected: Russian text is readable.
+- For a SQL or open-text question with multiple submissions, expand `История отправок`.
+- Expected: each submission is shown separately with its own ordinal number and payload.
 - For an open/manual-review answer, click `Проверка`.
 - Add note `Хорошее объяснение, зачесть` and click `Принять`.
 - Expected: answer badge changes to `верно` and manual review badge changes to `Принято`.
 - Download MD again.
 - Expected: Markdown includes `#### Admin Review` for that answer.
+- Expected: Markdown also contains `#### Submission History` for questions that were submitted more than once.
 
 ## Negative Cases
 

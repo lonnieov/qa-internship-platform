@@ -65,6 +65,9 @@ async function getAttemptReportData(attemptId: string) {
         include: {
           question: { include: { trackRef: true, options: { orderBy: { order: "asc" } } } },
           selectedOption: true,
+          submissions: {
+            orderBy: { submissionIndex: "asc" },
+          },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -259,6 +262,32 @@ function renderAnswerDetails(answer: AttemptAnswer) {
     codeBlock(getSelectedOptionSummary(answer), "json"),
     "",
   ].join("\n");
+}
+
+function renderSubmissionHistory(answer: AttemptAnswer) {
+  if (answer.submissions.length === 0) return "";
+
+  const lines = ["#### Submission History", ""];
+
+  for (const submission of answer.submissions) {
+    lines.push(
+      `##### Submission ${submission.submissionIndex}`,
+      "",
+      bullet("kind", submission.kind),
+      bullet("is_correct", submission.isCorrect),
+      bullet("submitted_at", formatDateTime(submission.submittedAt)),
+      bullet("time_spent_ms", submission.timeSpentMs),
+      "",
+      "Request payload:",
+      codeBlock(submission.requestPayload, "json"),
+      "",
+      "Response payload:",
+      codeBlock(submission.responsePayload, "json"),
+      "",
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function getAdminReview(value: unknown) {
@@ -459,6 +488,10 @@ export async function generateAttemptReportMarkdown(attemptId: string) {
     }
 
     lines.push(renderAnswerDetails(answer), "");
+    const submissionHistory = renderSubmissionHistory(answer);
+    if (submissionHistory) {
+      lines.push(submissionHistory, "");
+    }
   });
 
   const filename = `assessment-${sanitizeFileName(attempt.internProfile.fullName) || attempt.id}.md`;

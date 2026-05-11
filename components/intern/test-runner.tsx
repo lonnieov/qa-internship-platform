@@ -284,17 +284,10 @@ function createInitialSqlDraft(question: Question): SqlDraft {
   };
 }
 
-function hasCompleteManualQaAnswer(draft: ManualQaDraft | undefined) {
+function hasSubmittedManualQaAnswer(draft: ManualQaDraft | undefined) {
   if (!draft) return false;
-  if (draft.noBugsFound) return true;
-
-  return draft.reports.some(
-    (report) =>
-      report.title.trim() &&
-      report.steps.trim() &&
-      report.actual.trim() &&
-      report.expected.trim(),
-  );
+  if (draft.submissionCount > 0) return true;
+  return draft.noBugsFound || draft.reports.length > 0;
 }
 
 function buildDevtoolsEndpoint(
@@ -368,33 +361,46 @@ function inferSqlRelations(tables: SqlSandboxTable[]): SqlRelation[] {
 }
 
 function buildSqlDiagramCards(tables: SqlSandboxTable[]): SqlDiagramCard[] {
-  const cardWidth = 252;
-  const padding = 32;
+  const cardWidth = 332;
+  const padding = 28;
+  const schemaRowHeight = 34;
+  const sampleHeaderHeight = 44;
+  const sampleRowHeight = 30;
+
+  const createHeight = (table: SqlSandboxTable) =>
+    74 +
+    table.columns.length * schemaRowHeight +
+    sampleHeaderHeight +
+    Math.max(table.rows.length, 1) * sampleRowHeight;
 
   if (tables.length === 3) {
     const [first, second, third] = tables;
-    const createHeight = (table: SqlSandboxTable) =>
-      64 + table.columns.length * 34;
+    const gapX = 56;
+    const gapY = 54;
+    const leftX = padding;
+    const rightX = leftX + cardWidth + gapX;
+    const topY = 78;
+    const lowerY = topY + Math.max(createHeight(first), createHeight(second)) + gapY;
 
     return [
       {
         table: first,
-        x: padding,
-        y: 168,
+        x: leftX,
+        y: topY,
         width: cardWidth,
         height: createHeight(first),
       },
       {
         table: second,
-        x: 342,
-        y: 112,
+        x: rightX,
+        y: topY,
         width: cardWidth,
         height: createHeight(second),
       },
       {
         table: third,
-        x: 342,
-        y: 342,
+        x: leftX + Math.round((cardWidth + gapX) / 2),
+        y: lowerY,
         width: cardWidth,
         height: createHeight(third),
       },
@@ -405,12 +411,12 @@ function buildSqlDiagramCards(tables: SqlSandboxTable[]): SqlDiagramCard[] {
   return tables.map((table, index) => {
     const row = Math.floor(index / columns);
     const column = index % columns;
-    const height = 64 + table.columns.length * 34;
+    const height = createHeight(table);
 
     return {
       table,
-      x: padding + column * 312,
-      y: 72 + row * 222,
+      x: padding + column * (cardWidth + 36),
+      y: 72 + row * (height + 42),
       width: cardWidth,
       height,
     };
@@ -577,7 +583,7 @@ export function TestRunner({
     }
 
     if (question.type === "MANUAL_QA_SANDBOX") {
-      return hasCompleteManualQaAnswer(manualQaDrafts.get(question.id));
+      return hasSubmittedManualQaAnswer(manualQaDrafts.get(question.id));
     }
 
     if (question.type === "AUTOTEST_SANDBOX") {
@@ -1097,7 +1103,7 @@ export function TestRunner({
         setManualQaDrafts((prev) => {
           const next = new Map(prev);
           const current = next.get(question.id) ?? draft;
-          const hasAnswer = hasCompleteManualQaAnswer(current);
+          const hasAnswer = current.reports.length > 0 || current.noBugsFound;
           next.set(question.id, {
             ...current,
             submissionCount: hasAnswer
@@ -1682,6 +1688,41 @@ export function TestRunner({
                                       </div>
                                     );
                                   })}
+
+                                  <div className="sql-diagram-sample">
+                                    <div className="sql-diagram-sample-title">
+                                      Sample data
+                                    </div>
+                                    <div className="sql-diagram-sample-table-wrap">
+                                      <table className="sql-diagram-sample-table">
+                                        <thead>
+                                          <tr>
+                                            {card.table.columns.map((column) => (
+                                              <th key={`${card.table.name}-${column.name}`}>
+                                                {column.name}
+                                              </th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {card.table.rows.map((row, rowIndex) => (
+                                            <tr key={`${card.table.name}-row-${rowIndex}`}>
+                                              {card.table.columns.map((column) => {
+                                                const value = row[column.name];
+                                                return (
+                                                  <td
+                                                    key={`${card.table.name}-${rowIndex}-${column.name}`}
+                                                  >
+                                                    {value === null ? "NULL" : String(value)}
+                                                  </td>
+                                                );
+                                              })}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
                                 </div>
                               </button>
                             );
@@ -2259,12 +2300,14 @@ export function TestRunner({
                         ? (sqlDrafts.get(question.id)?.submissionCount ?? 0) > 0
                         : (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
                       : question.type === "MANUAL_QA_SANDBOX"
-                        ? hasCompleteManualQaAnswer(
+                        ? hasSubmittedManualQaAnswer(
                             manualQaDrafts.get(question.id),
                           )
                         : question.type === "AUTOTEST_SANDBOX"
                           ? Boolean(autotestDrafts.get(question.id)?.code.trim())
-                          : Boolean(answers.get(question.id));
+                          : getOpenQuizConfig(question.apiConfig)
+                            ? Boolean(textAnswers.get(question.id)?.trim())
+                            : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
                   const commented = Boolean(
                     commentDrafts.get(question.id)?.trim(),

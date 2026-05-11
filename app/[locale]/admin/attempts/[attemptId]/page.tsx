@@ -39,6 +39,9 @@ export default async function AttemptDetailsPage({
         include: {
           question: { include: { options: { orderBy: { order: "asc" } } } },
           selectedOption: true,
+          submissions: {
+            orderBy: { submissionIndex: "asc" },
+          },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -106,6 +109,92 @@ export default async function AttemptDetailsPage({
     }
 
     return answer.isCorrect ? t("table.resultCorrect") : t("table.resultWrong");
+  }
+
+  function renderSubmissionDetails(answer: (typeof safeAttempt.answers)[number]) {
+    if (answer.submissions.length === 0) return null;
+
+    return (
+      <details className="attempt-submission-history">
+        <summary className="body-2 muted">
+          {t("table.submissionHistory", {
+            count: answer.submissions.length,
+          })}
+        </summary>
+        <div className="stack">
+          {answer.submissions.map((submission) => {
+            const payload =
+              submission.requestPayload &&
+              typeof submission.requestPayload === "object" &&
+              !Array.isArray(submission.requestPayload)
+                ? (submission.requestPayload as Record<string, unknown>)
+                : null;
+            const response =
+              submission.responsePayload &&
+              typeof submission.responsePayload === "object" &&
+              !Array.isArray(submission.responsePayload)
+                ? (submission.responsePayload as Record<string, unknown>)
+                : null;
+
+            return (
+              <div className="soft-panel stack" key={submission.id}>
+                <div className="nav-row">
+                  <strong>
+                    {t("table.submissionLabel", {
+                      number: submission.submissionIndex,
+                    })}
+                  </strong>
+                  <Badge
+                    variant={
+                      submission.isCorrect === true
+                        ? "success"
+                        : submission.isCorrect === false
+                          ? "danger"
+                          : "muted"
+                    }
+                  >
+                    {submission.isCorrect === true
+                      ? t("table.resultCorrect")
+                      : submission.isCorrect === false
+                        ? t("table.resultWrong")
+                        : t("table.resultUngraded")}
+                  </Badge>
+                </div>
+                <span className="body-2 muted">
+                  {formatDuration(submission.timeSpentMs)}
+                </span>
+
+                {submission.kind === "OPEN_QUIZ" ? (
+                  <pre className="body-2 m-0 whitespace-pre-wrap">
+                    {String(payload?.answerText ?? t("table.notFilled"))}
+                  </pre>
+                ) : submission.kind === "SQL_SANDBOX" ? (
+                  <div className="stack">
+                    <pre className="body-2 m-0 whitespace-pre-wrap">
+                      {String(payload?.query ?? t("table.notFilled"))}
+                    </pre>
+                    {"error" in (response ?? {}) && response?.error ? (
+                      <p className="body-2 m-0">{String(response.error)}</p>
+                    ) : (
+                      <pre className="body-2 m-0 whitespace-pre-wrap">
+                        {stringifyPrettyJson(response)}
+                      </pre>
+                    )}
+                  </div>
+                ) : (
+                  <pre className="body-2 m-0 whitespace-pre-wrap">
+                    {stringifyPrettyJson({
+                      request: submission.requestPayload,
+                      response: submission.responsePayload,
+                    })}
+                  </pre>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </details>
+    );
   }
 
   return (
@@ -428,6 +517,98 @@ export default async function AttemptDetailsPage({
                                       </div>
                                     );
                                   })()
+                                ) : answer.question.type === "SQL_SANDBOX" ? (
+                                  (() => {
+                                    const sqlRequest =
+                                      answer.apiRequest &&
+                                      typeof answer.apiRequest === "object" &&
+                                      !Array.isArray(answer.apiRequest)
+                                        ? (answer.apiRequest as {
+                                            query?: string;
+                                          })
+                                        : null;
+                                    const sqlResponse =
+                                      answer.apiResponse &&
+                                      typeof answer.apiResponse === "object" &&
+                                      !Array.isArray(answer.apiResponse)
+                                        ? (answer.apiResponse as {
+                                            columns?: string[];
+                                            rows?: Array<Array<unknown>>;
+                                            error?: string;
+                                          })
+                                        : null;
+
+                                    return (
+                                      <div className="stack">
+                                        <strong>{t("table.sqlQuery")}</strong>
+                                        <pre className="body-2 m-0 whitespace-pre-wrap">
+                                          {sqlRequest?.query?.trim() ||
+                                            t("table.notFilled")}
+                                        </pre>
+                                        <span className="body-2 muted">
+                                          {t("table.submissions", {
+                                            count: answer.submissionCount,
+                                          })}
+                                        </span>
+                                        {sqlResponse?.error ? (
+                                          <div className="soft-panel">
+                                            <strong>
+                                              {t("table.sqlError")}
+                                            </strong>
+                                            <p className="body-2 m-0">
+                                              {sqlResponse.error}
+                                            </p>
+                                          </div>
+                                        ) : sqlResponse?.columns?.length &&
+                                          sqlResponse.rows ? (
+                                          <div className="stack">
+                                            <strong>
+                                              {t("table.sqlResult")}
+                                            </strong>
+                                            <div className="table-wrap">
+                                              <table className="table">
+                                                <thead>
+                                                  <tr>
+                                                    {sqlResponse.columns.map(
+                                                      (column) => (
+                                                        <th key={column}>
+                                                          {column}
+                                                        </th>
+                                                      ),
+                                                    )}
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {sqlResponse.rows.map(
+                                                    (row, rowIndex) => (
+                                                      <tr key={rowIndex}>
+                                                        {row.map(
+                                                          (
+                                                            value,
+                                                            columnIndex,
+                                                          ) => (
+                                                            <td
+                                                              key={`${rowIndex}-${columnIndex}`}
+                                                            >
+                                                              {value === null
+                                                                ? "NULL"
+                                                                : String(
+                                                                    value,
+                                                                  )}
+                                                            </td>
+                                                          ),
+                                                        )}
+                                                      </tr>
+                                                    ),
+                                                  )}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()
                                 ) : answer.question.type === "API_SANDBOX" ||
                                   answer.question.type ===
                                     "DEVTOOLS_SANDBOX" ? (
@@ -469,6 +650,7 @@ export default async function AttemptDetailsPage({
                                   <p className="body-2 m-0">{internComment}</p>
                                 </div>
                               ) : null}
+                              {renderSubmissionDetails(answer)}
                             </div>
                           );
                         })()}
