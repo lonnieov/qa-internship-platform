@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@/generated/prisma/client";
 import {
   evaluateApiSandboxRequest,
   getJsonPathValue,
@@ -49,6 +50,58 @@ function splitName(fullName: string) {
     firstName: firstName || null,
     lastName: rest.length > 0 ? rest.join(" ") : null,
   };
+}
+
+type SubmissionClient = Pick<typeof prisma, "assessmentAnswerSubmission">;
+
+async function createAnswerSubmission(
+  tx: SubmissionClient,
+  input: {
+    answerId: string;
+    kind: string;
+    requestPayload?: Prisma.InputJsonValue | null;
+    responsePayload?: Prisma.InputJsonValue | null;
+    isCorrect?: boolean;
+    timeSpentMs: number;
+  },
+) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const latest = await tx.assessmentAnswerSubmission.findFirst({
+      where: { answerId: input.answerId },
+      orderBy: { submissionIndex: "desc" },
+      select: { submissionIndex: true },
+    });
+
+    try {
+      return await tx.assessmentAnswerSubmission.create({
+        data: {
+          answerId: input.answerId,
+          submissionIndex: (latest?.submissionIndex ?? 0) + 1,
+          kind: input.kind,
+          requestPayload:
+            input.requestPayload === null
+              ? Prisma.JsonNull
+              : input.requestPayload,
+          responsePayload:
+            input.responsePayload === null
+              ? Prisma.JsonNull
+              : input.responsePayload,
+          isCorrect: input.isCorrect,
+          timeSpentMs: input.timeSpentMs,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "P2002" &&
+        attempt < 2
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 async function findFinishedAttemptForInvitation(
@@ -344,31 +397,44 @@ export async function submitOpenQuizAnswerAction(input: {
     return { ok: false, expired: false };
   }
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        {
-          mode: "OPEN_TEXT",
-          answerText: input.answerText,
-        },
-        getInternComment(answer.apiRequest),
-      ),
-      selectedOptionId: null,
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+  const requestPayload = {
+    mode: "OPEN_TEXT",
+    answerText: input.answerText,
+  } as const;
+
+  await prisma.$transaction(async (tx) => {
+    await createAnswerSubmission(tx, {
+      answerId: answer.id,
+      kind: "OPEN_QUIZ",
+      requestPayload,
       isCorrect: false,
-      answeredAt: new Date(),
-      submissionCount: {
-        increment: 1,
+      timeSpentMs,
+    });
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
+        },
       },
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      data: {
+        apiRequest: mergeInternComment(
+          requestPayload,
+          getInternComment(answer.apiRequest),
+        ),
+        selectedOptionId: null,
+        isCorrect: false,
+        answeredAt: new Date(),
+        submissionCount: {
+          increment: 1,
+        },
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/intern/test");
@@ -594,28 +660,41 @@ export async function submitApiSandboxAction(input: {
     bodyText: input.bodyText,
   });
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        evaluation.normalizedRequest,
-        getInternComment(answer.apiRequest),
-      ),
-      apiResponse: evaluation.response,
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+
+  await prisma.$transaction(async (tx) => {
+    await createAnswerSubmission(tx, {
+      answerId: answer.id,
+      kind: "API_SANDBOX",
+      requestPayload: evaluation.normalizedRequest,
+      responsePayload: evaluation.response,
       isCorrect: evaluation.ok,
-      answeredAt: new Date(),
-      submissionCount: {
-        increment: 1,
+      timeSpentMs,
+    });
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
+        },
       },
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      data: {
+        apiRequest: mergeInternComment(
+          evaluation.normalizedRequest,
+          getInternComment(answer.apiRequest),
+        ),
+        apiResponse: evaluation.response,
+        isCorrect: evaluation.ok,
+        answeredAt: new Date(),
+        submissionCount: {
+          increment: 1,
+        },
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/intern/test");
@@ -674,32 +753,50 @@ export async function submitSqlSandboxAction(input: {
   }
 
   const response = await executeSqlSandboxQuery(config, input.query);
+  const shouldKeepPreviousSuccess = answer.isCorrect && !response.ok;
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+  const requestPayload = {
+    mode: "SQL_SANDBOX",
+    query: input.query,
+  } as const;
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        {
-          mode: "SQL_SANDBOX",
-          query: input.query,
-        },
-        getInternComment(answer.apiRequest),
-      ),
-      apiResponse: response,
+  await prisma.$transaction(async (tx) => {
+    await createAnswerSubmission(tx, {
+      answerId: answer.id,
+      kind: "SQL_SANDBOX",
+      requestPayload,
+      responsePayload: response,
       isCorrect: response.ok,
-      answeredAt: new Date(),
-      submissionCount: {
-        increment: 1,
+      timeSpentMs,
+    });
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
+        },
       },
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      data: {
+        ...(!shouldKeepPreviousSuccess
+          ? {
+              apiRequest: mergeInternComment(
+                requestPayload,
+                getInternComment(answer.apiRequest),
+              ),
+              apiResponse: response,
+              isCorrect: response.ok,
+            }
+          : {}),
+        answeredAt: new Date(),
+        submissionCount: {
+          increment: 1,
+        },
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/intern/test");
@@ -765,37 +862,60 @@ export async function submitDevtoolsAnswerAction(input: {
   );
   const actual = normalizeAnswerValue(input.answerText);
   const isCorrect = actual.toLowerCase() === expected.toLowerCase();
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+  const hasAnswer = input.answerText.trim().length > 0;
+  const requestPayload = {
+    mode: "DEVTOOLS_RESPONSE",
+    answerPath: config.answerPath,
+    answerText: input.answerText,
+  } as const;
+  const responsePayload = {
+    status: config.successStatus ?? 200,
+    headers: config.successHeaders ?? {},
+    body: config.successBody ?? { ok: true },
+  };
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        {
-          mode: "DEVTOOLS_RESPONSE",
-          answerPath: config.answerPath,
-          answerText: input.answerText,
+  await prisma.$transaction(async (tx) => {
+    if (hasAnswer) {
+      await createAnswerSubmission(tx, {
+        answerId: answer.id,
+        kind: "DEVTOOLS_SANDBOX",
+        requestPayload,
+        responsePayload,
+        isCorrect,
+        timeSpentMs,
+      });
+    }
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
         },
-        getInternComment(answer.apiRequest),
-      ),
-      apiResponse: {
-        status: config.successStatus ?? 200,
-        headers: config.successHeaders ?? {},
-        body: config.successBody ?? { ok: true },
       },
-      isCorrect,
-      answeredAt: new Date(),
-      submissionCount: input.answerText.trim()
-        ? Math.max(1, answer.submissionCount)
-        : 0,
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
+      data: {
+        apiRequest: mergeInternComment(
+          requestPayload,
+          getInternComment(answer.apiRequest),
+        ),
+        apiResponse: responsePayload,
+        isCorrect,
+        answeredAt: hasAnswer ? new Date() : null,
+        ...(hasAnswer
+          ? {
+              submissionCount: {
+                increment: 1,
+              },
+            }
+          : {
+              submissionCount: 0,
+            }),
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/intern/test");
@@ -844,30 +964,53 @@ export async function submitAutotestAnswerAction(input: {
   const config = getAutotestSandboxConfig(answer.question.apiConfig);
   const summary = summarizeAutotestAnswer(input.code, config);
   const hasAnswer = input.code.trim().length > 0;
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+  const requestPayload = {
+    mode: "AUTOTEST_SANDBOX",
+    code: input.code,
+  } as const;
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        {
-          mode: "AUTOTEST_SANDBOX",
-          code: input.code,
+  await prisma.$transaction(async (tx) => {
+    if (hasAnswer) {
+      await createAnswerSubmission(tx, {
+        answerId: answer.id,
+        kind: "AUTOTEST_SANDBOX",
+        requestPayload,
+        responsePayload: summary,
+        isCorrect: false,
+        timeSpentMs,
+      });
+    }
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
         },
-        getInternComment(answer.apiRequest),
-      ),
-      apiResponse: summary,
-      isCorrect: false,
-      answeredAt: hasAnswer ? new Date() : null,
-      submissionCount: hasAnswer ? Math.max(1, answer.submissionCount) : 0,
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
       },
-    },
+      data: {
+        apiRequest: mergeInternComment(
+          requestPayload,
+          getInternComment(answer.apiRequest),
+        ),
+        apiResponse: summary,
+        isCorrect: false,
+        answeredAt: hasAnswer ? new Date() : null,
+        ...(hasAnswer
+          ? {
+              submissionCount: {
+                increment: 1,
+              },
+            }
+          : {
+              submissionCount: 0,
+            }),
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
+      },
+    });
   });
 
   revalidatePath("/intern/test");
@@ -921,31 +1064,54 @@ export async function submitManualQaAnswerAction(input: {
   const noBugsFound = input.noBugsFound && reports.length === 0;
   const summary = summarizeManualQaAnswer(reports, config);
   const hasAnswer = reports.length > 0 || noBugsFound;
+  const timeSpentMs = Math.max(0, Math.round(input.timeSpentMs));
+  const requestPayload = {
+    mode: "MANUAL_QA_SANDBOX",
+    reports,
+    noBugsFound,
+  } as const;
 
-  await prisma.assessmentAnswer.update({
-    where: {
-      attemptId_questionId: {
-        attemptId: input.attemptId,
-        questionId: input.questionId,
-      },
-    },
-    data: {
-      apiRequest: mergeInternComment(
-        {
-          mode: "MANUAL_QA_SANDBOX",
-          reports,
-          noBugsFound,
+  await prisma.$transaction(async (tx) => {
+    if (hasAnswer) {
+      await createAnswerSubmission(tx, {
+        answerId: answer.id,
+        kind: "MANUAL_QA_SANDBOX",
+        requestPayload,
+        responsePayload: summary,
+        isCorrect: false,
+        timeSpentMs,
+      });
+    }
+
+    await tx.assessmentAnswer.update({
+      where: {
+        attemptId_questionId: {
+          attemptId: input.attemptId,
+          questionId: input.questionId,
         },
-        getInternComment(answer.apiRequest),
-      ),
-      apiResponse: summary,
-      isCorrect: false,
-      answeredAt: hasAnswer ? new Date() : null,
-      submissionCount: hasAnswer ? Math.max(1, answer.submissionCount) : 0,
-      timeSpentMs: {
-        increment: Math.max(0, Math.round(input.timeSpentMs)),
       },
-    },
+      data: {
+        apiRequest: mergeInternComment(
+          requestPayload,
+          getInternComment(answer.apiRequest),
+        ),
+        apiResponse: summary,
+        isCorrect: false,
+        answeredAt: hasAnswer ? new Date() : null,
+        ...(hasAnswer
+          ? {
+              submissionCount: {
+                increment: 1,
+              },
+            }
+          : {
+              submissionCount: 0,
+            }),
+        timeSpentMs: {
+          increment: timeSpentMs,
+        },
+      },
+    });
   });
 
   revalidatePath("/intern/test");
