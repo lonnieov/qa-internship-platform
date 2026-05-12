@@ -27,7 +27,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages}>
       <div className="site-shell">
         <div className="site-shell-content">{children}</div>
-        <SiteFooter />
+        <SiteFooter locale={locale} />
       </div>
     </NextIntlClientProvider>
   );

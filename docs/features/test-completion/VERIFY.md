@@ -21,11 +21,14 @@
 - Expected: the dialog closes and the test is still active.
 - Click `Завершить` again, then click `Продолжить`.
 - Expected: the attempt is submitted and the result flow opens.
+- Expected: the result page shows a short colorful confetti burst across the screen.
 - Start another attempt.
 - Answer every question and navigate to the last question.
 - Expected: an additional `Завершить` button appears on the right side of the question card footer.
 - Click the footer `Завершить`.
 - Expected: the same confirmation dialog opens.
+- Submit the attempt.
+- Expected: the same confetti burst plays after redirecting to the result page.
 
 ## Negative Cases
 
@@ -38,3 +41,5 @@
 
 - Navigate between questions with `Назад`, `Далее`, and the navigation dots.
 - Expected: navigation still works and does not submit the attempt.
+- Enable reduced motion in the browser or OS accessibility settings and open the result page.
+- Expected: the result content still renders, and the confetti animation is not shown.

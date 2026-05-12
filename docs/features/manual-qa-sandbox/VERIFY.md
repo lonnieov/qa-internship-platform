@@ -36,6 +36,16 @@
 6. Click `Добавить вопрос`.
 7. Expected result: the question card shows preset `click-super-app-installment-widget-v1`.
 
+### Admin Creates My Home Task
+
+1. Open `/admin/questions?type=MANUAL_QA_SANDBOX`.
+2. Click `Добавить`.
+3. Select preset `ClickSuperApp / Мой Дом`.
+4. Expected result: mission mentions `Мой Дом`, added accounts, payment for a specific account, and balance change after successful payment.
+5. Expected result: known bugs JSON includes `my-home-balance-not-updated-after-payment`.
+6. Click `Добавить вопрос`.
+7. Expected result: the question card shows preset `click-super-app-my-home-v1`.
+
 ### Intern Completes Task
 
 1. Issue or reuse an intern token.
@@ -70,6 +80,29 @@
 11. Expected result: the Deferred payment widget is not rendered.
 12. Return to amount input, enter `200000`, and continue.
 13. Expected result: this is a valid boundary case that should be checked by the tester.
+
+### Intern Checks My Home Payment
+
+1. Create or use a Manual QA question with preset `ClickSuperApp / Мой Дом`.
+2. Start an intern attempt and open that question.
+3. Expected result: the phone shows `Click Дом` with five added accounts: `Электроэнергия`, `Газ (Физ лица)`, `Холодная вода`, `Вывоз мусора`, and `ISTV`.
+4. Click account `Вывоз мусора`.
+5. Enter `1000` into the amount field.
+6. Click `К оплате`.
+7. Expected result: confirmation screen shows `Сумма оплаты: 1 000 сум`, the selected account title, card `U * 1876`, and `Оплатить`.
+8. Click `Оплатить`.
+9. Expected result: success screen shows `Оплата успешна`, amount `1 000 сум`, and a receipt number.
+10. Click `Вернуться в Click Дом`.
+11. Expected result: the tester can compare account `Вывоз мусора` balance before and after the payment; it should change from `58 600 сум` to `59 600 сум`.
+12. If the balance remains `58 600 сум`, add a bug report:
+   - title: `Баланс счета не изменился после успешной оплаты`
+   - severity: `critical`
+   - category: `calculation`
+   - steps: `1. Открыть Мой Дом\n2. Выбрать Вывоз мусора\n3. Ввести 1000\n4. Оплатить\n5. Вернуться в список счетов`
+   - actual: `Баланс Вывоз мусора остался 58 600 сум`
+   - expected: `Баланс Вывоз мусора стал 59 600 сум`
+13. Click `Сохранить ответ`.
+14. Expected result: badge changes to `ответ сохранён` and navigation marks the question as answered.
 
 ### Admin Reviews Result
 

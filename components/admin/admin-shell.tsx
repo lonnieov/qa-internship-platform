@@ -1,5 +1,6 @@
 "use client";
 
+import type { WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -31,6 +32,128 @@ const navItems = [
   { href: "/admin/questions", labelKey: "questions", icon: ListChecks },
   { href: "/admin/settings", labelKey: "settings", icon: Settings },
 ];
+
+const SCROLL_EDGE_EPSILON = 1;
+
+function normalizeWheelDeltaY(event: WheelEvent, pageStep: number) {
+  if (event.deltaMode === 1) {
+    return event.deltaY * 16;
+  }
+
+  if (event.deltaMode === 2) {
+    return event.deltaY * pageStep;
+  }
+
+  return event.deltaY;
+}
+
+function getNestedScrollable(
+  target: EventTarget | null,
+  boundary: HTMLElement,
+) {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+
+  let element: Element | null = target;
+
+  while (element && element !== boundary) {
+    if (element instanceof HTMLElement) {
+      const { overflowY } = window.getComputedStyle(element);
+      const isScrollable =
+        (overflowY === "auto" || overflowY === "scroll") &&
+        element.scrollHeight > element.clientHeight + SCROLL_EDGE_EPSILON;
+
+      if (isScrollable) {
+        return element;
+      }
+    }
+
+    element = element.parentElement;
+  }
+
+  return null;
+}
+
+function handleAdminContentWheel(event: ReactWheelEvent<HTMLDivElement>) {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey) {
+    return;
+  }
+
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+    return;
+  }
+
+  const container = event.currentTarget;
+  const nestedScrollable = getNestedScrollable(event.target, container);
+
+  if (nestedScrollable) {
+    return;
+  }
+
+  const deltaY = normalizeWheelDeltaY(
+    event.nativeEvent,
+    Math.max(container.clientHeight, 1),
+  );
+
+  if (Math.abs(deltaY) <= SCROLL_EDGE_EPSILON) {
+    return;
+  }
+
+  const maxContainerScroll = Math.max(
+    0,
+    container.scrollHeight - container.clientHeight,
+  );
+  const maxPageScroll = Math.max(
+    0,
+    document.documentElement.scrollHeight - window.innerHeight,
+  );
+
+  if (deltaY > 0) {
+    const remainingContainerScroll = maxContainerScroll - container.scrollTop;
+    const remainingPageScroll = maxPageScroll - window.scrollY;
+
+    if (
+      remainingPageScroll <= SCROLL_EDGE_EPSILON ||
+      remainingContainerScroll >= deltaY - SCROLL_EDGE_EPSILON
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    container.scrollTop = maxContainerScroll;
+    window.scrollBy({
+      top: deltaY - Math.max(remainingContainerScroll, 0),
+      behavior: "auto",
+    });
+    return;
+  }
+
+  const shell = container.closest(".admin-shell");
+  const shellTop = shell
+    ? shell.getBoundingClientRect().top + window.scrollY
+    : 0;
+  const pageScrolledPastShell = Math.max(0, window.scrollY - shellTop);
+
+  if (pageScrolledPastShell <= SCROLL_EDGE_EPSILON) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const upwardDelta = Math.abs(deltaY);
+  const pageDelta = Math.min(upwardDelta, pageScrolledPastShell);
+  window.scrollBy({
+    top: -pageDelta,
+    behavior: "auto",
+  });
+
+  const remainingDelta = upwardDelta - pageDelta;
+
+  if (remainingDelta > SCROLL_EDGE_EPSILON) {
+    container.scrollTop = Math.max(0, container.scrollTop - remainingDelta);
+  }
+}
 
 export function AdminShell({
   children,
@@ -102,7 +225,9 @@ export function AdminShell({
           </form>
         </div>
       </aside>
-      <div className="admin-content">{children}</div>
+      <div className="admin-content" onWheel={handleAdminContentWheel}>
+        {children}
+      </div>
     </div>
   );
 }

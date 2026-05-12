@@ -11,6 +11,7 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - A visible info bubble warns that unanswered questions count as fail.
 - Manual finish opens a confirmation dialog before submitting the attempt.
 - Automatic finish by timer, tab close, or hidden tab still submits immediately.
+- The result screen plays a short full-screen confetti burst when a completed attempt opens.
 
 ## Main Flow
 
@@ -21,10 +22,13 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - The confirmation dialog explains the result of submitting.
 - `Продолжить` submits the attempt.
 - `Отмена` closes the dialog and keeps the attempt active.
+- After successful submit, the result page opens with a decorative confetti burst over the screen.
 
 ## Touched Files
 
 - `components/intern/test-runner.tsx`
+- `components/intern/completion-confetti.tsx`
+- `app/[locale]/intern/result/page.tsx`
 - `app/globals.css`
 
 ## Constraints
@@ -32,3 +36,4 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - The confirmation only applies to manual finish.
 - Auto-submit paths must not wait for a dialog.
 - Unanswered questions remain scored as fail by the existing submit flow.
+- Confetti is CSS-only, has no extra package dependency, and is hidden when reduced motion is enabled.

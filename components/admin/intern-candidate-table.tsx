@@ -280,107 +280,109 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
 
   return (
     <>
-      <div className="table-wrap">
-        <table className="table interns-table candidate-table">
-          <thead>
-            <tr>
-              <th>
-                <button
-                  className="table-sort-button"
-                  type="button"
-                  onClick={() => toggleSort("name")}
-                >
-                  {t("table.intern")} <span>{sortLabel("name")}</span>
-                </button>
-              </th>
-              <th>
-                <button
-                  className="table-sort-button"
-                  type="button"
-                  onClick={() => toggleSort("access")}
-                >
-                  {t("table.testStatus")} <span>{sortLabel("access")}</span>
-                </button>
-              </th>
-              <th>
-                <button
-                  className="table-sort-button"
-                  type="button"
-                  onClick={() => toggleSort("attempt")}
-                >
-                  {t("table.latestAttempt")} <span>{sortLabel("attempt")}</span>
-                </button>
-              </th>
-              <th>
-                <button
-                  className="table-sort-button"
-                  type="button"
-                  onClick={() => toggleSort("result")}
-                >
-                  {t("table.result")} <span>{sortLabel("result")}</span>
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((row) => (
-              <tr
-                key={row.id}
-                className="candidate-table-row"
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedId(row.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelectedId(row.id);
-                  }
-                }}
-              >
-                <td>
-                  <strong>{row.name}</strong>
-                </td>
-                <td>
-                  <Badge variant={row.badgeVariant}>
-                    {t(`status.${row.accessLabel}`)}
-                  </Badge>
-                </td>
-                <td>{row.attemptLabel}</td>
-                <td>{row.resultLabel}</td>
+      <div className="candidate-table-panel">
+        <div className="table-wrap">
+          <table className="table interns-table candidate-table">
+            <thead>
+              <tr>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
+                    onClick={() => toggleSort("name")}
+                  >
+                    {t("table.intern")} <span>{sortLabel("name")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
+                    onClick={() => toggleSort("access")}
+                  >
+                    {t("table.testStatus")} <span>{sortLabel("access")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
+                    onClick={() => toggleSort("attempt")}
+                  >
+                    {t("table.latestAttempt")} <span>{sortLabel("attempt")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
+                    onClick={() => toggleSort("result")}
+                  >
+                    {t("table.result")} <span>{sortLabel("result")}</span>
+                  </button>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="candidate-pagination">
-        <span>
-          {sortedRows.length > 0
-            ? t("pagination", {
-                from: (safePage - 1) * pageSize + 1,
-                to: Math.min(safePage * pageSize, sortedRows.length),
-                total: sortedRows.length,
-              })
-            : t("paginationEmpty")}
-        </span>
-        <div>
-          <Button
-            size="sm"
-            variant="outline"
-            type="button"
-            disabled={safePage === 1}
-            onClick={() => setPage(Math.max(1, safePage - 1))}
-          >
-            {t("previous")}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            type="button"
-            disabled={safePage === pageCount}
-            onClick={() => setPage(Math.min(pageCount, safePage + 1))}
-          >
-            {t("next")}
-          </Button>
+            </thead>
+            <tbody>
+              {pageRows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="candidate-table-row"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedId(row.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedId(row.id);
+                    }
+                  }}
+                >
+                  <td>
+                    <strong>{row.name}</strong>
+                  </td>
+                  <td>
+                    <Badge variant={row.badgeVariant}>
+                      {t(`status.${row.accessLabel}`)}
+                    </Badge>
+                  </td>
+                  <td>{row.attemptLabel}</td>
+                  <td>{row.resultLabel}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="candidate-pagination">
+          <span>
+            {sortedRows.length > 0
+              ? t("pagination", {
+                  from: (safePage - 1) * pageSize + 1,
+                  to: Math.min(safePage * pageSize, sortedRows.length),
+                  total: sortedRows.length,
+                })
+              : t("paginationEmpty")}
+          </span>
+          <div>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              disabled={safePage === 1}
+              onClick={() => setPage(Math.max(1, safePage - 1))}
+            >
+              {t("previous")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              disabled={safePage === pageCount}
+              onClick={() => setPage(Math.min(pageCount, safePage + 1))}
+            >
+              {t("next")}
+            </Button>
+          </div>
         </div>
       </div>
 

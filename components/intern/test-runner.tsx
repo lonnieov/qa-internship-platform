@@ -38,6 +38,7 @@ import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
 import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
 import { ClickSuperAppInstallmentWidgetPreset } from "@/components/intern/manual-qa-presets/click-super-app-installment-widget";
+import { ClickSuperAppMyHomePreset } from "@/components/intern/manual-qa-presets/click-super-app-my-home";
 import {
   getManualQaAnswerPayload,
   getManualQaSandboxConfig,
@@ -442,6 +443,10 @@ function getSqlDiagramLayout(tables: SqlSandboxTable[]) {
 function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
   if (appPreset === "click-super-app-installment-widget-v1") {
     return <ClickSuperAppInstallmentWidgetPreset />;
+  }
+
+  if (appPreset === "click-super-app-my-home-v1") {
+    return <ClickSuperAppMyHomePreset />;
   }
 
   return <ClickSuperAppClickAvtoPreset />;

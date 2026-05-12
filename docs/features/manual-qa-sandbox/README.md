@@ -10,7 +10,8 @@ Adds an admin workflow for creating manual functional QA tasks based on a mobile
 - Admin can create and edit `MANUAL_QA_SANDBOX` questions.
 - Manual QA config stores scenario title, mission, preset id, viewport, time hint, bug categories, and known bugs rubric.
 - Intern test runner renders the selected miniapp preset and a bug-report form.
-- Presets include `ClickSuperApp / ClickAvto` and `ClickSuperApp / Рассрочка`.
+- Presets include `ClickSuperApp / ClickAvto`, `ClickSuperApp / Рассрочка`, and `ClickSuperApp / Мой Дом`.
+- `ClickSuperApp / Мой Дом` renders added utility accounts, single-account payment, confirmation, success receipt, and a rubric for checking that the selected account balance changes after payment.
 - Manual QA test pages use an expanded work area and compact preset styling so embedded mobile screens fit inside the assessment viewport.
 - Intern bug reports are saved and shown in the admin attempt report and Markdown export.
 - Manual QA questions are excluded from automatic score calculation.
@@ -50,6 +51,7 @@ Adds an admin workflow for creating manual functional QA tasks based on a mobile
 - `components/admin/question-create-modal.tsx`
 - `components/intern/manual-qa-presets/click-super-app-click-avto.tsx`
 - `components/intern/manual-qa-presets/click-super-app-installment-widget.tsx`
+- `components/intern/manual-qa-presets/click-super-app-my-home.tsx`
 - `components/intern/test-runner.tsx`
 - `app/globals.css`
 - `app/admin/attempts/[attemptId]/page.tsx`
