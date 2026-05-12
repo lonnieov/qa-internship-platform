@@ -23,7 +23,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/app ./app
@@ -34,9 +34,13 @@ COPY --from=builder /app/proxy.ts ./proxy.ts
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
 
 USER node
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["sh", "-c", "npm run start -- --hostname 0.0.0.0 --port ${PORT}"]

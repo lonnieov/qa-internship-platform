@@ -17,7 +17,7 @@
 
 - Open `/ru`.
 - Enter a valid intern token and submit.
-- Expected: the intern is routed into the existing intern flow.
+- Expected: the POST returns a redirect to `/ru/intern`, sets `qa_intern`, and the intern is routed into the existing intern flow.
 - Open `/ru` again and click `Администратор`.
 - Expected: the tab indicator moves smoothly, `/ru/sign-in/admin` opens, and the admin login form fades into place.
 - Click `Стажёр`.
