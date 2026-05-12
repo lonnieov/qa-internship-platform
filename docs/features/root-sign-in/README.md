@@ -12,6 +12,7 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - Sign-in screens no longer show a home-page link.
 - Role switching uses animated tabs and a soft form-card entrance between intern and admin screens.
 - Auth role links stay locale-prefixed to avoid an extra middleware redirect during client navigation.
+- Successful admin sign-in redirects directly to the current locale admin route.
 
 ## Main Flow
 
@@ -20,6 +21,7 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - User can switch to administrator sign-in through the sign-in role tabs.
 - The active tab indicator slides before navigation and the target form fades into place.
 - Protected admin routes redirect unauthenticated users directly to the active locale sign-in URL.
+- Admin login submits the current locale and redirects to `/{locale}/admin` after session creation.
 
 ## Touched Files
 
@@ -29,7 +31,9 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - `app/[locale]/sign-up/intern/page.tsx`
 - `app/[locale]/sign-up/admin/page.tsx`
 - `app/[locale]/admin/layout.tsx`
+- `components/admin/admin-login-form.tsx`
 - `components/auth-role-tabs.tsx`
+- `src/actions/admin-auth.ts`
 - `src/lib/auth.ts`
 - `app/globals.css`
 
