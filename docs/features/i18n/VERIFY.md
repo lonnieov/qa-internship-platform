@@ -10,10 +10,11 @@
 
 1. Open `/admin/interns`.
 2. Expected: page redirects to `/ru/admin/interns`.
-3. Use the language switcher and select Uzbek.
-4. Expected: URL changes to `/uz/admin/interns` and admin navigation plus interns page labels switch to Uzbek.
-5. Open the intern start page in Russian and switch to Uzbek.
-6. Expected: URL changes to `/uz/intern` and start-page labels switch to Uzbek.
+3. Expected: the redirect `Location` is relative or uses the public host without an internal runtime port.
+4. Use the language switcher and select Uzbek.
+5. Expected: URL changes to `/uz/admin/interns` and admin navigation plus interns page labels switch to Uzbek.
+6. Open the intern start page in Russian and switch to Uzbek.
+7. Expected: URL changes to `/uz/intern` and start-page labels switch to Uzbek.
 
 ## Positive Case
 
