@@ -12,6 +12,7 @@
 - Expected: the main table has `Статус теста`, not `Доступ`, as the test status column.
 - Expected: separate `Последние токены` and `Профили стажёров` cards are not shown.
 - Expected: the first page shows no more than 10 rows.
+- Expected: the pagination counter and `Назад` / `Вперёд` controls sit at the bottom edge of the list card.
 - Expected: the page itself does not get a vertical scrollbar on a desktop viewport.
 
 ## Positive Case

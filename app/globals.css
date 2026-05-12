@@ -1214,7 +1214,7 @@ button {
 .admin-interns-card-content {
   display: grid;
   min-height: 0;
-  align-items: start;
+  align-items: stretch;
 }
 
 .grid-2 {
@@ -3110,6 +3110,17 @@ button {
   cursor: pointer;
 }
 
+.candidate-table-panel {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.candidate-table-panel > .table-wrap {
+  min-height: 0;
+}
+
 .table-sort-button {
   display: inline-flex;
   width: 100%;
@@ -4259,6 +4270,637 @@ button {
   display: grid;
   gap: 2px;
   padding: 14px;
+}
+
+.my-home-phone {
+  position: relative;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  border-color: #050506;
+  background: #101010;
+  color: #f7f7f7;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.my-home-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 8px 24px 2px;
+  background: #101010;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.my-home-statusbar strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #0a84ff;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.my-home-statusbar span:last-child {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #5d5d63;
+  color: #ffffff;
+}
+
+.my-home-dashboard-appbar,
+.my-home-flow-appbar {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  min-height: 54px;
+  padding: 4px 16px 10px;
+  background: #101010;
+}
+
+.my-home-dashboard-appbar strong,
+.my-home-flow-appbar strong {
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 24px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-toolbar-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+}
+
+.my-home-screen {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  background: #101010;
+}
+
+.my-home-shortcuts,
+.my-home-balance-panel,
+.my-home-payment-card,
+.my-home-payment-options,
+.my-home-details,
+.my-home-wallet-banner,
+.my-home-bank-card {
+  border-radius: 8px;
+  background: #242627;
+}
+
+.my-home-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px 14px;
+}
+
+.my-home-shortcut {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #f8f8f8;
+}
+
+.my-home-shortcut span {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border-radius: 8px;
+  background: #121314;
+  color: #0a84ff;
+}
+
+.my-home-shortcut b {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-balance-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.my-home-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.my-home-panel-header h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.my-home-panel-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: #0a84ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.my-home-segments {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 8px;
+  background: #101010;
+}
+
+.my-home-segments button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9a9ca1;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.my-home-segments button.active {
+  background: #242627;
+  color: #ffffff;
+}
+
+.my-home-account-list {
+  display: grid;
+  gap: 8px;
+}
+
+.my-home-account-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 64px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  text-align: left;
+}
+
+.my-home-account-icon {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef3f8;
+  color: #0a84ff;
+}
+
+.my-home-account-icon.electric {
+  color: #0a84ff;
+}
+
+.my-home-account-icon.gas {
+  color: #1687ff;
+}
+
+.my-home-account-icon.water {
+  color: #18c7d3;
+}
+
+.my-home-account-icon.waste {
+  color: #00a98f;
+}
+
+.my-home-account-icon.tv {
+  color: #6381ff;
+}
+
+.my-home-account-meta {
+  min-width: 0;
+}
+
+.my-home-account-meta strong,
+.my-home-account-meta small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-account-meta strong {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.my-home-account-meta small {
+  color: #9ca0a6;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.my-home-balance {
+  color: #20d667;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.my-home-primary {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 8px;
+  background: #0a84ff;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.my-home-primary:hover {
+  opacity: 0.92;
+}
+
+.my-home-tabbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 74px;
+  border-top: 1px solid #2b2c2f;
+  background: #171819;
+}
+
+.my-home-tabbar button {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: #9ca0a6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-home-tabbar button.active {
+  color: #0a84ff;
+}
+
+.my-home-payment-screen {
+  gap: 12px;
+}
+
+.my-home-payment-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+}
+
+.my-home-payment-card > .my-home-account-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.my-home-payment-card-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.my-home-payment-card-title strong {
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-payment-card dl,
+.my-home-details dl {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.my-home-payment-card dl div,
+.my-home-details dl div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.my-home-payment-card dt,
+.my-home-payment-card dd,
+.my-home-details dt,
+.my-home-details dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.my-home-payment-card dt,
+.my-home-details dt {
+  color: #9ca0a6;
+}
+
+.my-home-payment-card dd,
+.my-home-details dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f8f8f8;
+  font-weight: 700;
+  text-align: right;
+}
+
+.my-home-payment-card dd.positive {
+  color: #20d667;
+  font-size: 17px;
+}
+
+.my-home-payment-card dd button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #0a84ff;
+}
+
+.my-home-amount-input {
+  min-height: 52px;
+  border: 0;
+  background: #242627;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.my-home-amount-input::placeholder {
+  color: #8d9197;
+}
+
+.my-home-payment-options {
+  display: grid;
+  padding: 12px 0;
+}
+
+.my-home-payment-options button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 20px;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  text-align: left;
+}
+
+.my-home-payment-options svg {
+  color: #0a84ff;
+}
+
+.my-home-payment-options span {
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-sticky-button {
+  margin-top: auto;
+}
+
+.my-home-confirm-screen {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  gap: 10px;
+}
+
+.my-home-details {
+  display: grid;
+  gap: 8px;
+  padding: 16px 10px;
+  background: transparent;
+}
+
+.my-home-details > strong {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.my-home-details dt,
+.my-home-details dd {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.my-home-details dd {
+  max-width: 190px;
+  justify-content: flex-end;
+}
+
+.my-home-wallet-banner {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 28px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.my-home-wallet-banner > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 8px;
+  background: #f2d14f;
+  color: #161616;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.my-home-wallet-banner strong,
+.my-home-wallet-banner small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-wallet-banner strong {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.my-home-wallet-banner small {
+  color: #9ca0a6;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.my-home-wallet-banner button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #747783;
+  color: #171819;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.my-home-card-section {
+  display: grid;
+  gap: 10px;
+}
+
+.my-home-card-section h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.my-home-card-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 10px;
+  align-items: center;
+}
+
+.my-home-bank-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+}
+
+.my-home-bank-card svg {
+  color: #ffd84d;
+}
+
+.my-home-bank-card strong,
+.my-home-bank-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-home-bank-card strong {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.my-home-bank-card small {
+  color: #9ca0a6;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.my-home-card-row > button {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: left;
+}
+
+.my-home-ask-friend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 54px;
+  border: 0;
+  border-top: 1px solid #242627;
+  background: #171819;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.my-home-ask-friend svg {
+  color: #0a84ff;
+}
+
+.my-home-success-screen {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 24px;
+  overflow-y: auto;
+  background: #101010;
+  text-align: center;
+}
+
+.my-home-success-screen svg {
+  color: #20d667;
+}
+
+.my-home-success-screen strong {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.my-home-success-screen span {
+  color: #20d667;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.my-home-success-screen small {
+  color: #9ca0a6;
 }
 
 .installment-phone {

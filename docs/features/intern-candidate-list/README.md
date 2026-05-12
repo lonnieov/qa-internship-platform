@@ -13,6 +13,7 @@ Show interns and newly issued token candidates in one admin list.
 - Search updates automatically with a debounce as the admin types.
 - The table is paginated by 10 rows.
 - Each table column can be sorted by clicking its header.
+- Pagination stays pinned to the bottom of the list card on desktop.
 - Clicking a row opens a modal with masked token history, attempts, results, and token action.
 - New access tokens are created from the selected intern row modal.
 - Newly created tokens are added to the open row modal immediately.

@@ -41,7 +41,9 @@
 3. Expected result: user, language, theme, and logout controls are pinned to the bottom of the visible sidebar.
 4. Open an admin route with long content, such as `/ru/admin/interns`.
 5. Expected result: the right content column scrolls while the sidebar remains fixed.
-6. Scroll the content column to the end, then continue scrolling.
-7. Expected result: the full page scroll reaches the footer.
-8. Print an attempt report page from the browser.
-9. Expected result: the global footer is not included in print output.
+6. With the pointer over the right content column, scroll down through the end of the column content.
+7. Expected result: the page continues moving to the footer without a stuck frame or a second scroll attempt.
+8. While the footer is visible and the pointer is over the right content column, scroll up.
+9. Expected result: the page moves back above the footer first, then the right content column scrolls upward.
+10. Print an attempt report page from the browser.
+11. Expected result: the global footer is not included in print output.

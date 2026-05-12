@@ -176,6 +176,55 @@ export const clickSuperAppInstallmentWidgetPresetConfig = {
   ],
 } satisfies ManualQaSandboxConfig;
 
+export const clickSuperAppMyHomePresetConfig = {
+  mode: "MANUAL_QA_SANDBOX",
+  scenarioTitle: "ClickSuperApp: Мой Дом — оплата счетов",
+  mission:
+    "Проверьте функционал «Мой Дом»: список добавленных счетов, переход к оплате конкретного счета, подтверждение платежа и изменение суммы этого счета после успешной оплаты.",
+  appPreset: "click-super-app-my-home-v1",
+  viewport: { width: 390, height: 844 },
+  timeHintMinutes: 12,
+  bugCategories: [
+    "functional",
+    "payment",
+    "calculation",
+    "state",
+    "navigation",
+    "mobile-ui",
+  ],
+  knownBugs: [
+    {
+      id: "my-home-balance-not-updated-after-payment",
+      title: "После успешной оплаты баланс выбранного счета не меняется",
+      severity: "critical",
+      matchKeywords: [
+        "баланс",
+        "счет",
+        "счёт",
+        "оплат",
+        "сумма",
+        "не меня",
+        "balance",
+        "unchanged",
+      ],
+    },
+    {
+      id: "my-home-final-balance-ignores-payment",
+      title: "Конечное сальдо в деталях платежа не учитывает сумму оплаты",
+      severity: "major",
+      matchKeywords: [
+        "конечное",
+        "сальдо",
+        "детал",
+        "предоплата",
+        "1000",
+        "1 000",
+        "final",
+      ],
+    },
+  ],
+} satisfies ManualQaSandboxConfig;
+
 export const manualQaPresetOptions = [
   {
     value: clickSuperAppClickAvtoPresetConfig.appPreset,
@@ -186,6 +235,11 @@ export const manualQaPresetOptions = [
     value: clickSuperAppInstallmentWidgetPresetConfig.appPreset,
     label: "ClickSuperApp / Рассрочка",
     config: clickSuperAppInstallmentWidgetPresetConfig,
+  },
+  {
+    value: clickSuperAppMyHomePresetConfig.appPreset,
+    label: "ClickSuperApp / Мой Дом",
+    config: clickSuperAppMyHomePresetConfig,
   },
 ] as const;
 
