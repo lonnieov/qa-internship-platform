@@ -9,6 +9,7 @@ Allow admin and intern assessment UI to work in Russian and Uzbek.
 - Locale-prefixed routes use `/ru/...` and `/uz/...`.
 - The admin shell, `/admin/interns`, intern start, intern test, and intern result workflows read UI text from message files.
 - Language switchers preserve the current path and query string, including active assessment attempts.
+- Proxy locale redirects use the forwarded public host so reverse proxies do not leak internal ports.
 
 ## Main Flow
 
@@ -16,6 +17,7 @@ Allow admin and intern assessment UI to work in Russian and Uzbek.
 2. `next-intl` loads messages for the active locale.
 3. Client and server components read labels through translation keys.
 4. The language switcher replaces the locale segment and keeps filters such as intern search or active attempt id.
+5. Same-origin locale redirects are normalized to the forwarded public origin before response.
 
 ## Touched Files
 
