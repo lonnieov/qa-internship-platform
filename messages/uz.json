@@ -14,17 +14,63 @@
     "logout": "Chiqish"
   },
   "SiteFooter": {
-    "brand": "Click Assessment",
-    "description": "QA stajyorlari assessmenti, amaliy topshiriqlar va ichki sifat tekshiruvlari uchun platforma.",
+    "brand": "LAP inc.",
+    "description": "Buyurtma asosida raqamli mahsulotlar yaratadigan AI studiya: prototipdan xotirjam relizgacha.",
     "contactsLabel": "Huquq egalari kontaktlari",
     "ownerTitle": "Huquq egalari",
-    "ownerName": "Click Assessment",
-    "terms": "Platformadan foydalanish huquq egasining ichki qoidalari bilan tartibga solinadi.",
+    "ownerName": "LAP inc.",
+    "terms": "Platformadan foydalanish LAP inc. ichki qoidalari bilan tartibga solinadi.",
     "contactButton": "Hamkorlik uchun murojaat qiling",
     "contactDialogTitle": "Huquq egalari kontaktlari",
     "contactDialogDescription": "Ijodkorlardan biriga Telegram orqali yozing",
     "closeContactDialog": "Kontaktlarni yopish",
-    "copyright": "© {year} Click Assessment. Barcha huquqlar himoyalangan"
+    "copyright": "© {year} LAP inc. Barcha huquqlar himoyalangan"
+  },
+  "CompanyPage": {
+    "eyebrow": "Raqamli mahsulotlar uchun AI studiya",
+    "title": "LAP inc.",
+    "subtitle": "Biznes vazifalari uchun AI servislar, ichki vositalar va web mahsulotlarni loyihalaymiz va yig'amiz. Texnik topshiriq atrofida ortiqcha marosimsiz, lekin deadlinega hurmat bilan.",
+    "teamCta": "Jamoa",
+    "contactCta": "Yozish",
+    "studioKicker": "Nima qilamiz",
+    "studioTitle": "Buyurtma asosida raqamli mahsulotlar",
+    "studioDescription": "G'oyani ishchi mahsulotga aylantiramiz, AI vaqt tejaydigan joyga ulaymiz va mahsulotni faqat demo paytida emas, haqiqiy hayotda ham ishlaydigan holatga olib kelamiz.",
+    "servicesLabel": "LAP inc. xizmatlari",
+    "services": {
+      "aiProducts": {
+        "title": "AI mahsulotlar",
+        "description": "Chat-botlar, assistentlar, generatorlar va aqlli ssenariylar. Excel hali pensiyaga chiqmaganini ham esdan chiqarmaymiz."
+      },
+      "automation": {
+        "title": "Avtomatlashtirish",
+        "description": "API, bazalar va jarayonlarni shunday bog'laymizki, qo'lda qilinadigan rutina o'ziga yangi hobbi topadi."
+      },
+      "delivery": {
+        "title": "Kalitgacha ishga tushirish",
+        "description": "Maketdan productiongacha: dizayn, frontend, backend va juma oldidan chiqadigan o'sha oxirgi bug."
+      }
+    },
+    "teamKicker": "Yaratuvchilar",
+    "teamTitle": "Uch kishi, bitta umumiy TODO",
+    "teamDescription": "Rasmlar keyinroq qo'shiladi. Hozircha «yana bitta kichkina tuzatish» degan gapdan keyin ko'rinadigan yuzlar uchun joy qoldirdik.",
+    "photoPlaceholder": "Rasm tez orada",
+    "creators": {
+      "igor": {
+        "name": "Игорь Ливиев",
+        "role": "Promptlarning bosh shomoni",
+        "description": "Neyrotarmoqlar bilan xuddi ularda ham deadline kalendari bordek kelishadi."
+      },
+      "fahriyor": {
+        "name": "Фахриёр Ахмаджонов",
+        "role": "«Chiroyli qilib bering» tugmasi arxitektori",
+        "description": "«Tezroq va ishlaydigan bo'lsin» degan gapni odamlarga ko'rsatishga uyalmaydigan interfeysga aylantiradi."
+      },
+      "nikita": {
+        "name": "Никита Пак",
+        "role": "Production sokin sehrlari direktori",
+        "description": "Mahsulot faqat demo, to'lin oy va dasturchining noutbukida emas, hamma joyda ishlashini kuzatadi."
+      }
+    }
   },
   "AdminInterns": {
     "pageTitle": "Stajyorlar va ruxsatlar",

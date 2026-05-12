@@ -11,6 +11,7 @@ import {
 import { getResultAttemptId, verifyResultTicket } from "@/lib/intern-token-auth";
 import { prisma } from "@/lib/prisma";
 import { formatDuration } from "@/lib/utils";
+import { CompletionConfetti } from "@/components/intern/completion-confetti";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -56,6 +57,8 @@ export default async function InternResultPage({
 
   return (
     <main className="page intern-finish-page">
+      <CompletionConfetti />
+
       <div className="intern-page-top">
         <div className="brand">
           <ServiceLogo />

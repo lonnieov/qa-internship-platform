@@ -9,7 +9,7 @@
 
 1. Open `/ru/sign-in/intern`.
 2. Scroll to the bottom of the page.
-3. Expected result: footer uses the app surface palette and shows `Click Assessment`, contact email, `Связаться с нами`, and `© 2026 Click Assessment. Все права защищены`.
+3. Expected result: footer uses the app surface palette and shows `LAP inc.`, contact email `hello@lap.inc`, `Связаться с нами`, and `© 2026 LAP inc. Все права защищены`.
 4. Expected result: footer follows the page content without a visible spacer band.
 
 ## Positive Case
@@ -18,15 +18,17 @@
 2. Expected result: the auth brand panel does not show the old small copyright line.
 3. Expected result: the footer is not visible until the page is scrolled below the first viewport.
 4. Scroll to the footer.
-5. Click `Связаться с нами`.
-6. Expected result: a contacts modal opens.
-7. Expected result: modal contains links `@lonnieov`, `@livievi_i`, and `@faxa0_0`.
-8. Click each link.
-9. Expected result: links target `https://t.me/lonnieov`, `https://t.me/livievi_i`, and `https://t.me/faxa0_0`.
-10. Close the modal.
-11. Expected result: modal disappears and the footer remains visible.
-12. Open `/uz/sign-in/intern`.
-13. Expected result: footer copy is shown in Uzbek and the same contact email is visible.
+5. Click the footer `LAP inc.` brand name.
+6. Expected result: browser opens `/ru/company`.
+7. Return to the footer and click `Связаться с нами`.
+8. Expected result: a contacts modal opens.
+9. Expected result: modal contains links `@lonnieov`, `@livievi_i`, and `@faxa0_0`.
+10. Click each link.
+11. Expected result: links target `https://t.me/lonnieov`, `https://t.me/livievi_i`, and `https://t.me/faxa0_0`.
+12. Close the modal.
+13. Expected result: modal disappears and the footer remains visible.
+14. Open `/uz/sign-in/intern`.
+15. Expected result: footer copy is shown in Uzbek and the same contact email is visible.
 
 ## Negative Cases
 
