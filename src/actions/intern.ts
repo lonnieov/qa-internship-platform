@@ -32,6 +32,7 @@ import {
 } from "@/lib/sql-sandbox-config";
 import { executeSqlSandboxQuery } from "@/lib/sql-sandbox";
 import { hashInviteCode } from "@/lib/security";
+import { isLocale } from "@/i18n/routing";
 import {
   clearInternSession,
   createResultSession,
@@ -43,6 +44,11 @@ export type InternTokenLoginState = {
   ok: boolean;
   message: string;
 };
+
+function normalizeLocale(value: FormDataEntryValue | null) {
+  const locale = String(value ?? "");
+  return isLocale(locale) ? locale : "ru";
+}
 
 function splitName(fullName: string) {
   const [firstName, ...rest] = fullName.trim().split(/\s+/);
@@ -123,6 +129,7 @@ export async function loginInternByTokenAction(
   formData: FormData,
 ): Promise<InternTokenLoginState> {
   const token = String(formData.get("token") ?? "");
+  const locale = normalizeLocale(formData.get("locale"));
   const hasPersonalDataConsent =
     String(formData.get("personalDataConsent") ?? "") === "on";
 
@@ -189,8 +196,8 @@ export async function loginInternByTokenAction(
       }
 
       await createInternSession(profile.id);
-      revalidatePath("/intern");
-      redirect("/intern");
+      revalidatePath(`/${locale}/intern`);
+      redirect(`/${locale}/intern`);
     }
 
     if (invitation.status === "PENDING") {
@@ -251,8 +258,8 @@ export async function loginInternByTokenAction(
   }
 
   await createInternSession(profile.id);
-  revalidatePath("/intern");
-  redirect("/intern");
+  revalidatePath(`/${locale}/intern`);
+  redirect(`/${locale}/intern`);
 }
 
 export async function logoutInternAction() {

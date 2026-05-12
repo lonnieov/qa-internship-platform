@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useLocale } from "next-intl";
 import {
   loginInternByTokenAction,
   type InternTokenLoginState,
@@ -15,6 +16,7 @@ const initialState: InternTokenLoginState = {
 };
 
 export function TokenLoginForm() {
+  const locale = useLocale();
   const [state, action, isPending] = useActionState(
     loginInternByTokenAction,
     initialState,
@@ -23,6 +25,7 @@ export function TokenLoginForm() {
 
   return (
     <form action={action} className="form-grid">
+      <input name="locale" type="hidden" value={locale} />
       <Input id="token" name="token" placeholder="XXXX-XXXX-XXXX" />
       <Label className="consent-field" htmlFor="personalDataConsent">
         <input
