@@ -1,3 +1,3 @@
-import InternSignInPage from "./sign-in/intern/[[...sign-in]]/page";
+import InternSignInPage from "./sign-in/intern/page";
 
 export default InternSignInPage;

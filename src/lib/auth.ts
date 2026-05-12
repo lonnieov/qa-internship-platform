@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
+import { isLocale } from "@/i18n/routing";
 import { getAdminSessionProfile } from "@/lib/admin-auth";
 import { getInternSessionProfile } from "@/lib/intern-token-auth";
 import { prisma } from "@/lib/prisma";
+
+function localizedPath(path: string, locale?: string) {
+  return locale && isLocale(locale) ? `/${locale}${path}` : path;
+}
 
 export async function getCurrentProfile() {
   const adminProfile = await getAdminSessionProfile();
@@ -17,29 +22,29 @@ export async function getCurrentProfile() {
   return null;
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(options?: { locale?: string }) {
   const profile = await getCurrentProfile();
 
   if (!profile) {
-    redirect("/sign-in/admin");
+    redirect(localizedPath("/sign-in/admin", options?.locale));
   }
 
   if (profile.role !== "ADMIN") {
-    redirect("/intern");
+    redirect(localizedPath("/intern", options?.locale));
   }
 
   return profile;
 }
 
-export async function requireAdminAccess() {
+export async function requireAdminAccess(options?: { locale?: string }) {
   const profile = await getCurrentProfile();
 
   if (!profile) {
-    redirect("/sign-in/admin");
+    redirect(localizedPath("/sign-in/admin", options?.locale));
   }
 
   if (profile.role !== "ADMIN" && profile.role !== "TRACK_MASTER") {
-    redirect("/intern");
+    redirect(localizedPath("/intern", options?.locale));
   }
 
   return profile;
@@ -57,15 +62,15 @@ export async function getManageableTrackIds(profile: { id: string; role: string 
   return memberships.map((membership) => membership.trackId);
 }
 
-export async function requireIntern() {
+export async function requireIntern(options?: { locale?: string }) {
   const profile = await getCurrentProfile();
 
   if (!profile) {
-    redirect("/sign-in/intern");
+    redirect(localizedPath("/sign-in/intern", options?.locale));
   }
 
   if (profile.role !== "INTERN" || !profile.internProfile) {
-    redirect("/admin");
+    redirect(localizedPath("/admin", options?.locale));
   }
 
   return profile as typeof profile & {

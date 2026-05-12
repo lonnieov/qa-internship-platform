@@ -10,15 +10,16 @@
 
 - Open `/`.
 - Expected: the intern sign-in screen appears immediately with the token form.
+- Expected: URL is locale-prefixed as `/ru`.
 - Expected: no landing page cards or "На главную" link are visible.
 
 ## Positive Case
 
-- Open `/`.
+- Open `/ru`.
 - Enter a valid intern token and submit.
 - Expected: the intern is routed into the existing intern flow.
-- Open `/` again and click `Администратор`.
-- Expected: the tab indicator moves smoothly, `/sign-in/admin` opens, and the admin login form fades into place.
+- Open `/ru` again and click `Администратор`.
+- Expected: the tab indicator moves smoothly, `/ru/sign-in/admin` opens, and the admin login form fades into place.
 - Click `Стажёр`.
 - Expected: the role switch animates back and the token login form is shown.
 
@@ -29,9 +30,11 @@
 
 ## Regression Check
 
-- Open `/sign-in/intern`.
+- Open `/ru/sign-in/intern`.
 - Expected: the same intern sign-in screen still works.
-- Open `/sign-in/admin`.
+- Open `/ru/sign-in/admin`.
 - Expected: admin sign-in still works and can switch back to `Стажёр`.
+- Open `/ru/admin` in a logged-out browser.
+- Expected: the page redirects to `/ru/sign-in/admin` without a client chunk loading error.
 - Use Cmd/Ctrl-click on a role tab.
 - Expected: the browser keeps the normal new-tab behavior.

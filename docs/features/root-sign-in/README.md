@@ -6,29 +6,35 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 
 ## Scope
 
-- `/` renders the intern token sign-in screen.
-- `/sign-in/intern` keeps the same intern sign-in screen.
-- `/sign-in/admin` remains available from the role switch.
+- `/ru` renders the intern token sign-in screen by default.
+- `/ru/sign-in/intern` keeps the same intern sign-in screen.
+- `/ru/sign-in/admin` remains available from the role switch.
 - Sign-in screens no longer show a home-page link.
 - Role switching uses animated tabs and a soft form-card entrance between intern and admin screens.
+- Auth role links stay locale-prefixed to avoid an extra middleware redirect during client navigation.
 
 ## Main Flow
 
-- User opens `/`.
+- User opens `/` and is redirected to `/ru`.
 - The intern token login form is shown immediately.
 - User can switch to administrator sign-in through the sign-in role tabs.
 - The active tab indicator slides before navigation and the target form fades into place.
+- Protected admin routes redirect unauthenticated users directly to the active locale sign-in URL.
 
 ## Touched Files
 
-- `app/page.tsx`
-- `app/sign-in/intern/[[...sign-in]]/page.tsx`
-- `app/sign-in/admin/[[...sign-in]]/page.tsx`
+- `app/[locale]/page.tsx`
+- `app/[locale]/sign-in/intern/page.tsx`
+- `app/[locale]/sign-in/admin/page.tsx`
+- `app/[locale]/sign-up/intern/page.tsx`
+- `app/[locale]/sign-up/admin/page.tsx`
+- `app/[locale]/admin/layout.tsx`
 - `components/auth-role-tabs.tsx`
+- `src/lib/auth.ts`
 - `app/globals.css`
 
 ## Constraints
 
 - Intern token login remains available from `/`.
-- Admin sign-in remains on `/sign-in/admin`.
-- Intern sign-in remains on `/sign-in/intern`.
+- Admin sign-in remains on `/ru/sign-in/admin` and `/uz/sign-in/admin`.
+- Intern sign-in remains on `/ru/sign-in/intern` and `/uz/sign-in/intern`.

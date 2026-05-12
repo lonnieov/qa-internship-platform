@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 type AuthRole = "intern" | "admin";
 
 export function AuthRoleTabs({ activeRole }: { activeRole: AuthRole }) {
+  const locale = useLocale();
   const t = useTranslations("AuthRoleTabs");
   const router = useRouter();
   const [pendingRole, setPendingRole] = useState<AuthRole | null>(null);
   const visibleRole = pendingRole ?? activeRole;
   const roleLinks: Array<{ href: string; label: string; role: AuthRole }> = [
-    { href: "/sign-in/intern", label: t("intern"), role: "intern" },
-    { href: "/sign-in/admin", label: t("admin"), role: "admin" },
+    { href: `/${locale}/sign-in/intern`, label: t("intern"), role: "intern" },
+    { href: `/${locale}/sign-in/admin`, label: t("admin"), role: "admin" },
   ];
 
   function switchRole(
