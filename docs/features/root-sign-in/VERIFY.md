@@ -34,6 +34,8 @@
 - Expected: the same intern sign-in screen still works.
 - Open `/ru/sign-in/admin`.
 - Expected: admin sign-in still works and can switch back to `Стажёр`.
+- Submit valid admin credentials on `/ru/sign-in/admin`.
+- Expected: the POST returns a redirect to `/ru/admin`, sets `qa_admin`, and the admin dashboard opens.
 - Open `/ru/admin` in a logged-out browser.
 - Expected: the page redirects to `/ru/sign-in/admin` without a client chunk loading error.
 - Use Cmd/Ctrl-click on a role tab.

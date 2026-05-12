@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { seedAdminEmail } from "@/lib/admin-constants";
+import { isLocale } from "@/i18n/routing";
 import { requireAdmin } from "@/lib/auth";
 import {
   clearAdminSession,
@@ -27,12 +28,18 @@ function normalizePassword(value: FormDataEntryValue | null) {
   return String(value ?? "");
 }
 
+function normalizeLocale(value: FormDataEntryValue | null) {
+  const locale = String(value ?? "");
+  return isLocale(locale) ? locale : "ru";
+}
+
 export async function loginAdminAction(
   _prevState: AdminAuthState,
   formData: FormData,
 ): Promise<AdminAuthState> {
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
+  const locale = normalizeLocale(formData.get("locale"));
 
   if (!email || !password) {
     return { ok: false, message: "Введите email и пароль." };
@@ -50,7 +57,7 @@ export async function loginAdminAction(
   }
 
   await createAdminSession(profile.id);
-  redirect("/admin");
+  redirect(`/${locale}/admin`);
 }
 
 export async function createAdminAction(

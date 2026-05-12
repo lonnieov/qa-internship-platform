@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { loginAdminAction, type AdminAuthState } from "@/actions/admin-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ const initialState: AdminAuthState = {
 };
 
 export function AdminLoginForm() {
+  const locale = useLocale();
   const t = useTranslations("AdminAuth");
   const [state, action, isPending] = useActionState(
     loginAdminAction,
@@ -22,6 +23,7 @@ export function AdminLoginForm() {
 
   return (
     <form action={action} className="form-grid">
+      <input name="locale" type="hidden" value={locale} />
       <div className="form-grid">
         <Label htmlFor="email">{t("email")}</Label>
         <Input id="email" name="email" type="email" autoComplete="email" />
