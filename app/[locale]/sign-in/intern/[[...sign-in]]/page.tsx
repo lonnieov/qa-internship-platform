@@ -30,7 +30,6 @@ export default function InternSignInPage() {
             </div>
           </div>
         </div>
-        <small>© 2026 · Внутренняя QA-платформа</small>
       </section>
 
       <section className="auth-form-panel">

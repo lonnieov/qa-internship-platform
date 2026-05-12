@@ -35,7 +35,6 @@ export default async function AdminSignInPage() {
             </div>
           </div>
         </div>
-        <small>{t("footer")}</small>
       </section>
 
       <section className="auth-form-panel">

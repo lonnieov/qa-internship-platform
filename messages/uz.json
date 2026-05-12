@@ -13,6 +13,19 @@
     "fallbackAdmin": "Administrator",
     "logout": "Chiqish"
   },
+  "SiteFooter": {
+    "brand": "Click Assessment",
+    "description": "QA stajyorlari assessmenti, amaliy topshiriqlar va ichki sifat tekshiruvlari uchun platforma.",
+    "contactsLabel": "Huquq egalari kontaktlari",
+    "ownerTitle": "Huquq egalari",
+    "ownerName": "Click Assessment",
+    "terms": "Platformadan foydalanish huquq egasining ichki qoidalari bilan tartibga solinadi.",
+    "contactButton": "Hamkorlik uchun murojaat qiling",
+    "contactDialogTitle": "Huquq egalari kontaktlari",
+    "contactDialogDescription": "Ijodkorlardan biriga Telegram orqali yozing",
+    "closeContactDialog": "Kontaktlarni yopish",
+    "copyright": "© {year} Click Assessment. Barcha huquqlar himoyalangan"
+  },
   "AdminInterns": {
     "pageTitle": "Stajyorlar va ruxsatlar",
     "pageDescription": "Token bazada faqat SHA-256 xesh ko‘rinishida saqlanadi.",

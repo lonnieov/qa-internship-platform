@@ -13,6 +13,19 @@
     "fallbackAdmin": "Администратор",
     "logout": "Выйти"
   },
+  "SiteFooter": {
+    "brand": "Click Assessment",
+    "description": "Платформа для ассессмента QA-стажёров, практических заданий и внутренних проверок качества.",
+    "contactsLabel": "Контакты правообладателей",
+    "ownerTitle": "Правообладатели",
+    "ownerName": "Click Assessment",
+    "terms": "Использование платформы регулируется внутренними правилами правообладателя.",
+    "contactButton": "Связаться для сотрудничества",
+    "contactDialogTitle": "Контакты правообладателей",
+    "contactDialogDescription": "Напишите одному из создателей в Telegram.",
+    "closeContactDialog": "Закрыть контакты",
+    "copyright": "© {year} Click Assessment. Все права защищены"
+  },
   "AdminInterns": {
     "pageTitle": "Стажёры и доступы",
     "pageDescription": "Токен хранится в базе только в виде SHA-256 хэша.",
