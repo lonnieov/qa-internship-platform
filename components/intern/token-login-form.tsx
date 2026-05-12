@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   loginInternByTokenAction,
   type InternTokenLoginState,
@@ -19,6 +19,7 @@ export function TokenLoginForm() {
     loginInternByTokenAction,
     initialState,
   );
+  const [hasConsent, setHasConsent] = useState(false);
 
   return (
     <form action={action} className="form-grid">
@@ -28,14 +29,16 @@ export function TokenLoginForm() {
           id="personalDataConsent"
           name="personalDataConsent"
           type="checkbox"
+          checked={hasConsent}
           required
+          onChange={(event) => setHasConsent(event.target.checked)}
         />
         <span>
           Я согласен(а) на обработку персональных данных для прохождения
           ассессмента и проверки результатов.
         </span>
       </Label>
-      <Button disabled={isPending} type="submit">
+      <Button disabled={isPending || !hasConsent} type="submit">
         Войти
       </Button>
       {state.message ? (

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "prisma generate && next build",
     "build:deploy": "prisma generate && prisma db push && next build",
     "start": "next start",
@@ -23,8 +23,9 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "next-intl": "^4.11.0",
+    "node-sql-parser": "^5.4.0",
     "openai": "latest",
-    "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
     "react": "latest",
     "react-dom": "latest",
@@ -33,7 +34,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
-    "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.20.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",

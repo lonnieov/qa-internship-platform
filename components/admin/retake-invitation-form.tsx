@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
-import { RotateCcw } from "lucide-react";
+import { useActionState, useEffect, useRef } from "react";
+import { CheckCircle2, Clock3, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   createRetakeInvitationAction,
   type InvitationState,
@@ -16,19 +17,35 @@ const initialState: InvitationState = {
 
 export function RetakeInvitationForm({
   internProfileId,
+  buttonLabel,
+  issuedButtonLabel,
+  onCreated,
 }: {
   internProfileId: string;
+  buttonLabel?: string;
+  issuedButtonLabel?: string;
+  onCreated?: (invitation: NonNullable<InvitationState["invitation"]>) => void;
 }) {
+  const t = useTranslations("AdminInterns");
   const [state, action, isPending] = useActionState(
     createRetakeInvitationAction,
     initialState,
   );
+  const lastInvitationId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!state.invitation || state.invitation.id === lastInvitationId.current) {
+      return;
+    }
+
+    lastInvitationId.current = state.invitation.id;
+    onCreated?.(state.invitation);
+  }, [onCreated, state.invitation]);
 
   return (
-    <div className="retake-action">
+    <div className="retake-action" aria-live="polite">
       <form action={action}>
         <input type="hidden" name="internProfileId" value={internProfileId} />
-        <input type="hidden" name="expiresInDays" value="14" />
         <Button
           className="intern-action-button intern-action-retake"
           size="sm"
@@ -37,13 +54,33 @@ export function RetakeInvitationForm({
           disabled={isPending}
         >
           <RotateCcw size={15} />
-          Перепройти
+          {state.inviteCode
+            ? issuedButtonLabel ?? t("retake.issueNew")
+            : buttonLabel ?? t("retake.retry")}
         </Button>
       </form>
       {state.message ? (
-        <div className="retake-token-panel">
-          <p className="body-2 m-0">{state.message}</p>
-          {state.inviteCode ? <CopyableToken token={state.inviteCode} /> : null}
+        <div
+          className={`retake-token-panel ${state.ok ? "success" : "danger"}`}
+        >
+          <div className="retake-token-header">
+            <span className="retake-token-icon">
+              {state.ok ? <CheckCircle2 size={16} /> : <RotateCcw size={16} />}
+            </span>
+            <div>
+              <strong>{state.ok ? t("tokenCreated") : t("failed")}</strong>
+              <p className="body-2 muted m-0">{state.message}</p>
+            </div>
+          </div>
+          {state.inviteCode ? (
+            <>
+              <CopyableToken token={state.inviteCode} />
+              <div className="retake-token-meta">
+                <Clock3 size={14} />
+                <span>{t("newTokenShownOnce")}</span>
+              </div>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

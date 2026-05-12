@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { MoreHorizontal, X } from "lucide-react";
 import {
   deleteAdminAction,
@@ -28,6 +29,7 @@ type AdminManageModalProps = {
 };
 
 export function AdminManageModal({ admin }: AdminManageModalProps) {
+  const t = useTranslations("AdminSettings");
   const [isOpen, setIsOpen] = useState(false);
   const [updateState, updateAction, isUpdatePending] = useActionState(
     updateAdminAction,
@@ -42,7 +44,7 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
   return (
     <>
       <button
-        aria-label={`Управлять администратором ${admin.email ?? admin.id}`}
+        aria-label={t("admins.manageAria", { admin: admin.email ?? admin.id })}
         className="track-manage-trigger"
         type="button"
         onClick={() => setIsOpen(true)}
@@ -65,12 +67,12 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id={`admin-modal-title-${admin.id}`}>
-                  Редактировать администратора
+                  {t("admins.manageTitle")}
                 </h2>
                 <p className="body-2 muted m-0">{admin.email}</p>
               </div>
               <Button
-                aria-label="Закрыть модальное окно"
+                aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
                 onClick={() => setIsOpen(false)}
@@ -82,7 +84,7 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
             <div className="track-modal-body">
               {isProtected ? (
                 <p className="body-1 muted m-0">
-                  Сидового администратора нельзя редактировать или удалить.
+                  {t("admins.seedProtected")}
                 </p>
               ) : (
                 <>
@@ -91,7 +93,7 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                     <div className="grid-2">
                       <div className="form-field">
                         <Label htmlFor={`admin-first-name-${admin.id}`}>
-                          Имя
+                          {t("admins.form.firstName")}
                         </Label>
                         <Input
                           id={`admin-first-name-${admin.id}`}
@@ -101,7 +103,7 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                       </div>
                       <div className="form-field">
                         <Label htmlFor={`admin-last-name-${admin.id}`}>
-                          Фамилия
+                          {t("admins.form.lastName")}
                         </Label>
                         <Input
                           id={`admin-last-name-${admin.id}`}
@@ -111,7 +113,9 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                       </div>
                     </div>
                     <div className="form-field">
-                      <Label htmlFor={`admin-email-${admin.id}`}>Email</Label>
+                      <Label htmlFor={`admin-email-${admin.id}`}>
+                        {t("admins.form.email")}
+                      </Label>
                       <Input
                         id={`admin-email-${admin.id}`}
                         name="email"
@@ -122,19 +126,19 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                     </div>
                     <div className="form-field">
                       <Label htmlFor={`admin-password-${admin.id}`}>
-                        Новый пароль
+                        {t("admins.form.newPassword")}
                       </Label>
                       <Input
                         id={`admin-password-${admin.id}`}
                         name="password"
                         type="password"
                         minLength={6}
-                        placeholder="Оставьте пустым, чтобы не менять"
+                        placeholder={t("admins.form.passwordPlaceholder")}
                       />
                     </div>
                     <div className="modal-actions">
                       <Button type="submit" disabled={isUpdatePending}>
-                        Сохранить
+                        {t("save")}
                       </Button>
                     </div>
                     {updateState.message ? (
@@ -150,10 +154,9 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
 
                   <div className="track-modal-danger-zone">
                     <div>
-                      <strong>Удаление</strong>
+                      <strong>{t("admins.delete.title")}</strong>
                       <p className="body-2 muted m-0">
-                        Учётная запись исчезнет из списка и больше не сможет
-                        войти.
+                        {t("admins.delete.description")}
                       </p>
                     </div>
                     <form action={deleteAction}>
@@ -164,11 +167,11 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                         disabled={isDeletePending || admin.isCurrent}
                         title={
                           admin.isCurrent
-                            ? "Нельзя удалить текущую учётную запись"
+                            ? t("admins.delete.currentDisabled")
                             : undefined
                         }
                       >
-                        Удалить администратора
+                        {t("admins.delete.action")}
                       </Button>
                     </form>
                     {deleteState.message ? (

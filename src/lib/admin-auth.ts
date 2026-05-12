@@ -115,7 +115,9 @@ export async function getAdminSessionProfile() {
     return null;
   }
 
-  if (session.profile.role !== "ADMIN") return null;
+  if (session.profile.role !== "ADMIN" && session.profile.role !== "TRACK_MASTER") {
+    return null;
+  }
 
   return session.profile;
 }

@@ -1,0 +1,607 @@
+{
+  "AdminShell": {
+    "brand": "Click Assessment",
+    "tagline": "Never gonna give you up",
+    "navLabel": "Admin navigatsiyasi",
+    "nav": {
+      "overview": "Umumiy",
+      "interns": "Stajyorlar",
+      "tracks": "Treklar",
+      "questions": "Savollar",
+      "settings": "Sozlamalar"
+    },
+    "fallbackAdmin": "Administrator",
+    "logout": "Chiqish"
+  },
+  "SiteFooter": {
+    "brand": "Click Assessment",
+    "description": "QA stajyorlari assessmenti, amaliy topshiriqlar va ichki sifat tekshiruvlari uchun platforma.",
+    "contactsLabel": "Huquq egalari kontaktlari",
+    "ownerTitle": "Huquq egalari",
+    "ownerName": "Click Assessment",
+    "terms": "Platformadan foydalanish huquq egasining ichki qoidalari bilan tartibga solinadi.",
+    "contactButton": "Hamkorlik uchun murojaat qiling",
+    "contactDialogTitle": "Huquq egalari kontaktlari",
+    "contactDialogDescription": "Ijodkorlardan biriga Telegram orqali yozing",
+    "closeContactDialog": "Kontaktlarni yopish",
+    "copyright": "© {year} Click Assessment. Barcha huquqlar himoyalangan"
+  },
+  "AdminInterns": {
+    "pageTitle": "Stajyorlar va ruxsatlar",
+    "pageDescription": "Token bazada faqat SHA-256 xesh ko‘rinishida saqlanadi.",
+    "listTitle": "Stajyorlar ro‘yxati",
+    "searchActive": "F.I.Sh. bo‘yicha qidiruv: {query}",
+    "searchIdle": "Yangi stajyorlar yaratilgandan so‘ng darhol shu yerda ko‘rinadi.",
+    "searchPlaceholder": "F.I.Sh. bo‘yicha qidirish",
+    "searchLabel": "F.I.Sh. bo‘yicha qidirish",
+    "reset": "Tozalash",
+    "createIntern": "Stajyor yaratish",
+    "createInternTitle": "Yangi stajyor",
+    "createInternDescription": "Stajyor yaratilgandan so‘ng ruxsat tokeni darhol chiqariladi.",
+    "candidateName": "Nomzodning ismi va familiyasi",
+    "candidatePlaceholder": "Alina Karimova",
+    "createToken": "Token yaratish",
+    "createMore": "Yana yaratish",
+    "tokenCreated": "Token yaratildi",
+    "failed": "Amal bajarilmadi",
+    "newTokenShownOnce": "Yangi token bir marta ko‘rsatiladi.",
+    "tokensAttemptsActions": "Stajyor tokenlari, urinishlari va amallari.",
+    "accessTokens": "Ruxsat tokenlari",
+    "tokenHoverHint": "Yangi tokenlar maska ustiga olib borilganda ochiladi.",
+    "attemptsResults": "Urinishlar va natijalar",
+    "attemptHistory": "Ushbu profil bo‘yicha test topshirish tarixi.",
+    "profileNotCreated": "Profil hali yaratilmagan",
+    "profileCreatedAfterLogin": "Profil token orqali birinchi kirishdan keyin yaratiladi.",
+    "noAttempts": "Hali urinishlar yo‘q",
+    "notStarted": "Stajyor hali testni boshlamagan.",
+    "emptyTitle": "Hech narsa topilmadi",
+    "emptyDescription": "To‘liq ro‘yxatga qaytish uchun so‘rovni o‘zgartiring yoki qidiruvni tozalang.",
+    "oldToken": "eski token",
+    "oldTokenTitle": "To‘liq token mavjud emas: yozuv admin uchun token saqlashdan oldin yaratilgan",
+    "revealCopyToken": "Tokenni ko‘rsatish va nusxalash",
+    "revealCopyTitle": "Tokenni ko‘rish uchun ustiga olib boring. Nusxalash uchun bosing.",
+    "copied": "Nusxalandi",
+    "copy": "Nusxalash",
+    "copyHint": "Nusxalash uchun bosing",
+    "revoke": "Bekor qilish",
+    "result": "Natija",
+    "openResult": "Natija",
+    "closeModal": "Modal oynani yopish",
+    "previous": "Ortga",
+    "next": "Oldinga",
+    "pagination": "{from}-{to} / {total}",
+    "paginationEmpty": "0 / 0",
+    "table": {
+      "intern": "Stajyor",
+      "access": "Ruxsat",
+      "testStatus": "Test holati",
+      "latestAttempt": "Oxirgi urinish",
+      "result": "Natija",
+      "candidate": "Nomzod",
+      "token": "Token",
+      "status": "Holat",
+      "created": "Yaratilgan",
+      "started": "Boshlagan",
+      "submitted": "Tugatgan"
+    },
+    "status": {
+      "PENDING": "faol",
+      "ACCEPTED": "faol",
+      "COMPLETED": "ishlatilgan",
+      "REVOKED": "bekor qilingan",
+      "TOKEN_EXPIRED": "muddati o‘tgan",
+      "IN_PROGRESS": "urinish davom etmoqda",
+      "SUBMITTED": "yakunlangan",
+      "AUTO_SUBMITTED": "avtomatik yakunlangan",
+      "EXPIRED": "muddati tugagan",
+      "NO_ATTEMPTS": "urinishlar yo‘q",
+      "profile": "profil"
+    },
+    "noProfile": "profil yaratilmagan",
+    "noAttemptsShort": "urinishlar yo‘q",
+    "dash": "—",
+    "retake": {
+      "retry": "Qayta topshirish",
+      "issueNew": "Yangi token berish"
+    }
+  },
+  "AdminOverview": {
+    "title": "Administrator paneli",
+    "description": "Stajyorlar uchun ruxsatlar, savollar va natijalarni boshqaring.",
+    "grantAccess": "Ruxsat berish",
+    "cards": {
+      "interns": "Stajyorlar",
+      "inDatabase": "bazada",
+      "activeQuestions": "Faol savollar",
+      "active": "faol",
+      "timeLimit": "Vaqt limiti",
+      "minutes": "daqiqa"
+    },
+    "recentAttempts": {
+      "title": "So‘nggi urinishlar",
+      "open": "Ochish",
+      "empty": "Hali urinishlar yo‘q.",
+      "table": {
+        "intern": "Stajyor",
+        "started": "Testni boshladi",
+        "submitted": "Testni tugatdi",
+        "status": "Holat",
+        "result": "Natija",
+        "progress": "Progress"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "urinish davom etmoqda",
+      "SUBMITTED": "yakunlangan",
+      "AUTO_SUBMITTED": "avtomatik yakunlangan",
+      "EXPIRED": "muddati tugagan"
+    }
+  },
+  "AdminSettings": {
+    "title": "Sozlamalar",
+    "description": "Limit yangi urinishlarga qo‘llanadi. Natija to‘g‘ri javoblar foizi sifatida hisoblanadi.",
+    "save": "Saqlash",
+    "closeModal": "Modal oynani yopish",
+    "timeCard": {
+      "title": "Umumiy vaqt",
+      "minutesLabel": "Butun test uchun daqiqa"
+    },
+    "admins": {
+      "title": "Administratorlar",
+      "noName": "Ismsiz",
+      "current": "joriy",
+      "manageTitle": "Administratorni tahrirlash",
+      "manageAria": "Administratorni boshqarish: {admin}",
+      "seedProtected": "Seed administratorni tahrirlash yoki o‘chirish mumkin emas.",
+      "table": {
+        "admin": "Administrator",
+        "created": "Yaratilgan",
+        "email": "Email"
+      },
+      "form": {
+        "firstName": "Ism",
+        "lastName": "Familiya",
+        "password": "Parol",
+        "newPassword": "Yangi parol",
+        "passwordPlaceholder": "O‘zgartirmaslik uchun bo‘sh qoldiring",
+        "create": "Administrator yaratish",
+        "email": "Email"
+      },
+      "delete": {
+        "title": "O‘chirish",
+        "description": "Hisob ro‘yxatdan yo‘qoladi va endi tizimga kira olmaydi.",
+        "currentDisabled": "Joriy hisobni o‘chirib bo‘lmaydi",
+        "action": "Administratorni o‘chirish"
+      }
+    }
+  },
+  "AdminQuestions": {
+    "title": "Savollar banki",
+    "description": "Savollar treklar va topshiriq turlari bo‘yicha tasniflanadi.",
+    "add": "Qo‘shish",
+    "newQuestion": "Yangi savol",
+    "closeModal": "Modal oynani yopish",
+    "edit": "Tahrirlash",
+    "hide": "Yashirish",
+    "activate": "Faollashtirish",
+    "save": "Saqlash",
+    "delete": "O’chirish",
+    "dragQuestion": "Savolni sudrash",
+    "deleteConfirm": "Savolni qayta tiklab bo‘lmaydigan tarzda o‘chirish kerakmi?",
+    "empty": "Tanlangan kesimda hali savollar yo‘q.",
+    "status": {
+      "active": "faol",
+      "hidden": "yashirin"
+    },
+    "sections": {
+      "quiz": {
+        "description": "Javob variantlari bilan klassik test savollari."
+      },
+      "api": {
+        "description": "API so‘rovlarini qo‘lda yuborish va tekshirish vazifalari."
+      },
+      "sql": {
+        "description": "Bog‘langan jadvallar va ma’lumotlar bo‘yicha SQL so‘rov yozish vazifalari."
+      },
+      "devtools": {
+        "description": "DevTools ichidagi Network va response bilan ishlash vazifalari."
+      },
+      "manualQa": {
+        "description": "mobile/webview miniapp ichida bug topish va rasmiylashtirish bo’yicha amaliy vazifalar."
+      },
+      "autotest": {
+        "description": "Mobil stsenariylar uchun psevdokod autotest yozish vazifalari."
+      }
+    },
+    "openQuestion": {
+      "label": "Ochiq savol",
+      "reviewerHint": "Tekshiruvchi uchun ko‘rsatma",
+      "reviewerHintMissing": "Tekshiruvchi uchun ko‘rsatma ko‘rsatilmagan."
+    },
+    "toast": {
+      "title": "Savol qo‘shildi",
+      "description": "Yangi yozuv savollar bankida darhol ko‘rinadi."
+    },
+    "tracks": {
+      "title": "Treklar",
+      "all": "Barcha treklar",
+      "newTrackAria": "Yangi trek nomi",
+      "newTrackPlaceholder": "Yangi trek",
+      "manageAria": "Trekni boshqarish: {name}",
+      "manageTitle": "Trekni tahrirlash",
+      "questionsCount": "{count} ta savol",
+      "name": "Nomi",
+      "order": "Tartib",
+      "statusDeleteTitle": "Holat va o‘chirish",
+      "statusDeleteDescription": "Yashirilgan trek yangi savol yaratishda taklif qilinmaydi.",
+      "deleteTitle": "Trekni o‘chirish",
+      "deleteBlockedTitle": "Avval savollarni ko‘chiring yoki o‘chiring",
+      "deleteBlockedDescription": "Trekni faqat barcha savollar ko‘chirilgandan yoki o‘chirilgandan keyin o‘chirish mumkin."
+    },
+    "typeLabels": {
+      "quiz": "Quiz",
+      "api": "API Sandbox",
+      "sql": "SQL Sandbox",
+      "devtools": "DevTools Sandbox",
+      "devtoolsShort": "DevTools",
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
+    },
+    "meta": {
+      "tables": "{count} ta jadval",
+      "knownBugs": "{count} ta known bug",
+      "status": "status {status}"
+    },
+    "ai": {
+      "title": "AI-savol tavsiyalari",
+      "topic": "Mavzu",
+      "generate": "Variantlarni generatsiya qilish",
+      "defaultTopic": "Stajyorlar uchun QA nazariyasi",
+      "error": "Takliflarni olib bo‘lmadi.",
+      "correctSuffix": "— to‘g‘ri"
+    }
+  },
+  "AdminAttemptReport": {
+    "title": "Assessment hisoboti",
+    "subtitle": "{name} · emailsiz token orqali kirish",
+    "download": "MD yuklab olish",
+    "summary": {
+      "totalTime": "Umumiy vaqt",
+      "averageTime": "Bir savolga o‘rtacha",
+      "result": "Yakun",
+      "status": "Holat",
+      "correctAnswers": "To‘g‘ri javoblar"
+    },
+    "table": {
+      "title": "Savollar bo‘yicha vaqt",
+      "question": "Savol",
+      "answer": "Javob",
+      "time": "Vaqt",
+      "result": "Natija",
+      "notFilled": "to‘ldirilmagan",
+      "notSelected": "tanlanmagan",
+      "apiRequest": "API so‘rovi",
+      "sqlQuery": "SQL so‘rovi",
+      "sqlResult": "SQL natijasi",
+      "sqlError": "SQL xatosi",
+      "submissions": "yuborishlar: {count}",
+      "submissionHistory": "Yuborishlar tarixi ({count})",
+      "submissionLabel": "{number}-yuborish",
+      "internComment": "Stajyor izohi",
+      "bugsCount": "{count} ta bug",
+      "noBugsFound": "bug topilmadi",
+      "knownBugs": "known",
+      "steps": "Qadamlar",
+      "actual": "Amaldagi natija",
+      "expected": "Kutilgan natija",
+      "toggleReview": "Tekshiruv",
+      "toggleReviewForQuestion": "{number}-savol tekshiruvini ko‘rsatish yoki yashirish",
+      "reviewForQuestion": "{number}-savol tekshiruvi",
+      "resultManual": "qo‘lda tekshirish",
+      "resultUngraded": "baholanmaydi",
+      "resultCorrect": "to‘g‘ri",
+      "resultWrong": "0 ball"
+    },
+    "status": {
+      "IN_PROGRESS": "urinish davom etmoqda",
+      "SUBMITTED": "yakunlangan",
+      "AUTO_SUBMITTED": "avtomatik yakunlangan",
+      "EXPIRED": "muddati tugagan"
+    }
+  },
+  "AdminQuestionForm": {
+    "title": {
+      "edit": "Savolni tahrirlash",
+      "new": "Yangi savol"
+    },
+    "submit": {
+      "save": "O‘zgarishlarni saqlash",
+      "add": "Savol qo‘shish"
+    },
+    "questionType": "Savol turi",
+    "classification": "Tasnif",
+    "createTrackFirst": "Savol qo‘shishdan oldin faol trek yarating.",
+    "fields": {
+      "questionText": "Savol matni",
+      "sqlMission": "SQL vazifa tavsifi",
+      "manualMission": "Stajyor uchun missiya",
+      "autotestMission": "Autotest vazifasi uchun missiya",
+      "apiMission": "API vazifa tavsifi"
+    },
+    "quizMode": "Quiz savol formati",
+    "quizModes": {
+      "choice": "Variantlar bilan",
+      "openText": "Ochiq javob"
+    },
+    "open": {
+      "answerKey": "Etalon javob",
+      "answerKeyPlaceholder": "Majburiy emas. Tekshiruvchi uchun ko‘rsatma qoldirishingiz mumkin.",
+      "answerLabel": "Stajyor uchun maydon yorlig‘i",
+      "answerLabelPlaceholder": "Javobni o‘z so‘zlaringiz bilan tasvirlang",
+      "placeholder": "Javobni kiriting",
+      "placeholderLabel": "Placeholder"
+    },
+    "choice": {
+      "option": "Variant",
+      "correct": "to‘g‘ri"
+    },
+    "api": {
+      "expectedMethod": "Kutilgan method",
+      "successStatus": "Muvaffaqiyatli status code",
+      "expectedPath": "Kutilgan path",
+      "expectedQuery": "Kutilgan query string",
+      "requiredHeaders": "Majburiy request headers",
+      "expectedBody": "Kutilgan JSON body",
+      "successBody": "Muvaffaqiyatli response body"
+    },
+    "sql": {
+      "taskTitle": "Vazifa nomi",
+      "tables": "Bog‘langan jadvallar va ma’lumotlar",
+      "expectedResult": "Kutilgan natija",
+      "autoTitle": "SQL sandbox avtomatik tekshiriladi",
+      "autoDescription": "Stajyor topshiriqdagi jadvallar uchun bitta SELECT yoki WITH so‘rov yozadi, tizim esa sintaksisni tekshiradi va natijani ma’no bo‘yicha solishtiradi."
+    },
+    "manual": {
+      "preset": "Ilova preset'i",
+      "scenarioTitle": "Ssenariy nomi",
+      "recommendedMinutes": "Tavsiya etilgan daqiqa",
+      "categories": "Kategoriyalar vergul bilan",
+      "reviewTitle": "Bu tur qo‘lda tekshiriladi",
+      "reviewDescription": "Stajyor miniapp ichida bug topadi va bug-report rasmiylashtiradi. Known bugs tekshiruvchi rubricasi va kelajakdagi yarim avtomatik baholash uchun kerak.",
+      "viewportWidth": "Viewport kengligi",
+      "viewportHeight": "Viewport balandligi",
+      "knownBugsRubric": "Known bugs rubricasi"
+    },
+    "autotest": {
+      "preset": "Stsenariy preseti",
+      "scenarioTitle": "Stsenariy nomi",
+      "recommendedMinutes": "Tavsiya dakikalar",
+      "expectedScenarios": "Kutilgan stsenariylar (JSON)",
+      "reviewTitle": "Bu tur qo'lda tekshirishni talab qiladi",
+      "reviewDescription": "Stajyor psevdokod yozadi. Keyword matching asosiy tekshiruvni bajaradi — yakuniy baho tekshiruvchi tomonidan beriladi."
+    },
+    "devtools": {
+      "networkMethod": "Network ichidagi so‘rov method'i",
+      "responseStatus": "Javob status'i",
+      "buttonLabel": "Stajyor uchun tugma matni",
+      "buttonDefault": "So‘rov yuborish",
+      "endpointName": "Network ichidagi endpoint nomi",
+      "endpointQuery": "Endpoint uchun query string",
+      "requestBody": "Klikda yuboriladigan Request JSON body",
+      "responseBody": "DevTools uchun JSON response body",
+      "answerPath": "Response ichidagi parametr yo‘li",
+      "expectedAnswer": "Stajyordan kutilgan javob",
+      "answerLabel": "Javob maydoni yorlig‘i",
+      "answerLabelDefault": "Response ichidagi message maydoni qiymatini kiriting",
+      "responseHeaders": "Response headers"
+    },
+    "adminNote": "Admin uchun izoh",
+    "defaults": {
+      "quizPrompt": "Smoke testing nimani tekshiradi?",
+      "apiPrompt": "Ali Valiyev foydalanuvchisini yaratish uchun so‘rov yuboring va 201 javobiga erishing.",
+      "devtoolsPrompt": "Tugmani bosing, Network ichidan requestni toping va response dagi message maydoni qiymatini kiriting.",
+      "choiceA": "Yig‘imdan keyin kritik funksionalni tez tekshirish",
+      "choiceB": "Loyihadagi barcha talablarni to‘liq tekshirish",
+      "choiceC": "Faqat interfeysning vizual qatlamini tekshirish",
+      "choiceD": "API load testing"
+    },
+    "typeLabels": {
+      "quiz": "Quiz",
+      "api": "API Sandbox",
+      "sql": "SQL Sandbox",
+      "devtools": "DevTools",
+      "manualQa": "Manual QA",
+      "autotest": "Autotest"
+    }
+  },
+  "AdminAuth": {
+    "brand": "QA Internship platform",
+    "badge": "Administrator",
+    "title": "Administrator kirishi",
+    "description": "Administrator kirishi parol va sessiyani bazada saqlaydi va stajyorning token orqali kirishi bilan kesishmaydi.",
+    "password": "Parol",
+    "signIn": "Kirish",
+    "heroTitle": "Assessment admin paneli",
+    "heroDescription": "Stajyorlar, ruxsat tokenlari, savollar banki va topshirish natijalarini boshqaring.",
+    "heroStats": {
+      "questions": "savollar banki",
+      "reports": "MD-hisobotlar",
+      "tokens": "stajyor ruxsatlari"
+    },
+    "footer": "© 2026 · Ichki QA platformasi",
+    "email": "Email"
+  },
+  "AuthRoleTabs": {
+    "intern": "Stajyor",
+    "admin": "Administrator"
+  },
+  "PasswordInput": {
+    "show": "Parolni ko‘rsatish",
+    "hide": "Parolni yashirish"
+  },
+  "ThemeToggle": {
+    "label": "Mavzu",
+    "toggle": "Mavzuni almashtirish",
+    "light": "Yorug‘",
+    "dark": "Qorong‘i"
+  },
+  "LanguageSwitcher": {
+    "label": "Til",
+    "ru": "Рус",
+    "uz": "O‘z"
+  },
+  "InternHome": {
+    "sessionActive": "Sessiya faol",
+    "welcome": "Xush kelibsiz, {name}",
+    "description": "Oldingizda QA asoslari bo‘yicha qisqa test turibdi. Quyidagi qoidalarni o‘qing, tayyorgarlik ro‘yxatini belgilang va tayyor bo‘lganda sessiyani boshlang.",
+    "candidateRole": "Intern AQA",
+    "testParams": "Test parametrlari",
+    "questions": "Savollar",
+    "oneCorrect": "Bitta to‘g‘ri javob",
+    "active": "faol",
+    "time": "Vaqt",
+    "totalLimit": "Umumiy limit",
+    "minutes": "daqiqa",
+    "topicsTitle": "Nimalar bo‘ladi",
+    "topicsDescription": "Mavzular QA jamoasida boshlash uchun kerak bo‘lgan bazaviy ko‘nikmalar bo‘yicha taqsimlangan.",
+    "topicTesting": "Testlash asoslari",
+    "topicTestingDescription": "Test turlari, piramida, prinsiplar",
+    "topicDesign": "Test-dizayn",
+    "topicDesignDescription": "Ekvivalent sinflar, chegara qiymatlar",
+    "topicBugs": "Bug-reportlar",
+    "topicBugsDescription": "Tuzilma, prioritet, severity",
+    "topicApi": "API va vositalar",
+    "topicApiDescription": "HTTP kodlar, bazaviy so‘rovlar",
+    "readinessTitle": "Tayyorgarlik",
+    "readinessDescription": "Sessiyani boshlashni faollashtirish uchun bandlarni tasdiqlang.",
+    "checkQuiet": "Men tinch joydaman va chalg‘ituvchi omillar yo‘q",
+    "checkTime": "Testdan o‘tish uchun bo‘sh vaqtim bor",
+    "checkConnection": "Internet aloqasi barqaror",
+    "checkRules": "Test qoidalari bilan tanishdim",
+    "rulesTitle": "Sessiya qoidalari",
+    "rulesMeta": "Butun urinish davomida amal qiladi",
+    "timerRuleTitle": "Taymer to‘xtamaydi",
+    "timerRuleDescription": "Vaqt sessiya boshlanganidan tugaguncha sanaladi.",
+    "returnRuleTitle": "Savolga qaytish mumkin",
+    "returnRuleDescription": "Murakkab bandlarni o‘tkazib yuboring va navigatsiya orqali qayting.",
+    "autosaveRuleTitle": "Javoblar avtomatik saqlanadi",
+    "autosaveRuleDescription": "Har bir tanlov avtomatik saqlanadi.",
+    "launchTitle": "Boshlash",
+    "activeAttempt": "Sessiya allaqachon boshlangan",
+    "readyCount": "{checked} / {total} band tayyor",
+    "continueTitle": "Testni davom ettirish",
+    "readyTitle": "Boshlashga tayyormisiz?",
+    "continueDescription": "Sizda faol urinish bor. To‘xtagan joyingizdan davom eting.",
+    "startDescription": "Boshlangandan so‘ng test uchun umumiy vaqt hisobi boshlanadi.",
+    "noQuestions": "Hozir faol savollar yo‘q. Administratorga testni yoqishini ayting.",
+    "readinessProgress": "Tayyorgarlik jarayoni",
+    "footnote": "Sessiya davomida varaqani yopish urinish sifatida hisoblanadi.",
+    "continueButton": "Testni davom ettirish",
+    "startButton": "Testni boshlash"
+  },
+  "InternResult": {
+    "title": "Ishtirokingiz uchun rahmat!",
+    "description": "Javoblaringiz qabul qilindi. Ayrim topshiriqlar qo‘lda tekshirilishi mumkin, shuning uchun yakuniy natijani keyinroq xabar qilamiz.",
+    "answersSent": "Yuborilgan javoblar",
+    "ofTotal": "{total} tadan",
+    "timeSpent": "Sarflangan vaqt",
+    "laterTitle": "Javobni keyinroq xabar qilamiz",
+    "laterDescription": "Agar testda qo‘lda tekshiriladigan topshiriqlar bo‘lsa, QA jamoasi ularni alohida baholaydi. Natija va fikr-mulohaza tekshiruvdan keyin keladi.",
+    "tokenRevokedTitle": "Token orqali kirish bekor qilindi.",
+    "tokenRevokedDescription": "Qayta kirish va qayta urinish mavjud emas.",
+    "nextSteps": "Keyingi qadamlar",
+    "stepSubmittedTitle": "Javoblar yuborildi",
+    "stepSubmittedEta": "hozir",
+    "stepSubmittedDescription": "Sessiya yakunlandi, token ishlatildi. Avtomatik tekshiruvlar hisobga olindi.",
+    "stepManualTitle": "Qo‘lda tekshirish",
+    "stepManualEta": "1-2 kun",
+    "stepManualDescription": "QA jamoasi batafsil javoblar va amaliy vaziyatlarni baholaydi.",
+    "stepMailTitle": "Natija xati",
+    "stepMailEta": "3 kungacha",
+    "stepMailDescription": "Qaror va qisqa izoh tekshiruv yakunlangandan keyin keladi.",
+    "closeTab": "Bu varaqani yopish mumkin."
+  },
+  "InternTest": {
+    "navigation": "Navigatsiya",
+    "questionProgress": "Savol {current} / {total}",
+    "canReturn": "Vaqt tugaguncha savollarga qaytish mumkin.",
+    "markedProgress": "{total} tadan {answered} tasi belgilandi. Sandbox topshiriqlarida progress javob tekshiruvga yuborilgandan keyin ko‘rinadi.",
+    "answeredLegend": "Javob berilgan · {count}",
+    "commentsLegend": "Izohlar · {count}",
+    "emptyLegend": "Javobsiz · {count}",
+    "finish": "Yakunlash",
+    "unansweredFail": "Javobsiz savollar fail sifatida hisoblanadi.",
+    "lessThanMinute": "Bir daqiqadan kam vaqt qoldi",
+    "finishDialogTitle": "Testni yakunlaysizmi?",
+    "finishDialogBody": "Tasdiqlagandan so‘ng test tekshiruvga yuboriladi. Javobsiz savollar fail sifatida hisoblanadi.",
+    "cancel": "Bekor qilish",
+    "continue": "Davom etish",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "save": "Saqlash",
+    "saveAnswer": "Javobni saqlash",
+    "answerFilled": "javob to‘ldirilgan",
+    "answerSaved": "javob saqlandi",
+    "unsavedChanges": "saqlanmagan o‘zgarishlar bor",
+    "statusPassed": "qabul qilindi",
+    "statusFix": "tuzatish kerak",
+    "commentShort": "Izoh",
+    "addComment": "Izoh yozish",
+    "commentTitle": "Savolga izoh",
+    "commentSaving": "saqlanmoqda",
+    "commentSaved": "saqlandi",
+    "commentDraft": "qoralama",
+    "commentHelp": "Reviewer nimani ko‘rishi kerakligini yozing: masalan, to‘g‘ri javob yo‘q, rasm yuklanmayapti yoki shart noaniq yozilgan.",
+    "commentPlaceholder": "Masalan: to‘g‘ri javob yo‘q, chunki...",
+    "openQuizAnswerLabel": "Javobni kiriting",
+    "openQuizPlaceholder": "Javobni o‘z so‘zlaringiz bilan yozing",
+    "api": {
+      "submissions": "Yuborishlar: {count}"
+    },
+    "devtools": {
+      "requestTitle": "DevTools orqali tekshirish so‘rovi",
+      "requestSent": "so‘rov yuborildi",
+      "sendRequest": "So‘rov yuborish",
+      "answerLabel": "Response ichidan {value} qiymatini kiriting",
+      "parameter": "parametr",
+      "savingAnswer": "javob saqlanmoqda",
+      "autosave": "javob avtomatik saqlanadi"
+    },
+    "manualQa": {
+      "bugReportsTitle": "Bug-reportlar",
+      "bugReportsHelp": "Faqat miniapp ichida qayta ko‘rsatgan nuqsonlarni yozing.",
+      "noBugsTitle": "Bug topilmadi",
+      "noBugsHelp": "Tekshiruvni ongli ravishda nuqsonsiz tugatgan bo‘lsangizgina belgilang.",
+      "bugTitle": "Bug {number}",
+      "deleteBug": "Bug-reportni o‘chirish",
+      "titleLabel": "Nomi",
+      "titlePlaceholder": "Masalan: promokod qayta qo‘llanmoqda",
+      "stepsLabel": "Qayta ko‘rsatish qadamlari",
+      "stepsPlaceholder": "1. ClickAvto ochish\n2. ...",
+      "actualPlaceholder": "Aslida nima bo‘ldi",
+      "expectedPlaceholder": "Qanday bo‘lishi kerak",
+      "notesPlaceholder": "Ixtiyoriy: qurilma, tarmoq, qo‘shimcha kontekst",
+      "addBug": "Bug qo‘shish"
+    },
+    "sql": {
+      "queryTitle": "SQL Query",
+      "queryHint": "SELECT so‘rovini yozing va yuborishdan oldin natijani tekshiring.",
+      "placeholder": "SQL so‘rovini kiriting",
+      "run": "Bajarish",
+      "runs": "Ishga tushirishlar: {count}",
+      "resultTitle": "So‘rov natijasi",
+      "resultHint": "Tizim joriy so‘rov qaytargan satrlarni ko‘rsatadi.",
+      "resultEmpty": "Bu yerda SQL so‘rovingiz natijasi paydo bo‘ladi.",
+      "tablesTitle": "Bog‘langan jadvallar",
+      "tablesHint": "Jadvalni tanlang va uning ustunlari hamda test ma’lumotlarini ko‘ring.",
+      "fieldsTitle": "Jadval ustunlari",
+      "sampleDataTitle": "Namuna ma’lumotlar",
+      "schemaPreview": "Ushbu vazifa uchun sxema va mavjud satrlar.",
+      "statusPassed": "qabul qilindi",
+      "statusFix": "tuzatish kerak",
+      "statusIdle": "hali tekshirilmagan",
+      "rows": "{count} rows",
+      "resetView": "Tiklash"
+    }
+  }
+}

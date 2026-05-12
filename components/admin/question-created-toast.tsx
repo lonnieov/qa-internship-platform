@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function QuestionCreatedToast() {
+  const t = useTranslations("AdminQuestions");
   const [visible, setVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -29,8 +31,8 @@ export function QuestionCreatedToast() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 rounded-[16px] border border-[var(--border)] bg-[var(--card)] px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-      <strong className="block">Вопрос добавлен</strong>
-      <span className="body-2 muted">Новая запись уже доступна в банке вопросов.</span>
+      <strong className="block">{t("toast.title")}</strong>
+      <span className="body-2 muted">{t("toast.description")}</span>
     </div>
   );
 }

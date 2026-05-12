@@ -1,18 +1,27 @@
 "use client";
 
-import type { ClipboardEvent, ReactNode } from "react";
+import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Clock3,
   Info,
+  MessageSquare,
+  Minus,
+  Plus,
   Send,
+  Trash2,
 } from "lucide-react";
 import {
+  saveQuestionCommentAction,
   selectAnswerAction,
+  submitManualQaAnswerAction,
+  submitAutotestAnswerAction,
   submitOpenQuizAnswerAction,
+  submitSqlSandboxAction,
   submitDevtoolsAnswerAction,
   spendQuestionTimeAction,
   submitApiSandboxAction,
@@ -27,6 +36,25 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
+import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
+import { ClickSuperAppInstallmentWidgetPreset } from "@/components/intern/manual-qa-presets/click-super-app-installment-widget";
+import {
+  getManualQaAnswerPayload,
+  getManualQaSandboxConfig,
+  type ManualQaBugReport,
+} from "@/lib/manual-qa-sandbox";
+import {
+  getAutotestAnswerPayload,
+  getAutotestSandboxConfig,
+} from "@/lib/autotest-sandbox";
+import {
+  getSqlSandboxConfig,
+  type SqlSandboxExecutionResult,
+  type SqlSandboxTable,
+} from "@/lib/sql-sandbox-config";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ServiceLogo } from "@/components/service-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type JsonValue =
   | null
@@ -51,7 +79,13 @@ type ResponseSnapshot = {
 
 type Question = {
   id: string;
-  type: "QUIZ" | "API_SANDBOX" | "DEVTOOLS_SANDBOX";
+  type:
+    | "QUIZ"
+    | "API_SANDBOX"
+    | "SQL_SANDBOX"
+    | "DEVTOOLS_SANDBOX"
+    | "MANUAL_QA_SANDBOX"
+    | "AUTOTEST_SANDBOX";
   track: string;
   text: string;
   explanation: string | null;
@@ -64,6 +98,7 @@ type Question = {
   apiRequest: unknown;
   apiResponse: unknown;
   isCorrect: boolean;
+  internComment: string;
 };
 
 type ApiDraft = {
@@ -88,6 +123,48 @@ type DevtoolsConfig = {
   buttonLabel?: string;
   answerLabel?: string;
   answerPath?: string;
+};
+
+type ManualQaDraft = {
+  reports: ManualQaBugReport[];
+  noBugsFound: boolean;
+  submissionCount: number;
+  answerSaveStatus: "idle" | "saving" | "saved";
+};
+
+type AutotestDraft = {
+  code: string;
+  submissionCount: number;
+  answerSaveStatus: "idle" | "saving" | "saved";
+};
+
+type SqlDraft = {
+  query: string;
+  response: SqlSandboxExecutionResult | null;
+  submissionCount: number;
+  isCorrect: boolean;
+};
+
+type CommentSaveStatus = "idle" | "saving" | "saved";
+type SqlViewport = {
+  scale: number;
+  x: number;
+  y: number;
+};
+
+type SqlRelation = {
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+};
+
+type SqlDiagramCard = {
+  table: SqlSandboxTable;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 function stringifyJson(value: JsonValue | null | undefined) {
@@ -150,6 +227,69 @@ function getDevtoolsConfig(question: Question) {
   return config?.mode === "DEVTOOLS_RESPONSE" ? config : null;
 }
 
+function createEmptyManualQaReport(index: number): ManualQaBugReport {
+  return {
+    id: `report-${Date.now()}-${index}`,
+    title: "",
+    severity: "major",
+    category: "functional",
+    steps: "",
+    actual: "",
+    expected: "",
+    note: "",
+  };
+}
+
+function createInitialManualQaDraft(question: Question): ManualQaDraft {
+  const payload = getManualQaAnswerPayload(question.apiRequest);
+
+  return {
+    reports: payload?.reports ?? [],
+    noBugsFound: payload?.noBugsFound ?? false,
+    submissionCount: question.submissionCount,
+    answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
+  };
+}
+
+function createInitialAutotestDraft(question: Question): AutotestDraft {
+  const payload = getAutotestAnswerPayload(question.apiRequest);
+
+  return {
+    code: payload?.code ?? "",
+    submissionCount: question.submissionCount,
+    answerSaveStatus: question.submissionCount > 0 ? "saved" : "idle",
+  };
+}
+
+function createInitialSqlDraft(question: Question): SqlDraft {
+  const request =
+    question.apiRequest &&
+    typeof question.apiRequest === "object" &&
+    !Array.isArray(question.apiRequest)
+      ? (question.apiRequest as { query?: unknown })
+      : null;
+
+  const response =
+    question.apiResponse &&
+    typeof question.apiResponse === "object" &&
+    !Array.isArray(question.apiResponse)
+      ? (question.apiResponse as SqlSandboxExecutionResult)
+      : null;
+
+  return {
+    query: typeof request?.query === "string" ? request.query : "",
+    response,
+    submissionCount: question.submissionCount,
+    isCorrect: question.isCorrect,
+  };
+}
+
+function hasSubmittedManualQaAnswer(draft: ManualQaDraft | undefined) {
+  if (!draft) return false;
+  if (draft.submissionCount > 0) return true;
+  return draft.noBugsFound || draft.reports.length > 0;
+}
+
 function buildDevtoolsEndpoint(
   attemptId: string,
   question: Question,
@@ -165,6 +305,148 @@ function buildDevtoolsEndpoint(
   return `/api/devtools-sandbox/${question.id}/${path}?${search.toString()}`;
 }
 
+function getSqlConfig(question: Question) {
+  return question.type === "SQL_SANDBOX"
+    ? getSqlSandboxConfig(question.apiConfig)
+    : null;
+}
+
+function normalizeSqlIdentifier(value: string) {
+  return value.toLowerCase().replace(/_/g, "");
+}
+
+function singularSqlIdentifier(value: string) {
+  return normalizeSqlIdentifier(value).replace(/s$/, "");
+}
+
+function inferSqlRelations(tables: SqlSandboxTable[]): SqlRelation[] {
+  const relations: SqlRelation[] = [];
+
+  for (const table of tables) {
+    for (const column of table.columns) {
+      const columnName = column.name.toLowerCase();
+      if (columnName === "id") continue;
+
+      const referenceKey = columnName.endsWith("_id")
+        ? columnName.slice(0, -3)
+        : columnName;
+
+      const target = tables.find((candidate) => {
+        const singular = singularSqlIdentifier(candidate.name);
+        const normalized = normalizeSqlIdentifier(candidate.name);
+        return singular === referenceKey || normalized === referenceKey;
+      });
+
+      if (!target) continue;
+
+      relations.push({
+        fromTable: table.name,
+        fromColumn: column.name,
+        toTable: target.name,
+        toColumn: "id",
+      });
+    }
+  }
+
+  return relations.filter(
+    (relation, index, all) =>
+      all.findIndex(
+        (item) =>
+          item.fromTable === relation.fromTable &&
+          item.fromColumn === relation.fromColumn &&
+          item.toTable === relation.toTable &&
+          item.toColumn === relation.toColumn,
+      ) === index,
+  );
+}
+
+function buildSqlDiagramCards(tables: SqlSandboxTable[]): SqlDiagramCard[] {
+  const cardWidth = 332;
+  const padding = 28;
+  const schemaRowHeight = 34;
+  const sampleHeaderHeight = 44;
+  const sampleRowHeight = 30;
+
+  const createHeight = (table: SqlSandboxTable) =>
+    74 +
+    table.columns.length * schemaRowHeight +
+    sampleHeaderHeight +
+    Math.max(table.rows.length, 1) * sampleRowHeight;
+
+  if (tables.length === 3) {
+    const [first, second, third] = tables;
+    const gapX = 56;
+    const gapY = 54;
+    const leftX = padding;
+    const rightX = leftX + cardWidth + gapX;
+    const topY = 78;
+    const lowerY = topY + Math.max(createHeight(first), createHeight(second)) + gapY;
+
+    return [
+      {
+        table: first,
+        x: leftX,
+        y: topY,
+        width: cardWidth,
+        height: createHeight(first),
+      },
+      {
+        table: second,
+        x: rightX,
+        y: topY,
+        width: cardWidth,
+        height: createHeight(second),
+      },
+      {
+        table: third,
+        x: leftX + Math.round((cardWidth + gapX) / 2),
+        y: lowerY,
+        width: cardWidth,
+        height: createHeight(third),
+      },
+    ];
+  }
+
+  const columns = tables.length <= 2 ? tables.length : 2;
+  return tables.map((table, index) => {
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    const height = createHeight(table);
+
+    return {
+      table,
+      x: padding + column * (cardWidth + 36),
+      y: 72 + row * (height + 42),
+      width: cardWidth,
+      height,
+    };
+  });
+}
+
+function getSqlDiagramLayout(tables: SqlSandboxTable[]) {
+  const cards = buildSqlDiagramCards(tables);
+  const relations = inferSqlRelations(tables);
+  const width =
+    Math.max(...cards.map((card) => card.x + card.width), 0) + 120;
+  const height =
+    Math.max(...cards.map((card) => card.y + card.height), 0) + 120;
+
+  return {
+    cards,
+    relations,
+    width: Math.max(900, width),
+    height: Math.max(720, height),
+  };
+}
+
+function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
+  if (appPreset === "click-super-app-installment-widget-v1") {
+    return <ClickSuperAppInstallmentWidgetPreset />;
+  }
+
+  return <ClickSuperAppClickAvtoPreset />;
+}
+
 export function TestRunner({
   attemptId,
   deadlineAt,
@@ -174,9 +456,23 @@ export function TestRunner({
   deadlineAt: string;
   questions: Question[];
 }) {
+  const t = useTranslations("InternTest");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [flaggedQuestions, setFlaggedQuestions] = useState(
-    () => new Set<string>(),
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [commentDrafts, setCommentDrafts] = useState(
+    () =>
+      new Map(
+        questions.map((question) => [question.id, question.internComment]),
+      ),
+  );
+  const [commentSaveStatuses, setCommentSaveStatuses] = useState(
+    () =>
+      new Map<string, CommentSaveStatus>(
+        questions.map((question) => [
+          question.id,
+          question.internComment ? "saved" : "idle",
+        ]),
+      ),
   );
   const [answers, setAnswers] = useState(
     () =>
@@ -206,6 +502,58 @@ export function TestRunner({
           .map((question) => [question.id, createInitialApiDraft(question)]),
       ),
   );
+  const [manualQaDrafts, setManualQaDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "MANUAL_QA_SANDBOX")
+          .map((question) => [
+            question.id,
+            createInitialManualQaDraft(question),
+          ]),
+      ),
+  );
+  const [sqlDrafts, setSqlDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => [question.id, createInitialSqlDraft(question)]),
+      ),
+  );
+  const [autotestDrafts, setAutotestDrafts] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "AUTOTEST_SANDBOX")
+          .map((question) => [
+            question.id,
+            createInitialAutotestDraft(question),
+          ]),
+      ),
+  );
+  const [selectedSqlTables, setSelectedSqlTables] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => {
+            const config = getSqlConfig(question);
+            return [question.id, config?.tables[0]?.name ?? ""];
+          }),
+      ),
+  );
+  const [sqlViewports, setSqlViewports] = useState(
+    () =>
+      new Map(
+        questions
+          .filter((question) => question.type === "SQL_SANDBOX")
+          .map((question) => [
+            question.id,
+            { scale: 0.92, x: 0, y: 0 } satisfies SqlViewport,
+          ]),
+      ),
+  );
   const [remainingMs, setRemainingMs] = useState(
     Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
   );
@@ -214,14 +562,32 @@ export function TestRunner({
   const enteredAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
   const devtoolsAutosaveRef = useRef<number | null>(null);
+  const sqlDragRef = useRef<{
+    questionId: string;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
   const currentQuestion = questions[currentIndex];
   const currentTrack = getQuestionTrackMeta(currentQuestion?.track);
   const answeredCount = questions.filter((question) => {
     if (
       question.type === "API_SANDBOX" ||
-      question.type === "DEVTOOLS_SANDBOX"
+      question.type === "DEVTOOLS_SANDBOX" ||
+      question.type === "SQL_SANDBOX"
     ) {
-      return (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
+      return question.type === "SQL_SANDBOX"
+        ? (sqlDrafts.get(question.id)?.submissionCount ?? 0) > 0
+        : (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0;
+    }
+
+    if (question.type === "MANUAL_QA_SANDBOX") {
+      return hasSubmittedManualQaAnswer(manualQaDrafts.get(question.id));
+    }
+
+    if (question.type === "AUTOTEST_SANDBOX") {
+      return Boolean(autotestDrafts.get(question.id)?.code.trim());
     }
 
     if (getOpenQuizConfig(question.apiConfig)) {
@@ -232,13 +598,13 @@ export function TestRunner({
   }).length;
   const progress =
     questions.length === 0 ? 0 : (answeredCount / questions.length) * 100;
-  const allQuestionsAnswered =
-    questions.length > 0 && answeredCount === questions.length;
   const isLastQuestion = currentIndex === questions.length - 1;
-  const showInlineFinish = allQuestionsAnswered && isLastQuestion;
-  const flaggedCount = questions.filter((question) =>
-    flaggedQuestions.has(question.id),
+  const commentedCount = questions.filter((question) =>
+    Boolean(commentDrafts.get(question.id)?.trim()),
   ).length;
+  const currentQuestionComment = commentDrafts.get(currentQuestion.id) ?? "";
+  const currentCommentSaveStatus =
+    commentSaveStatuses.get(currentQuestion.id) ?? "idle";
 
   function flushCurrentTime() {
     const questionId = currentQuestion?.id;
@@ -262,6 +628,12 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     setCurrentIndex(index);
@@ -310,16 +682,47 @@ export function TestRunner({
     });
   }
 
-  function toggleFlag() {
+  function updateQuestionComment(value: string) {
     if (!currentQuestion) return;
-    setFlaggedQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(currentQuestion.id)) {
-        next.delete(currentQuestion.id);
-      } else {
-        next.add(currentQuestion.id);
-      }
+    setCommentDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(currentQuestion.id, value);
       return next;
+    });
+    setCommentSaveStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(currentQuestion.id, "idle");
+      return next;
+    });
+  }
+
+  function saveQuestionComment() {
+    if (!currentQuestion) return;
+
+    const questionId = currentQuestion.id;
+    const internComment = commentDrafts.get(questionId) ?? "";
+
+    setCommentSaveStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(questionId, "saving");
+      return next;
+    });
+
+    startTransition(() => {
+      void saveQuestionCommentAction({
+        attemptId,
+        questionId,
+        internComment,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setCommentSaveStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(questionId, "saved");
+          return next;
+        });
+        setIsCommentDialogOpen(false);
+      });
     });
   }
 
@@ -338,6 +741,92 @@ export function TestRunner({
       next.set(currentQuestion.id, { ...current, ...patch });
       return next;
     });
+  }
+
+  function updateSqlDraft(questionId: string, patch: Partial<SqlDraft>) {
+    setSqlDrafts((prev) => {
+      const next = new Map(prev);
+      const question = questions.find((item) => item.id === questionId);
+      const current =
+        next.get(questionId) ?? (question ? createInitialSqlDraft(question) : null);
+      if (!current) return prev;
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function runSqlQuery() {
+    if (currentQuestion.type !== "SQL_SANDBOX") return;
+
+    const draft = sqlDrafts.get(currentQuestion.id) ?? createInitialSqlDraft(currentQuestion);
+    const timeSpentMs = Date.now() - enteredAtRef.current;
+    enteredAtRef.current = Date.now();
+
+    startTransition(() => {
+      void submitSqlSandboxAction({
+        attemptId,
+        questionId: currentQuestion.id,
+        query: draft.query,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setSqlDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(currentQuestion.id) ?? draft;
+          next.set(currentQuestion.id, {
+            ...current,
+            response: result.response ?? null,
+            submissionCount: current.submissionCount + 1,
+            isCorrect: Boolean(result.correct),
+          });
+          return next;
+        });
+      });
+    });
+  }
+
+  function updateSqlViewport(questionId: string, patch: Partial<SqlViewport>) {
+    setSqlViewports((prev) => {
+      const next = new Map(prev);
+      const current = next.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function nudgeSqlZoom(questionId: string, delta: number) {
+    const current = sqlViewports.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+    const scale = Math.min(1.65, Math.max(0.7, Number((current.scale + delta).toFixed(2))));
+    updateSqlViewport(questionId, { scale });
+  }
+
+  function startSqlDrag(
+    event: MouseEvent<HTMLDivElement>,
+    questionId: string,
+  ) {
+    const current = sqlViewports.get(questionId) ?? { scale: 0.92, x: 0, y: 0 };
+    sqlDragRef.current = {
+      questionId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: current.x,
+      originY: current.y,
+    };
+  }
+
+  function moveSqlDrag(event: MouseEvent<HTMLDivElement>) {
+    const drag = sqlDragRef.current;
+    if (!drag) return;
+
+    updateSqlViewport(drag.questionId, {
+      x: drag.originX + (event.clientX - drag.startX),
+      y: drag.originY + (event.clientY - drag.startY),
+    });
+  }
+
+  function endSqlDrag() {
+    sqlDragRef.current = null;
   }
 
   function sendApiRequest() {
@@ -501,6 +990,197 @@ export function TestRunner({
     }, 0);
   }
 
+  function updateManualQaDraft(
+    questionId: string,
+    patch: Partial<ManualQaDraft>,
+  ) {
+    setManualQaDrafts((prev) => {
+      const next = new Map(prev);
+      const question = questions.find((item) => item.id === questionId);
+      const current =
+        next.get(questionId) ??
+        (question ? createInitialManualQaDraft(question) : null);
+      if (!current) return prev;
+      next.set(questionId, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  function addManualQaReport() {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: [
+        ...draft.reports,
+        createEmptyManualQaReport(draft.reports.length + 1),
+      ],
+      noBugsFound: false,
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function updateManualQaReport(
+    reportId: string,
+    patch: Partial<ManualQaBugReport>,
+  ) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: draft.reports.map((report) =>
+        report.id === reportId ? { ...report, ...patch } : report,
+      ),
+      noBugsFound: false,
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function removeManualQaReport(reportId: string) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(currentQuestion.id) ??
+      createInitialManualQaDraft(currentQuestion);
+
+    updateManualQaDraft(currentQuestion.id, {
+      reports: draft.reports.filter((report) => report.id !== reportId),
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function toggleManualQaNoBugs(value: boolean) {
+    if (currentQuestion.type !== "MANUAL_QA_SANDBOX") return;
+
+    updateManualQaDraft(currentQuestion.id, {
+      noBugsFound: value,
+      reports: value
+        ? []
+        : (manualQaDrafts.get(currentQuestion.id)?.reports ?? []),
+      answerSaveStatus: "idle",
+    });
+  }
+
+  function saveManualQaAnswer(
+    question = currentQuestion,
+    options: { timeSpentMs?: number } = {},
+  ) {
+    if (question.type !== "MANUAL_QA_SANDBOX") return;
+
+    const draft =
+      manualQaDrafts.get(question.id) ?? createInitialManualQaDraft(question);
+    const timeSpentMs =
+      typeof options.timeSpentMs === "number"
+        ? options.timeSpentMs
+        : Date.now() - enteredAtRef.current;
+
+    if (typeof options.timeSpentMs !== "number") {
+      enteredAtRef.current = Date.now();
+    }
+
+    setManualQaDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(question.id, { ...draft, answerSaveStatus: "saving" });
+      return next;
+    });
+
+    startTransition(() => {
+      void submitManualQaAnswerAction({
+        attemptId,
+        questionId: question.id,
+        reports: draft.reports,
+        noBugsFound: draft.noBugsFound,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setManualQaDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(question.id) ?? draft;
+          const hasAnswer = current.reports.length > 0 || current.noBugsFound;
+          next.set(question.id, {
+            ...current,
+            submissionCount: hasAnswer
+              ? Math.max(1, current.submissionCount)
+              : 0,
+            answerSaveStatus: "saved",
+          });
+          return next;
+        });
+      });
+    });
+  }
+
+  function updateAutotestCode(value: string) {
+    if (currentQuestion.type !== "AUTOTEST_SANDBOX") return;
+
+    setAutotestDrafts((prev) => {
+      const next = new Map(prev);
+      const current =
+        next.get(currentQuestion.id) ??
+        createInitialAutotestDraft(currentQuestion);
+      next.set(currentQuestion.id, {
+        ...current,
+        code: value,
+        answerSaveStatus: "idle",
+      });
+      return next;
+    });
+  }
+
+  function saveAutotestAnswer(
+    question = currentQuestion,
+    options: { timeSpentMs?: number } = {},
+  ) {
+    if (question.type !== "AUTOTEST_SANDBOX") return;
+
+    const draft =
+      autotestDrafts.get(question.id) ?? createInitialAutotestDraft(question);
+    const timeSpentMs =
+      typeof options.timeSpentMs === "number"
+        ? options.timeSpentMs
+        : Date.now() - enteredAtRef.current;
+
+    if (typeof options.timeSpentMs !== "number") {
+      enteredAtRef.current = Date.now();
+    }
+
+    setAutotestDrafts((prev) => {
+      const next = new Map(prev);
+      next.set(question.id, { ...draft, answerSaveStatus: "saving" });
+      return next;
+    });
+
+    startTransition(() => {
+      void submitAutotestAnswerAction({
+        attemptId,
+        questionId: question.id,
+        code: draft.code,
+        timeSpentMs,
+      }).then((result) => {
+        if (!result?.ok) return;
+
+        setAutotestDrafts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(question.id) ?? draft;
+          const hasAnswer = current.code.trim().length > 0;
+          next.set(question.id, {
+            ...current,
+            submissionCount: hasAnswer ? Math.max(1, current.submissionCount) : 0,
+            answerSaveStatus: "saved",
+          });
+          return next;
+        });
+      });
+    });
+  }
+
   function submit(auto = false) {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -510,6 +1190,12 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     flushCurrentTime();
     startTransition(() => {
@@ -524,6 +1210,12 @@ export function TestRunner({
     }
     if (currentQuestion?.type === "DEVTOOLS_SANDBOX") {
       saveDevtoolsAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "MANUAL_QA_SANDBOX") {
+      saveManualQaAnswer(currentQuestion, { timeSpentMs: 0 });
+    }
+    if (currentQuestion?.type === "AUTOTEST_SANDBOX") {
+      saveAutotestAnswer(currentQuestion, { timeSpentMs: 0 });
     }
     setIsSubmitDialogOpen(true);
   }
@@ -575,54 +1267,81 @@ export function TestRunner({
 
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
+
   const currentApiDraft =
     currentQuestion.type === "API_SANDBOX" ||
     currentQuestion.type === "DEVTOOLS_SANDBOX"
       ? (apiDrafts.get(currentQuestion.id) ??
         createInitialApiDraft(currentQuestion))
       : null;
+  const currentSqlDraft =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? (sqlDrafts.get(currentQuestion.id) ?? createInitialSqlDraft(currentQuestion))
+      : null;
+  const currentSqlConfig =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? getSqlConfig(currentQuestion)
+      : null;
+  const currentSqlTable =
+    currentQuestion.type === "SQL_SANDBOX" && currentSqlConfig
+      ? currentSqlConfig.tables.find(
+          (table) =>
+            table.name ===
+            (selectedSqlTables.get(currentQuestion.id) ??
+              currentSqlConfig.tables[0]?.name ??
+              ""),
+        ) ?? currentSqlConfig.tables[0]
+      : null;
+  const currentSqlViewport =
+    currentQuestion.type === "SQL_SANDBOX"
+      ? (sqlViewports.get(currentQuestion.id) ?? { scale: 0.92, x: 0, y: 0 })
+      : null;
+  const currentSqlLayout =
+    currentQuestion.type === "SQL_SANDBOX" && currentSqlConfig
+      ? getSqlDiagramLayout(currentSqlConfig.tables)
+      : null;
+  const currentManualQaDraft =
+    currentQuestion.type === "MANUAL_QA_SANDBOX"
+      ? (manualQaDrafts.get(currentQuestion.id) ??
+        createInitialManualQaDraft(currentQuestion))
+      : null;
+  const currentManualQaConfig =
+    currentQuestion.type === "MANUAL_QA_SANDBOX"
+      ? getManualQaSandboxConfig(currentQuestion.apiConfig)
+      : null;
   const currentDevtoolsConfig =
     currentQuestion.type === "DEVTOOLS_SANDBOX"
       ? getDevtoolsConfig(currentQuestion)
       : null;
+  const currentAutotestDraft =
+    currentQuestion.type === "AUTOTEST_SANDBOX"
+      ? (autotestDrafts.get(currentQuestion.id) ??
+        createInitialAutotestDraft(currentQuestion))
+      : null;
+  const currentAutotestConfig =
+    currentQuestion.type === "AUTOTEST_SANDBOX"
+      ? getAutotestSandboxConfig(currentQuestion.apiConfig)
+      : null;
 
   return (
-    <main className="page stack-lg">
-      <div className="page-header">
-        <div>
-          <h1 className="head-1">Тестирование</h1>
-          <p className="body-1 muted m-0">
-            Вопрос {currentIndex + 1} из {questions.length}. Можно возвращаться
-            к вопросам до истечения общего времени.
-          </p>
-          <Progress value={progress} className="mt-4 max-w-[280px]" />
-        </div>
-        <div className="test-header-actions">
-          <div className="test-submit-control">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={requestManualSubmit}
-              disabled={isPending}
-            >
-              <Send size={18} />
-              Завершить
-            </Button>
-            <div className="submit-info-bubble" role="note">
-              <Info size={16} />
-              <span>Неотвеченные вопросы будут засчитаны как fail.</span>
-            </div>
-          </div>
-          <span className="timer-pill">
-            <Clock3 size={18} />
-            {minutes}:{seconds.toString().padStart(2, "0")}
-          </span>
-        </div>
-      </div>
-
-      <section className="grid-2">
-        <Card>
-          <CardHeader>
+    <main
+      className={`page test-page-compact stack-lg ${
+        currentQuestion.type === "SQL_SANDBOX"
+          ? "test-page-sql"
+          : currentQuestion.type === "MANUAL_QA_SANDBOX"
+            ? "manual-qa-test-page"
+            : currentQuestion.type === "AUTOTEST_SANDBOX"
+              ? "autotest-test-page"
+              : ""
+      }`}
+    >
+      <section
+        className={`grid-2 ${
+          currentQuestion.type === "SQL_SANDBOX" ? "test-layout-sql" : ""
+        }`}
+      >
+        <Card className={currentQuestion.type === "SQL_SANDBOX" ? "sql-main-card" : undefined}>
+          <CardHeader className="test-card-header">
             <div
               className="nav-row"
               style={{ justifyContent: "space-between" }}
@@ -636,27 +1355,29 @@ export function TestRunner({
                     ? "DevTools"
                     : currentQuestion.type === "API_SANDBOX"
                       ? "API Sandbox"
-                      : "Quiz"}
+                      : currentQuestion.type === "SQL_SANDBOX"
+                        ? "SQL Sandbox"
+                        : currentQuestion.type === "MANUAL_QA_SANDBOX"
+                          ? "Manual QA"
+                          : currentQuestion.type === "AUTOTEST_SANDBOX"
+                            ? "Autotest"
+                            : "Quiz"}
                 </span>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={toggleFlag}
-                style={{
-                  color: flaggedQuestions.has(currentQuestion.id)
-                    ? "var(--gold)"
-                    : "var(--muted-foreground)",
-                }}
+                onClick={() => setIsCommentDialogOpen(true)}
               >
-                {flaggedQuestions.has(currentQuestion.id)
-                  ? "Отмечено"
-                  : "Отметить"}
+                <MessageSquare size={16} />
+                {currentQuestionComment.trim()
+                  ? t("commentShort")
+                  : t("addComment")}
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="stack">
+          <CardContent className="test-card-content stack">
             <CardTitle>
               {currentIndex + 1}. {currentQuestion.text}
             </CardTitle>
@@ -671,7 +1392,7 @@ export function TestRunner({
                     <div className="form-grid">
                       <LabelLike>
                         {getOpenQuizConfig(currentQuestion.apiConfig)
-                          ?.answerLabel || "Введите ответ"}
+                          ?.answerLabel || t("openQuizAnswerLabel")}
                       </LabelLike>
                       <Textarea
                         data-track="open-quiz-answer"
@@ -681,7 +1402,7 @@ export function TestRunner({
                         }
                         placeholder={
                           getOpenQuizConfig(currentQuestion.apiConfig)
-                            ?.placeholder || "Опишите ответ своими словами"
+                            ?.placeholder || t("openQuizPlaceholder")
                         }
                         value={textAnswers.get(currentQuestion.id) ?? ""}
                       />
@@ -698,10 +1419,10 @@ export function TestRunner({
                         onClick={() => saveOpenAnswer()}
                         type="button"
                       >
-                        Сохранить ответ
+                        {t("saveAnswer")}
                       </Button>
                       {(textAnswers.get(currentQuestion.id) ?? "").trim() ? (
-                        <Badge variant="muted">ответ заполнен</Badge>
+                        <Badge variant="muted">{t("answerFilled")}</Badge>
                       ) : null}
                     </div>
                   </div>
@@ -729,6 +1450,575 @@ export function TestRunner({
                   </div>
                 )}
               </>
+            ) : currentSqlDraft && currentSqlConfig ? (
+              <div className="sql-workspace">
+                <div className="sql-center-column stack">
+                  <div className="surface sql-editor-panel stack">
+                    <div className="sql-panel-header">
+                      <div className="stack sql-panel-heading">
+                        <span className="sql-kicker">{currentSqlConfig.dialect}</span>
+                        <strong>{t("sql.queryTitle")}</strong>
+                        <p className="body-2 muted m-0">{t("sql.queryHint")}</p>
+                      </div>
+                      {currentSqlDraft.submissionCount > 0 ? (
+                        <Badge
+                          variant={currentSqlDraft.isCorrect ? "success" : "warning"}
+                        >
+                          {currentSqlDraft.isCorrect
+                            ? t("sql.statusPassed")
+                            : t("sql.statusFix")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="muted">{t("sql.statusIdle")}</Badge>
+                      )}
+                    </div>
+
+                    <Textarea
+                      className="sql-editor"
+                      data-track="sql-query"
+                      onChange={(event) =>
+                        updateSqlDraft(currentQuestion.id, {
+                          query: event.target.value,
+                        })
+                      }
+                      placeholder={t("sql.placeholder")}
+                      value={currentSqlDraft.query}
+                    />
+
+                    <div className="sql-runbar">
+                      <div className="nav-row">
+                        <Button
+                          disabled={isPending || !currentSqlDraft.query.trim()}
+                          onClick={runSqlQuery}
+                          type="button"
+                        >
+                          <Send size={18} />
+                          {t("sql.run")}
+                        </Button>
+                        <span className="body-2 muted sql-run-count">
+                          {t("sql.runs", { count: currentSqlDraft.submissionCount })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="surface sql-result-panel stack">
+                    <div className="sql-panel-header">
+                      <div className="stack sql-panel-heading">
+                        <strong>{t("sql.resultTitle")}</strong>
+                        <p className="body-2 muted m-0">{t("sql.resultHint")}</p>
+                      </div>
+                      {currentSqlDraft.response?.rows ? (
+                        <Badge variant="success">
+                          {t("sql.rows", {
+                            count: currentSqlDraft.response.rows.length,
+                          })}
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    {currentSqlDraft.response?.error ? (
+                      <div
+                        className="soft-panel"
+                        style={{ color: "var(--destructive)" }}
+                      >
+                        {currentSqlDraft.response.error}
+                      </div>
+                    ) : currentSqlDraft.response &&
+                      currentSqlDraft.response.columns.length > 0 ? (
+                      <div className="sql-result-table table-wrap">
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              {currentSqlDraft.response.columns.map((column) => (
+                                <th key={column}>{column}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentSqlDraft.response.rows.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {row.map((value, columnIndex) => (
+                                  <td key={`${rowIndex}-${columnIndex}`}>
+                                    {value === null ? "NULL" : String(value)}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="body-2 muted m-0">
+                        {t("sql.resultEmpty")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="surface sql-schema-panel stack">
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>{t("sql.tablesTitle")}</strong>
+                      <p className="body-2 muted m-0">{t("sql.tablesHint")}</p>
+                    </div>
+                    <Badge variant="muted">{currentSqlConfig.tables.length}</Badge>
+                  </div>
+
+                  {currentSqlLayout ? (
+                    <div className="sql-diagram-shell">
+                      <div className="sql-diagram-toolbar">
+                        {currentSqlViewport ? (
+                          <div className="sql-diagram-controls">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => nudgeSqlZoom(currentQuestion.id, -0.1)}
+                            >
+                              <Minus size={15} />
+                            </Button>
+                            <span className="sql-diagram-scale">
+                              {Math.round(currentSqlViewport.scale * 100)}%
+                            </span>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => nudgeSqlZoom(currentQuestion.id, 0.1)}
+                            >
+                              <Plus size={15} />
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div
+                        className="sql-diagram-viewport"
+                        onMouseDown={(event) => startSqlDrag(event, currentQuestion.id)}
+                        onMouseMove={moveSqlDrag}
+                        onMouseUp={endSqlDrag}
+                        onMouseLeave={endSqlDrag}
+                      >
+                        <div
+                          className="sql-diagram-scene"
+                          style={{
+                            width: currentSqlLayout.width,
+                            height: currentSqlLayout.height,
+                            transform: `translate(${currentSqlViewport?.x ?? 0}px, ${
+                              currentSqlViewport?.y ?? 0
+                            }px) scale(${currentSqlViewport?.scale ?? 1})`,
+                          }}
+                        >
+                          <svg
+                            className="sql-diagram-links"
+                            viewBox={`0 0 ${currentSqlLayout.width} ${currentSqlLayout.height}`}
+                          >
+                            {currentSqlLayout.relations.map((relation) => {
+                              const source = currentSqlLayout.cards.find(
+                                (card) => card.table.name === relation.fromTable,
+                              );
+                              const target = currentSqlLayout.cards.find(
+                                (card) => card.table.name === relation.toTable,
+                              );
+                              if (!source || !target) return null;
+
+                              const startX = source.x;
+                              const startY = source.y + source.height / 2;
+                              const endX = target.x + target.width;
+                              const endY = target.y + target.height / 2;
+                              const midX = (startX + endX) / 2;
+                              const path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
+
+                              return (
+                                <path
+                                  key={`${relation.fromTable}-${relation.fromColumn}-${relation.toTable}`}
+                                  d={path}
+                                />
+                              );
+                            })}
+                          </svg>
+
+                          {currentSqlLayout.cards.map((card) => {
+                            const active = currentSqlTable?.name === card.table.name;
+                            return (
+                              <button
+                                key={card.table.name}
+                                type="button"
+                                className={`sql-diagram-card ${active ? "active" : ""}`}
+                                style={{
+                                  width: card.width,
+                                  minHeight: card.height,
+                                  left: card.x,
+                                  top: card.y,
+                                }}
+                                onClick={() =>
+                                  setSelectedSqlTables((prev) => {
+                                    const next = new Map(prev);
+                                    next.set(currentQuestion.id, card.table.name);
+                                    return next;
+                                  })
+                                }
+                              >
+                                <div className="sql-diagram-card-header">
+                                  <strong>{card.table.name}</strong>
+                                </div>
+                                <div className="sql-diagram-card-body">
+                                  {card.table.columns.map((column) => {
+                                    const isPrimary = column.name === "id";
+                                    const isLinked =
+                                      column.name !== "id" &&
+                                      currentSqlLayout.relations.some(
+                                        (relation) =>
+                                          relation.fromTable === card.table.name &&
+                                          relation.fromColumn === column.name,
+                                      );
+
+                                    return (
+                                      <div className="sql-diagram-row" key={column.name}>
+                                        <span
+                                          className={`sql-diagram-key ${
+                                            isPrimary || isLinked ? "linked" : ""
+                                          }`}
+                                        >
+                                          {isPrimary ? "PK" : isLinked ? "FK" : ""}
+                                        </span>
+                                        <strong>{column.name}</strong>
+                                        <span>{column.type}</span>
+                                      </div>
+                                    );
+                                  })}
+
+                                  <div className="sql-diagram-sample">
+                                    <div className="sql-diagram-sample-title">
+                                      Sample data
+                                    </div>
+                                    <div className="sql-diagram-sample-table-wrap">
+                                      <table className="sql-diagram-sample-table">
+                                        <thead>
+                                          <tr>
+                                            {card.table.columns.map((column) => (
+                                              <th key={`${card.table.name}-${column.name}`}>
+                                                {column.name}
+                                              </th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {card.table.rows.map((row, rowIndex) => (
+                                            <tr key={`${card.table.name}-row-${rowIndex}`}>
+                                              {card.table.columns.map((column) => {
+                                                const value = row[column.name];
+                                                return (
+                                                  <td
+                                                    key={`${card.table.name}-${rowIndex}-${column.name}`}
+                                                  >
+                                                    {value === null ? "NULL" : String(value)}
+                                                  </td>
+                                                );
+                                              })}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : currentManualQaDraft && currentManualQaConfig ? (
+              <div className="manual-qa-task-layout">
+                <div className="manual-qa-task-app">
+                  <ManualQaPresetRenderer
+                    appPreset={currentManualQaConfig.appPreset}
+                  />
+                </div>
+
+                <div className="manual-qa-report-panel">
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <div>
+                      <strong>{t("manualQa.bugReportsTitle")}</strong>
+                      <p className="body-2 muted m-0">
+                        {t("manualQa.bugReportsHelp")}
+                      </p>
+                    </div>
+                    <Badge variant="muted">
+                      {currentManualQaDraft.reports.length}
+                    </Badge>
+                  </div>
+
+                  <label className="manual-qa-no-bugs">
+                    <input
+                      checked={currentManualQaDraft.noBugsFound}
+                      onChange={(event) =>
+                        toggleManualQaNoBugs(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>{t("manualQa.noBugsTitle")}</strong>
+                      <small>
+                        {t("manualQa.noBugsHelp")}
+                      </small>
+                    </span>
+                  </label>
+
+                  {!currentManualQaDraft.noBugsFound ? (
+                    <div className="stack">
+                      {currentManualQaDraft.reports.map((report, index) => (
+                        <div className="manual-qa-report-card" key={report.id}>
+                          <div
+                            className="nav-row"
+                            style={{ justifyContent: "space-between" }}
+                          >
+                            <strong>
+                              {t("manualQa.bugTitle", { number: index + 1 })}
+                            </strong>
+                            <Button
+                              aria-label={t("manualQa.deleteBug")}
+                              onClick={() => removeManualQaReport(report.id)}
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>{t("manualQa.titleLabel")}</LabelLike>
+                            <Input
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  title: event.target.value,
+                                })
+                              }
+                              placeholder={t("manualQa.titlePlaceholder")}
+                              value={report.title}
+                            />
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-grid">
+                              <LabelLike>Severity</LabelLike>
+                              <Select
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    severity: event.target
+                                      .value as ManualQaBugReport["severity"],
+                                  })
+                                }
+                                value={report.severity}
+                              >
+                                <option value="blocker">blocker</option>
+                                <option value="critical">critical</option>
+                                <option value="major">major</option>
+                                <option value="minor">minor</option>
+                                <option value="trivial">trivial</option>
+                              </Select>
+                            </div>
+                            <div className="form-grid">
+                              <LabelLike>Category</LabelLike>
+                              <Select
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    category: event.target.value,
+                                  })
+                                }
+                                value={report.category}
+                              >
+                                {currentManualQaConfig.bugCategories.map(
+                                  (category) => (
+                                    <option key={category} value={category}>
+                                      {category}
+                                    </option>
+                                  ),
+                                )}
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>
+                              {t("manualQa.stepsLabel")}
+                            </LabelLike>
+                            <Textarea
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  steps: event.target.value,
+                                })
+                              }
+                              placeholder={t("manualQa.stepsPlaceholder")}
+                              value={report.steps}
+                            />
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-grid">
+                              <LabelLike>Actual result</LabelLike>
+                              <Textarea
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    actual: event.target.value,
+                                  })
+                                }
+                                placeholder={t("manualQa.actualPlaceholder")}
+                                value={report.actual}
+                              />
+                            </div>
+                            <div className="form-grid">
+                              <LabelLike>Expected result</LabelLike>
+                              <Textarea
+                                onChange={(event) =>
+                                  updateManualQaReport(report.id, {
+                                    expected: event.target.value,
+                                  })
+                                }
+                                placeholder={t("manualQa.expectedPlaceholder")}
+                                value={report.expected}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="form-grid">
+                            <LabelLike>Note</LabelLike>
+                            <Input
+                              onChange={(event) =>
+                                updateManualQaReport(report.id, {
+                                  note: event.target.value,
+                                })
+                              }
+                              placeholder={t("manualQa.notesPlaceholder")}
+                              value={report.note ?? ""}
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        onClick={addManualQaReport}
+                        type="button"
+                        variant="secondary"
+                      >
+                        <Plus size={18} />
+                        {t("manualQa.addBug")}
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <Badge variant="muted">
+                      {currentManualQaDraft.answerSaveStatus === "saving"
+                        ? t("commentSaving")
+                        : currentManualQaDraft.answerSaveStatus === "saved"
+                          ? t("answerSaved")
+                          : t("unsavedChanges")}
+                    </Badge>
+                    <Button
+                      disabled={isPending}
+                      onClick={() => saveManualQaAnswer()}
+                      type="button"
+                    >
+                      {t("saveAnswer")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : currentAutotestDraft && currentAutotestConfig ? (
+              <div className="autotest-task-layout">
+                <div className="autotest-methods-panel">
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>Доступные методы</strong>
+                      <p className="body-2 muted m-0">Используйте эти методы в псевдокоде</p>
+                    </div>
+                    <Badge variant="muted">
+                      {currentAutotestConfig.availableMethods.length}
+                    </Badge>
+                  </div>
+                  <div className="autotest-methods-list">
+                    {currentAutotestConfig.availableMethods.map((method) => (
+                      <div className="autotest-method-item" key={method.name}>
+                        <code className="autotest-method-signature">
+                          {method.signature}
+                        </code>
+                        <span className="body-2 muted">{method.description}</span>
+                        <code className="autotest-method-example">
+                          {method.example}
+                        </code>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="autotest-editor-panel stack">
+                  <div className="sql-panel-header">
+                    <div className="stack sql-panel-heading">
+                      <strong>Псевдокод</strong>
+                      <p className="body-2 muted m-0">
+                        {currentAutotestConfig.mission}
+                      </p>
+                    </div>
+                    {currentAutotestDraft.submissionCount > 0 ? (
+                      <Badge variant="success">Сохранено</Badge>
+                    ) : (
+                      <Badge variant="muted">Не сохранено</Badge>
+                    )}
+                  </div>
+
+                  {currentAutotestConfig.exampleCode && !currentAutotestDraft.code.trim() ? (
+                    <div className="soft-panel">
+                      <p className="body-2 muted m-0" style={{ marginBottom: "4px" }}>
+                        Пример структуры:
+                      </p>
+                      <pre className="body-2 m-0 autotest-example-code">
+                        {currentAutotestConfig.exampleCode}
+                      </pre>
+                    </div>
+                  ) : null}
+
+                  <Textarea
+                    className="autotest-editor"
+                    data-track="autotest-code"
+                    onChange={(event) => updateAutotestCode(event.target.value)}
+                    placeholder={`// Напишите псевдокод автотестов\n\ntest('Описание сценария', () => {\n  navigateTo('Экран')\n  tap('Элемент')\n  expect('Результат').toBeVisible()\n})`}
+                    value={currentAutotestDraft.code}
+                  />
+
+                  <div
+                    className="nav-row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <Badge variant="muted">
+                      {currentAutotestDraft.answerSaveStatus === "saving"
+                        ? "Сохраняется..."
+                        : currentAutotestDraft.answerSaveStatus === "saved"
+                          ? "Сохранено"
+                          : "Не сохранено"}
+                    </Badge>
+                    <Button
+                      disabled={isPending || !currentAutotestDraft.code.trim()}
+                      onClick={() => saveAutotestAnswer()}
+                      type="button"
+                    >
+                      Сохранить ответ
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : currentApiDraft && currentDevtoolsConfig ? (
               <div className="stack">
                 <div className="soft-panel stack">
@@ -738,7 +2028,7 @@ export function TestRunner({
                   >
                     <div>
                       <p className="body-2 muted m-0">
-                        Запрос для проверки в DevTools
+                        {t("devtools.requestTitle")}
                       </p>
                       <strong>
                         {(currentDevtoolsConfig.method || "GET").toUpperCase()}{" "}
@@ -752,7 +2042,9 @@ export function TestRunner({
                       </strong>
                     </div>
                     {currentApiDraft.requestSent ? (
-                      <Badge variant="success">запрос отправлен</Badge>
+                      <Badge variant="success">
+                        {t("devtools.requestSent")}
+                      </Badge>
                     ) : null}
                   </div>
                   <Button
@@ -762,14 +2054,19 @@ export function TestRunner({
                     type="button"
                   >
                     <Send size={18} />
-                    {currentDevtoolsConfig.buttonLabel || "Отправить запрос"}
+                    {currentDevtoolsConfig.buttonLabel ||
+                      t("devtools.sendRequest")}
                   </Button>
                 </div>
 
                 <div className="form-grid">
                   <LabelLike>
                     {currentDevtoolsConfig.answerLabel ||
-                      `Введите значение ${currentDevtoolsConfig.answerPath || "параметра"} из response`}
+                      t("devtools.answerLabel", {
+                        value:
+                          currentDevtoolsConfig.answerPath ||
+                          t("devtools.parameter"),
+                      })}
                   </LabelLike>
                   <Input
                     data-track="devtools-answer"
@@ -788,10 +2085,10 @@ export function TestRunner({
                 >
                   <Badge variant="muted">
                     {currentApiDraft.answerSaveStatus === "saving"
-                      ? "сохраняем ответ"
+                      ? t("devtools.savingAnswer")
                       : currentApiDraft.submissionCount > 0
-                        ? "ответ сохранён"
-                        : "ответ сохранится автоматически"}
+                        ? t("answerSaved")
+                        : t("devtools.autosave")}
                   </Badge>
                 </div>
               </div>
@@ -865,9 +2162,11 @@ export function TestRunner({
                       <Send size={18} />
                       Send
                     </Button>
-                    <span className="body-2 muted">
-                      Отправок: {currentApiDraft.submissionCount}
-                    </span>
+                  <span className="body-2 muted">
+                    {t("api.submissions", {
+                      count: currentApiDraft.submissionCount,
+                    })}
+                  </span>
                   </div>
                   {currentApiDraft.submissionCount > 0 ? (
                     <Badge
@@ -876,8 +2175,8 @@ export function TestRunner({
                       }
                     >
                       {currentApiDraft.isCorrect
-                        ? "зачтено"
-                        : "нужно исправить"}
+                        ? t("statusPassed")
+                        : t("statusFix")}
                     </Badge>
                   ) : null}
                 </div>
@@ -929,7 +2228,7 @@ export function TestRunner({
                   disabled={currentIndex === 0}
                 >
                   <ArrowLeft size={18} />
-                  Назад
+                  {t("back")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -937,46 +2236,90 @@ export function TestRunner({
                   onClick={() => goTo(currentIndex + 1)}
                   disabled={isLastQuestion}
                 >
-                  Далее
+                  {t("next")}
                   <ArrowRight size={18} />
                 </Button>
               </div>
-
-              {showInlineFinish ? (
-                <Button
-                  type="button"
-                  onClick={requestManualSubmit}
-                  disabled={isPending}
-                  className="test-inline-finish"
-                >
-                  <Send size={18} />
-                  Завершить
-                </Button>
-              ) : null}
             </div>
           </CardContent>
         </Card>
 
         <div className="stack">
-          <Card>
-            <CardHeader>
-              <CardTitle>Навигация</CardTitle>
+          <Card className={currentQuestion.type === "SQL_SANDBOX" ? "test-nav-card-sql" : undefined}>
+            <CardHeader className="test-card-header">
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <div className="brand">
+                  <ServiceLogo />
+                  QA Assessment
+                </div>
+                <div className="nav-row">
+                  <LanguageSwitcher />
+                  <ThemeToggle variant="icon" />
+                </div>
+              </div>
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <CardTitle>{t("navigation")}</CardTitle>
+                <span className="timer-pill compact" suppressHydrationWarning>
+                  <Clock3 size={16} />
+                  {minutes}:{seconds.toString().padStart(2, "0")}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent className="stack">
-              <Progress value={progress} />
-              <div className="question-grid">
+            <CardContent className="test-card-content stack">
+              <div className="test-nav-summary">
+                <div>
+                  <strong>
+                    {t("questionProgress", {
+                      current: currentIndex + 1,
+                      total: questions.length,
+                    })}
+                  </strong>
+                  <span>{t("canReturn")}</span>
+                </div>
+                <Progress value={progress} />
+              </div>
+              <div
+                className={
+                  currentQuestion.type === "SQL_SANDBOX"
+                    ? "question-grid question-grid-sql"
+                    : "question-grid"
+                }
+              >
                 {questions.map((question, index) => {
                   const done =
                     question.type === "API_SANDBOX" ||
-                    question.type === "DEVTOOLS_SANDBOX"
-                      ? (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
-                      : Boolean(answers.get(question.id));
+                    question.type === "DEVTOOLS_SANDBOX" ||
+                    question.type === "SQL_SANDBOX"
+                      ? question.type === "SQL_SANDBOX"
+                        ? (sqlDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                        : (apiDrafts.get(question.id)?.submissionCount ?? 0) > 0
+                      : question.type === "MANUAL_QA_SANDBOX"
+                        ? hasSubmittedManualQaAnswer(
+                            manualQaDrafts.get(question.id),
+                          )
+                        : question.type === "AUTOTEST_SANDBOX"
+                          ? Boolean(autotestDrafts.get(question.id)?.code.trim())
+                          : getOpenQuizConfig(question.apiConfig)
+                            ? Boolean(textAnswers.get(question.id)?.trim())
+                            : Boolean(answers.get(question.id));
                   const active = index === currentIndex;
-                  const flagged = flaggedQuestions.has(question.id);
+                  const commented = Boolean(
+                    commentDrafts.get(question.id)?.trim(),
+                  );
                   return (
                     <button
-                      className={`question-dot ${done ? "done" : ""} ${
-                        flagged ? "flagged" : ""
+                      className={`question-dot ${
+                        currentQuestion.type === "SQL_SANDBOX"
+                          ? "question-dot-sql"
+                          : ""
+                      } ${done ? "done" : ""} ${
+                        commented ? "commented" : ""
                       } ${active ? "active" : ""}`}
                       key={question.id}
                       onClick={() => goTo(index)}
@@ -988,22 +2331,42 @@ export function TestRunner({
                 })}
               </div>
               <p className="body-2 muted m-0">
-                Отмечено {answeredCount} из {questions.length}. Для API sandbox
-                вопроса прогресс появляется после проверки ответа.
+                {t("markedProgress", {
+                  answered: answeredCount,
+                  total: questions.length,
+                })}
               </p>
               <div className="question-nav-legend">
                 <span>
                   <i className="legend-dot answered" />
-                  Отвечено · {answeredCount}
+                  {t("answeredLegend", { count: answeredCount })}
                 </span>
                 <span>
-                  <i className="legend-dot flagged" />
-                  Отмечено · {flaggedCount}
+                  <i className="legend-dot commented" />
+                  {t("commentsLegend", { count: commentedCount })}
                 </span>
                 <span>
                   <i className="legend-dot empty" />
-                  Без ответа · {questions.length - answeredCount}
+                  {t("emptyLegend", {
+                    count: questions.length - answeredCount,
+                  })}
                 </span>
+              </div>
+              <div className="test-submit-control compact">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={requestManualSubmit}
+                  disabled={isPending}
+                  className="test-nav-submit"
+                >
+                  <Send size={18} />
+                  {t("finish")}
+                </Button>
+                <div className="submit-info-bubble compact" role="note">
+                  <Info size={16} />
+                  <span>{t("unansweredFail")}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1014,7 +2377,7 @@ export function TestRunner({
               style={{ color: "var(--destructive)" }}
             >
               <AlertTriangle size={18} />
-              <strong>Осталось меньше минуты</strong>
+              <strong>{t("lessThanMinute")}</strong>
             </div>
           ) : null}
         </div>
@@ -1038,12 +2401,11 @@ export function TestRunner({
                   <AlertTriangle size={20} />
                 </span>
                 <h2 className="head-3 m-0" id="finish-test-title">
-                  Завершить тест?
+                  {t("finishDialogTitle")}
                 </h2>
               </div>
               <p className="body-1 muted m-0">
-                После подтверждения тест будет отправлен на проверку. Все
-                вопросы без ответа будут засчитаны как fail.
+                {t("finishDialogBody")}
               </p>
               <div className="confirm-dialog-actions">
                 <Button
@@ -1051,14 +2413,78 @@ export function TestRunner({
                   variant="outline"
                   onClick={() => setIsSubmitDialogOpen(false)}
                 >
-                  Отмена
+                  {t("cancel")}
                 </Button>
                 <Button
                   type="button"
                   onClick={() => submit(false)}
                   disabled={isPending}
                 >
-                  Продолжить
+                  {t("continue")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isCommentDialogOpen ? (
+        <div
+          aria-labelledby="question-comment-title"
+          aria-modal="true"
+          className="modal-backdrop"
+          role="dialog"
+          onClick={() => setIsCommentDialogOpen(false)}
+        >
+          <div
+            className="confirm-dialog question-comment-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="stack">
+              <div
+                className="nav-row"
+                style={{ justifyContent: "space-between" }}
+              >
+                <div className="nav-row">
+                  <span className="confirm-dialog-icon">
+                    <MessageSquare size={20} />
+                  </span>
+                  <h2 className="head-3 m-0" id="question-comment-title">
+                    {t("commentTitle")}
+                  </h2>
+                </div>
+                <Badge variant="muted">
+                  {currentCommentSaveStatus === "saving"
+                    ? t("commentSaving")
+                    : currentCommentSaveStatus === "saved"
+                      ? t("commentSaved")
+                      : t("commentDraft")}
+                </Badge>
+              </div>
+              <p className="body-2 muted m-0">
+                {t("commentHelp")}
+              </p>
+              <Textarea
+                autoFocus
+                maxLength={1000}
+                onChange={(event) => updateQuestionComment(event.target.value)}
+                placeholder={t("commentPlaceholder")}
+                value={currentQuestionComment}
+              />
+              <div className="confirm-dialog-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCommentDialogOpen(false)}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={saveQuestionComment}
+                  disabled={isPending || currentCommentSaveStatus === "saving"}
+                >
+                  {t("save")}
                 </Button>
               </div>
             </div>

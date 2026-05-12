@@ -4,32 +4,71 @@ import {
   normalizeLegacyTrack,
   slugifyTrack,
 } from "@/lib/question-classification";
+import { ensureDefaultWave } from "@/lib/waves";
 
 export async function ensureTracks() {
-  const existingCount = await prisma.track.count();
-
-  if (existingCount === 0) {
-    await prisma.track.createMany({
-      data: defaultTracks.map((track) => ({
-        slug: track.slug,
-        name: track.name,
-        order: track.order,
-      })),
-      skipDuplicates: true,
-    });
-  }
+  await Promise.all(
+    defaultTracks.map((track) =>
+      prisma.track.upsert({
+        where: { slug: track.slug },
+        update: {
+          name: track.name,
+          order: track.order,
+        },
+        create: {
+          slug: track.slug,
+          name: track.name,
+          order: track.order,
+        },
+      }),
+    ),
+  );
 
   const tracks = await prisma.track.findMany({
     orderBy: [{ order: "asc" }, { name: "asc" }],
   });
 
   for (const track of tracks) {
+    await ensureDefaultWave(track.id);
+
     await prisma.question.updateMany({
       where: {
         trackId: null,
         track: normalizeLegacyTrack(track.name),
       },
       data: { trackId: track.id },
+    });
+  }
+
+  const qaTrack = tracks.find((track) => track.slug === "qa") ?? tracks[0];
+  if (qaTrack) {
+    const qaWave = await ensureDefaultWave(qaTrack.id);
+    const legacyQaTaskTrackIds = tracks
+      .filter((track) => ["api", "grpc", "web"].includes(track.slug))
+      .map((track) => track.id);
+
+    if (legacyQaTaskTrackIds.length > 0) {
+      await prisma.question.updateMany({
+        where: { trackId: { in: legacyQaTaskTrackIds } },
+        data: { trackId: qaTrack.id, track: qaTrack.name },
+      });
+      await prisma.track.updateMany({
+        where: { id: { in: legacyQaTaskTrackIds } },
+        data: { isActive: false },
+      });
+    }
+
+    await prisma.invitation.updateMany({
+      where: { trackId: null },
+      data: { trackId: qaTrack.id, waveId: qaWave.id },
+    });
+    await prisma.internProfile.updateMany({
+      where: { trackId: null },
+      data: { trackId: qaTrack.id, waveId: qaWave.id },
+    });
+    await prisma.assessmentAttempt.updateMany({
+      where: { trackId: null },
+      data: { trackId: qaTrack.id, waveId: qaWave.id },
     });
   }
 

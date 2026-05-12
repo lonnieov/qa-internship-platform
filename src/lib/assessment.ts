@@ -1,7 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 
-export async function getSettings() {
+export async function getSettings(scope?: {
+  trackId?: string | null;
+  waveId?: string | null;
+}) {
+  if (scope?.waveId) {
+    const waveSettings = await prisma.assessmentSettings.findFirst({
+      where: { waveId: scope.waveId },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (waveSettings) return waveSettings;
+  }
+
+  if (scope?.trackId) {
+    const trackSettings = await prisma.assessmentSettings.findFirst({
+      where: { trackId: scope.trackId, waveId: null },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (trackSettings) return trackSettings;
+  }
+
   return prisma.assessmentSettings.upsert({
     where: { id: "global" },
     update: {},
@@ -25,6 +44,13 @@ export async function calculateAttemptScore(attemptId: string) {
     },
   });
   const scoredAnswers = answers.filter((answer) => {
+    if (
+      answer.question.type === "MANUAL_QA_SANDBOX" ||
+      answer.question.type === "AUTOTEST_SANDBOX"
+    ) {
+      return false;
+    }
+
     if (answer.question.type !== "QUIZ") {
       return true;
     }
@@ -73,13 +99,20 @@ export async function finalizeAttempt(attemptId: string, auto = false) {
 export async function expireAttemptIfNeeded(attemptId: string) {
   const attempt = await prisma.assessmentAttempt.findUnique({
     where: { id: attemptId },
+    include: {
+      internProfile: {
+        select: {
+          invitationId: true,
+        },
+      },
+    },
   });
 
   if (!attempt || attempt.status !== "IN_PROGRESS") return attempt;
 
   if (attempt.deadlineAt.getTime() <= Date.now()) {
     const score = await calculateAttemptScore(attemptId);
-    return prisma.assessmentAttempt.update({
+    const expiredAttempt = await prisma.assessmentAttempt.update({
       where: { id: attemptId },
       data: {
         status: "EXPIRED",
@@ -93,6 +126,15 @@ export async function expireAttemptIfNeeded(attemptId: string) {
         ...score,
       },
     });
+
+    if (attempt.internProfile.invitationId) {
+      await prisma.invitation.update({
+        where: { id: attempt.internProfile.invitationId },
+        data: { status: "COMPLETED" },
+      });
+    }
+
+    return expiredAttempt;
   }
 
   return attempt;

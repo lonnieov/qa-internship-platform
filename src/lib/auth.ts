@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminSessionProfile } from "@/lib/admin-auth";
 import { getInternSessionProfile } from "@/lib/intern-token-auth";
+import { prisma } from "@/lib/prisma";
 
 export async function getCurrentProfile() {
   const adminProfile = await getAdminSessionProfile();
@@ -28,6 +29,32 @@ export async function requireAdmin() {
   }
 
   return profile;
+}
+
+export async function requireAdminAccess() {
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    redirect("/sign-in/admin");
+  }
+
+  if (profile.role !== "ADMIN" && profile.role !== "TRACK_MASTER") {
+    redirect("/intern");
+  }
+
+  return profile;
+}
+
+export async function getManageableTrackIds(profile: { id: string; role: string }) {
+  if (profile.role === "ADMIN") return null;
+  if (profile.role !== "TRACK_MASTER") return [];
+
+  const memberships = await prisma.trackMember.findMany({
+    where: { profileId: profile.id, role: "TRACK_MASTER" },
+    select: { trackId: true },
+  });
+
+  return memberships.map((membership) => membership.trackId);
 }
 
 export async function requireIntern() {

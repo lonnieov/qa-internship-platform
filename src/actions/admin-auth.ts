@@ -39,7 +39,10 @@ export async function loginAdminAction(
   }
 
   const profile = await prisma.profile.findFirst({
-    where: { email, role: "ADMIN" },
+    where: {
+      email,
+      role: { in: ["ADMIN", "TRACK_MASTER"] },
+    },
   });
 
   if (!profile || !verifyPassword(password, profile.passwordHash)) {

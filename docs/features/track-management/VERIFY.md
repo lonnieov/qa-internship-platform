@@ -13,6 +13,7 @@
 - Expected: each track shows a question count and a `...` management button.
 - Click a track `...` button.
 - Expected: a centered edit modal opens over the page and the sidebar layout does not shift.
+- Expected: the modal has comfortable spacing, a separated status/delete section, and no overlapping text near the bottom.
 - Expected: the add-question modal shows active tracks in `Классификация`.
 
 ## Positive Case
@@ -23,6 +24,8 @@
 - Expected: the new question appears when `Backend` is selected.
 - Open the `Backend` `...` modal, rename it to `Backend QA`, and submit.
 - Expected: the sidebar label changes and the existing question remains in that track.
+- Reopen the `Backend QA` modal on a narrow viewport.
+- Expected: action buttons stack full-width and remain easy to tap.
 
 ## Negative Cases
 

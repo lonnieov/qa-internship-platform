@@ -7,6 +7,7 @@ Require intern consent for personal data processing before token authorization.
 ## Scope
 
 - Adds a required consent checkbox to the intern token sign-in form.
+- Disables the intern login button until the consent checkbox is selected.
 - Blocks intern token authorization on the server when consent is missing.
 - Keeps admin sign-in unchanged.
 
