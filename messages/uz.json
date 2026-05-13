@@ -92,6 +92,7 @@
     "failed": "Amal bajarilmadi",
     "newTokenShownOnce": "Yangi token bir marta ko‘rsatiladi.",
     "tokensAttemptsActions": "Stajyor tokenlari, urinishlari va amallari.",
+    "latestCompletedTrack": "Oxirgi yakunlangan urinish treki",
     "accessTokens": "Ruxsat tokenlari",
     "tokenHoverHint": "Yangi tokenlar maska ustiga olib borilganda ochiladi.",
     "attemptsResults": "Urinishlar va natijalar",
@@ -121,6 +122,7 @@
       "intern": "Stajyor",
       "access": "Ruxsat",
       "testStatus": "Test holati",
+      "track": "Trek",
       "latestAttempt": "Oxirgi urinish",
       "result": "Natija",
       "candidate": "Nomzod",
@@ -154,7 +156,6 @@
   "AdminOverview": {
     "title": "Administrator paneli",
     "description": "Stajyorlar uchun ruxsatlar, savollar va natijalarni boshqaring.",
-    "grantAccess": "Ruxsat berish",
     "cards": {
       "interns": "Stajyorlar",
       "inDatabase": "bazada",

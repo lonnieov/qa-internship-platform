@@ -10,6 +10,7 @@
 - Open `/admin/interns`.
 - Expected: there is one `Список стажёров` table.
 - Expected: the main table has `Статус теста`, not `Доступ`, as the test status column.
+- Expected: the main table has a `Трек` column.
 - Expected: separate `Последние токены` and `Профили стажёров` cards are not shown.
 - Expected: the first page shows no more than 10 rows.
 - Expected: the pagination counter and `Назад` / `Вперёд` controls sit at the bottom edge of the list card.
@@ -37,6 +38,9 @@
 - Sign in as the intern with the created token and start or finish a test.
 - Return to `/admin/interns`, click the same row.
 - Expected: the modal shows attempts and result links when results exist.
+- Expected: the main row `Трек` value matches the latest completed attempt track.
+- Expected: the modal shows `Трек последнего завершённого прохождения` with the same value.
+- Expected: the attempts table in the modal includes a `Трек` column.
 - Start a test with a short time limit and wait until the deadline passes.
 - Return to `/admin/interns`, click the same intern row.
 - Expected: the attempt status is `истекла`, the completion time is filled, and the result link is available.
@@ -60,7 +64,7 @@
 - Expected: matching token-only candidates and intern profiles remain visible.
 - Search for `zzzz-no-match`.
 - Expected: the empty state is centered and compact, with clear reset guidance.
-- Click each column header: `Стажёр`, `Статус теста`, `Последняя попытка`, `Результат`.
+- Click each column header: `Стажёр`, `Статус теста`, `Трек`, `Последняя попытка`, `Результат`.
 - Expected: rows reorder by the clicked column and the sort indicator changes direction when clicked again.
 - If more than 10 rows exist, click `Вперёд`.
 - Expected: the next 10 rows are shown and `Назад` returns to the previous page.

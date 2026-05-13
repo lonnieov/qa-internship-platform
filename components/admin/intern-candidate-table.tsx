@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
-type SortKey = "created" | "name" | "access" | "attempt" | "result";
+type SortKey = "created" | "name" | "track" | "access" | "attempt" | "result";
 type SortDirection = "asc" | "desc";
 
 const pageSize = 10;
@@ -33,6 +33,7 @@ export type CandidateInvitation = {
 
 export type CandidateAttempt = {
   id: string;
+  trackLabel: string;
   status: string;
   startedAt: string;
   submittedAt: string;
@@ -48,6 +49,7 @@ export type CandidateRow = {
   accessLabel: string;
   attemptLabel: string;
   resultLabel: string;
+  latestCompletedTrackLabel: string;
   createdAtSort: number;
   attemptAtSort: number;
   resultSort: number | null;
@@ -215,6 +217,15 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
       );
     }
 
+    if (sortKey === "track") {
+      return (
+        left.latestCompletedTrackLabel.localeCompare(
+          right.latestCompletedTrackLabel,
+          "ru",
+        ) * direction
+      );
+    }
+
     if (sortKey === "attempt") {
       return (left.attemptAtSort - right.attemptAtSort) * direction;
     }
@@ -240,7 +251,9 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
 
     setSortKey(nextKey);
     setSortDirection(
-      nextKey === "name" || nextKey === "access" ? "asc" : "desc",
+      nextKey === "name" || nextKey === "access" || nextKey === "track"
+        ? "asc"
+        : "desc",
     );
   }
 
@@ -307,6 +320,15 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   <button
                     className="table-sort-button"
                     type="button"
+                    onClick={() => toggleSort("track")}
+                  >
+                    {t("table.track")} <span>{sortLabel("track")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
                     onClick={() => toggleSort("attempt")}
                   >
                     {t("table.latestAttempt")} <span>{sortLabel("attempt")}</span>
@@ -346,6 +368,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                       {t(`status.${row.accessLabel}`)}
                     </Badge>
                   </td>
+                  <td>{row.latestCompletedTrackLabel}</td>
                   <td>{row.attemptLabel}</td>
                   <td>{row.resultLabel}</td>
                 </tr>
@@ -405,6 +428,10 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                 </h2>
                 <p className="body-2 muted m-0">
                   {t("tokensAttemptsActions")}
+                </p>
+                <p className="body-2 muted m-0">
+                  {t("latestCompletedTrack")}:{" "}
+                  <strong>{selected.latestCompletedTrackLabel}</strong>
                 </p>
               </div>
               <Button
@@ -510,6 +537,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                         <thead>
                           <tr>
                             <th>{t("table.status")}</th>
+                            <th>{t("table.track")}</th>
                             <th>{t("table.started")}</th>
                             <th>{t("table.submitted")}</th>
                             <th>{t("table.result")}</th>
@@ -520,6 +548,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                           {selected.attempts.map((attempt) => (
                             <tr key={attempt.id}>
                               <td>{t(`status.${attempt.status}`)}</td>
+                              <td>{attempt.trackLabel}</td>
                               <td>{attempt.startedAt}</td>
                               <td>{attempt.submittedAt}</td>
                               <td>{attempt.scorePercent}</td>

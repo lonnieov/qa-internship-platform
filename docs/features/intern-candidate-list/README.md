@@ -38,6 +38,7 @@ Show interns and newly issued token candidates in one admin list.
 - Admin opens `/admin/interns`.
 - Admin types in the search field and the list refreshes after a short pause.
 - Admin reads current test status in the `Статус теста` column.
+- Admin reads the track of the latest completed attempt in the `Трек` column.
 - Admin creates a token.
 - The candidate appears in `Список стажёров`.
 - Admin sorts or pages through the table when needed.
@@ -47,6 +48,7 @@ Show interns and newly issued token candidates in one admin list.
 - The modal lets the admin create another token.
 - The new token value appears once and the token table prepends its mask.
 - After the intern signs in, the modal also shows attempts and result links.
+- The modal shows the latest completed attempt track near the title and shows each attempt track in the history table.
 - If the latest attempt passed its deadline, the admin page marks it as expired and shows it as a result row.
 - The related access token is shown as `использован`, not `активный`.
 
@@ -56,6 +58,7 @@ Show interns and newly issued token candidates in one admin list.
 - `components/admin/intern-candidate-table.tsx`
 - `components/admin/intern-search-form.tsx`
 - `components/admin/retake-invitation-form.tsx`
+- `app/globals.css`
 - `src/actions/admin.ts`
 - `src/actions/intern.ts`
 - `src/lib/assessment.ts`
@@ -64,7 +67,6 @@ Show interns and newly issued token candidates in one admin list.
 - `messages/uz.json`
 - `prisma/schema.prisma`
 - `.env.example`
-- `app/globals.css`
 
 ## Constraints
 
@@ -72,6 +74,7 @@ Show interns and newly issued token candidates in one admin list.
 - Token tables show masks from `Invitation.inviteCodeMask`.
 - Copy actions use decrypted `Invitation.inviteCodeEncrypted`; old tokens without encrypted values cannot be copied from the table.
 - Pending candidates do not have attempts until first token login creates an intern profile.
+- Pending candidates and profiles without completed attempts show `—` in the latest completed track field.
 - Token-only candidates can still receive another token from their row modal.
 - Historical retake tokens are associated by name when no direct profile relation remains.
 - The admin page keeps table navigation inside the card to avoid page-level vertical scrolling on desktop.

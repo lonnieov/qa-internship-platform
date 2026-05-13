@@ -88,6 +88,11 @@ export default async function AdminInternsPage({
         attempts: {
           orderBy: { startedAt: "desc" },
           take: 10,
+          include: {
+            track: {
+              select: { name: true },
+            },
+          },
         },
       },
     }),
@@ -125,9 +130,11 @@ export default async function AdminInternsPage({
   );
   const internsWithCurrentAttempts = interns.map((intern) => ({
     ...intern,
-    attempts: intern.attempts.map(
-      (attempt) => expiredAttemptById.get(attempt.id) ?? attempt,
-    ),
+    attempts: intern.attempts.map((attempt) => {
+      const expiredAttempt = expiredAttemptById.get(attempt.id);
+
+      return expiredAttempt ? { ...attempt, ...expiredAttempt } : attempt;
+    }),
   }));
 
   if (expiredAttemptById.size > 0) {
@@ -160,6 +167,7 @@ export default async function AdminInternsPage({
     const activeAttempt = intern.attempts.find(
       (attempt) => attempt.status === "IN_PROGRESS",
     );
+    const latestCompletedTrackLabel = latest?.track?.name ?? t("dash");
     const latestInvitation = internInvitations[0];
     const testStatus = activeAttempt?.status ?? latest?.status ?? "NO_ATTEMPTS";
 
@@ -179,6 +187,7 @@ export default async function AdminInternsPage({
         : latest
           ? formatPercent(latest.scorePercent)
           : t("noAttemptsShort"),
+      latestCompletedTrackLabel,
       createdAtSort:
         latestInvitation?.createdAt.getTime() ?? intern.createdAt.getTime(),
       attemptAtSort:
@@ -216,6 +225,7 @@ export default async function AdminInternsPage({
       }),
       attempts: intern.attempts.map((attempt) => ({
         id: attempt.id,
+        trackLabel: attempt.track?.name ?? t("dash"),
         status: attempt.status,
         startedAt: formatDateTime(attempt.startedAt, locale),
         submittedAt: formatDateTime(attempt.submittedAt, locale),
@@ -255,6 +265,7 @@ export default async function AdminInternsPage({
       accessLabel: "NO_ATTEMPTS",
       attemptLabel: t("noAttemptsShort"),
       resultLabel: "—",
+      latestCompletedTrackLabel: t("dash"),
       createdAtSort: latestInvitation.createdAt.getTime(),
       attemptAtSort: 0,
       resultSort: null,

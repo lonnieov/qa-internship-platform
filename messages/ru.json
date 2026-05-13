@@ -92,6 +92,7 @@
     "failed": "Не удалось",
     "newTokenShownOnce": "Новый токен показан один раз.",
     "tokensAttemptsActions": "Токены, попытки и действия по стажёру.",
+    "latestCompletedTrack": "Трек последнего завершённого прохождения",
     "accessTokens": "Токены доступа",
     "tokenHoverHint": "Новые токены раскрываются при наведении на маску.",
     "attemptsResults": "Попытки и результаты",
@@ -121,6 +122,7 @@
       "intern": "Стажёр",
       "access": "Доступ",
       "testStatus": "Статус теста",
+      "track": "Трек",
       "latestAttempt": "Последняя попытка",
       "result": "Результат",
       "candidate": "Кандидат",
@@ -154,7 +156,6 @@
   "AdminOverview": {
     "title": "Панель администратора",
     "description": "Управляйте доступом, вопросами и результатами стажёров.",
-    "grantAccess": "Выдать доступ",
     "cards": {
       "interns": "Стажёры",
       "inDatabase": "в базе",

@@ -58,7 +58,7 @@ export function InvitationForm({ embedded = false, tracks = [] }: InvitationForm
           </div>
         ) : null}
         <Button disabled={isPending} type="submit">
-          {t("createIntern")}
+          {state.inviteCode ? t("createMore") : t("createIntern")}
         </Button>
       </form>
       {state.message ? (
