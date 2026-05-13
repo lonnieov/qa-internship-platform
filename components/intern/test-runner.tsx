@@ -168,6 +168,34 @@ type SqlDiagramCard = {
   height: number;
 };
 
+const DEVTOOLS_NOISE_REQUEST_COUNT = 8;
+const devtoolsNoisePathSegments = [
+  "metrics",
+  "session",
+  "events",
+  "sync",
+  "validate",
+  "preview",
+  "heartbeat",
+  "bootstrap",
+  "telemetry",
+  "handshake",
+  "profile",
+  "flags",
+];
+const devtoolsNoiseQueryNames = [
+  "step",
+  "source",
+  "trace",
+  "debug",
+  "cache",
+  "probe",
+  "sample",
+  "channel",
+  "phase",
+  "nonce",
+];
+
 function stringifyJson(value: JsonValue | null | undefined) {
   if (typeof value === "undefined") return "";
   return JSON.stringify(value, null, 2);
@@ -296,7 +324,7 @@ function buildDevtoolsEndpoint(
   question: Question,
   config: DevtoolsConfig,
 ) {
-  const path = (config.path || "/devtools_task").replace(/^\/+/, "");
+  const path = getDevtoolsRequestPath(config);
   const search = new URLSearchParams({ attempt: attemptId });
 
   for (const [key, value] of Object.entries(config.query ?? {})) {
@@ -304,6 +332,99 @@ function buildDevtoolsEndpoint(
   }
 
   return `/api/devtools-sandbox/${question.id}/${path}?${search.toString()}`;
+}
+
+function getDevtoolsRequestPath(config: DevtoolsConfig) {
+  return (config.path || "/devtools_task").replace(/^\/+/, "");
+}
+
+function buildDevtoolsNoisePath(targetPath: string, suffix: string) {
+  const normalizedPath = targetPath.replace(/\/+$/, "") || "devtools_task";
+  const separatorIndex = normalizedPath.lastIndexOf("/");
+  const prefix =
+    separatorIndex === -1 ? "" : `${normalizedPath.slice(0, separatorIndex + 1)}`;
+  const leaf =
+    separatorIndex === -1
+      ? normalizedPath
+      : normalizedPath.slice(separatorIndex + 1);
+
+  return `${prefix}${leaf}_${suffix}`;
+}
+
+function getDevtoolsNoiseQueryName(index: number, expectedKeys: Set<string>) {
+  for (let offset = 0; offset < devtoolsNoiseQueryNames.length; offset += 1) {
+    const candidate =
+      devtoolsNoiseQueryNames[
+        (index + offset) % devtoolsNoiseQueryNames.length
+      ];
+
+    if (!expectedKeys.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  return `noise_${index + 1}`;
+}
+
+function shuffleDevtoolsEndpoints(endpoints: string[], seed: string) {
+  const result = [...endpoints];
+  let hash = 0;
+
+  for (const character of seed) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    hash = (hash * 1664525 + 1013904223) >>> 0;
+    const swapIndex = hash % (index + 1);
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+
+  return result;
+}
+
+function buildDevtoolsNoiseEndpoints(
+  attemptId: string,
+  question: Question,
+  config: DevtoolsConfig,
+) {
+  const targetPath = getDevtoolsRequestPath(config);
+  const base = `/api/devtools-sandbox/${question.id}`;
+  const expectedQuery = Object.entries(config.query ?? {});
+  const expectedQueryKeys = new Set(expectedQuery.map(([key]) => key));
+  const variants: string[] = [];
+
+  for (let index = 0; index < DEVTOOLS_NOISE_REQUEST_COUNT; index += 1) {
+    const search = new URLSearchParams({ attempt: attemptId });
+    const queryName = getDevtoolsNoiseQueryName(index, expectedQueryKeys);
+    const queryValue = `${question.id.slice(0, 6)}-${index + 1}`;
+    const pathSegment =
+      devtoolsNoisePathSegments[index % devtoolsNoisePathSegments.length];
+    const path = buildDevtoolsNoisePath(targetPath, pathSegment);
+
+    for (const [key, value] of expectedQuery) {
+      search.set(key, value);
+    }
+
+    search.set(queryName, queryValue);
+    variants.push(`${base}/${path}?${search.toString()}`);
+  }
+
+  return variants;
+}
+
+function buildDevtoolsRequestBatch(
+  attemptId: string,
+  question: Question,
+  config: DevtoolsConfig,
+) {
+  return shuffleDevtoolsEndpoints(
+    [
+      buildDevtoolsEndpoint(attemptId, question, config),
+      ...buildDevtoolsNoiseEndpoints(attemptId, question, config),
+    ],
+    `${question.id}:${Date.now()}`,
+  );
 }
 
 function getSqlConfig(question: Question) {
@@ -876,18 +997,26 @@ export function TestRunner({
     const config = getDevtoolsConfig(currentQuestion);
     if (!config) return;
 
-    const endpoint = buildDevtoolsEndpoint(attemptId, currentQuestion, config);
+    const endpoints = buildDevtoolsRequestBatch(
+      attemptId,
+      currentQuestion,
+      config,
+    );
     const method = (config.method || "GET").toUpperCase();
+    const requestInit: RequestInit = {
+      method,
+      headers: { "Content-Type": "application/json" },
+      ...(method === "GET" || method === "HEAD"
+        ? {}
+        : { body: JSON.stringify(config.body ?? { action: "submit" }) }),
+    };
 
     startTransition(() => {
-      void fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        ...(method === "GET" || method === "HEAD"
-          ? {}
-          : { body: JSON.stringify(config.body ?? { action: "submit" }) }),
-      }).then(async (response) => {
-        await response.text();
+      void Promise.allSettled(
+        endpoints.map((endpoint) =>
+          fetch(endpoint, requestInit).then((response) => response.text()),
+        ),
+      ).then(() => {
         setApiDrafts((prev) => {
           const next = new Map(prev);
           const current =
