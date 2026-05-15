@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 import { updateSettingsAction } from "@/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/assessment";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FileText } from "lucide-react";
 
 export default async function AdminSettingsPage({
   params,
@@ -40,11 +42,19 @@ export default async function AdminSettingsPage({
 
   return (
     <main className="page page-narrow stack-lg">
-      <div>
-        <h1 className="head-1">{t("title")}</h1>
-        <p className="body-1 muted m-0">
-          {t("description")}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="head-1">{t("title")}</h1>
+          <p className="body-1 muted m-0">
+            {t("description")}
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="shrink-0 mt-1">
+          <Link href={`/${locale}/admin/settings/docs`}>
+            <FileText size={16} />
+            {t("docsLink")}
+          </Link>
+        </Button>
       </div>
 
       <Card>

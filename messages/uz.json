@@ -186,7 +186,8 @@
   },
   "AdminSettings": {
     "title": "Sozlamalar",
-    "description": "Limit yangi urinishlarga qo‘llanadi. Natija to‘g‘ri javoblar foizi sifatida hisoblanadi.",
+    "description": "Limit yangi urinishlarga qo’llanadi. Natija to’g’ri javoblar foizi sifatida hisoblanadi.",
+    "docsLink": "Hujjatlar",
     "save": "Saqlash",
     "closeModal": "Modal oynani yopish",
     "timeCard": {
