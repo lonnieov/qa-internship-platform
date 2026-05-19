@@ -197,11 +197,11 @@ export const clickAvtoTintingPresetConfig: AutotestSandboxConfig = {
     },
   ],
   exampleCode: `// Пример структуры псевдокода:
-test('Название сценария', () => {
-  navigateTo('Экран')
-  tap('Элемент')
-  expect('Результат').toBeVisible()
-})`,
+// test('Название сценария', () => {
+//   navigateTo('Экран')
+//   tap('Элемент')
+//   expect('Результат').toBeVisible()
+// })`,
 };
 
 // --- Preset registry ---
@@ -240,6 +240,8 @@ export function getAutotestSandboxConfig(value: unknown) {
       Array.isArray(config.expectedScenarios) && config.expectedScenarios.length > 0
         ? config.expectedScenarios
         : preset.expectedScenarios,
+    // Always use the preset's exampleCode to avoid outdated DB values being shown
+    exampleCode: preset.exampleCode,
   } satisfies AutotestSandboxConfig;
 }
 

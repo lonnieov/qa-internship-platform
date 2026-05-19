@@ -21,6 +21,7 @@ export default async function AdminSettingsPage({
   const { locale } = await params;
   const t = await getTranslations("AdminSettings");
   const currentAdmin = await requireAdmin({ locale });
+  const currentAdminIsSeed = currentAdmin.email?.toLowerCase() === seedAdminEmail;
   const [settings, admins] = await Promise.all([
     getSettings(),
     prisma.profile.findMany({
@@ -131,6 +132,7 @@ export default async function AdminSettingsPage({
                             isSeed: false,
                             isCurrent,
                           }}
+                          currentAdminIsSeed={currentAdminIsSeed}
                         />
                       </td>
                     </tr>

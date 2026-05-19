@@ -26,9 +26,10 @@ type AdminManageModalProps = {
     isSeed: boolean;
     isCurrent: boolean;
   };
+  currentAdminIsSeed: boolean;
 };
 
-export function AdminManageModal({ admin }: AdminManageModalProps) {
+export function AdminManageModal({ admin, currentAdminIsSeed }: AdminManageModalProps) {
   const t = useTranslations("AdminSettings");
   const [isOpen, setIsOpen] = useState(false);
   const [updateState, updateAction, isUpdatePending] = useActionState(
@@ -40,6 +41,11 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
     initialState,
   );
   const isProtected = admin.isSeed;
+  // Non-seed admins can only manage their own profile
+  const canManage = currentAdminIsSeed || admin.isCurrent;
+
+  // Non-seed admins see the button only for their own profile
+  if (!canManage) return null;
 
   return (
     <>
@@ -152,38 +158,40 @@ export function AdminManageModal({ admin }: AdminManageModalProps) {
                     ) : null}
                   </form>
 
-                  <div className="track-modal-danger-zone">
-                    <div>
-                      <strong>{t("admins.delete.title")}</strong>
-                      <p className="body-2 muted m-0">
-                        {t("admins.delete.description")}
-                      </p>
+                  {currentAdminIsSeed ? (
+                    <div className="track-modal-danger-zone">
+                      <div>
+                        <strong>{t("admins.delete.title")}</strong>
+                        <p className="body-2 muted m-0">
+                          {t("admins.delete.description")}
+                        </p>
+                      </div>
+                      <form action={deleteAction}>
+                        <input type="hidden" name="adminId" value={admin.id} />
+                        <Button
+                          type="submit"
+                          variant="destructive"
+                          disabled={isDeletePending || admin.isCurrent}
+                          title={
+                            admin.isCurrent
+                              ? t("admins.delete.currentDisabled")
+                              : undefined
+                          }
+                        >
+                          {t("admins.delete.action")}
+                        </Button>
+                      </form>
+                      {deleteState.message ? (
+                        <p
+                          className={`body-2 m-0 ${
+                            deleteState.ok ? "success-text" : "danger-text"
+                          }`}
+                        >
+                          {deleteState.message}
+                        </p>
+                      ) : null}
                     </div>
-                    <form action={deleteAction}>
-                      <input type="hidden" name="adminId" value={admin.id} />
-                      <Button
-                        type="submit"
-                        variant="destructive"
-                        disabled={isDeletePending || admin.isCurrent}
-                        title={
-                          admin.isCurrent
-                            ? t("admins.delete.currentDisabled")
-                            : undefined
-                        }
-                      >
-                        {t("admins.delete.action")}
-                      </Button>
-                    </form>
-                    {deleteState.message ? (
-                      <p
-                        className={`body-2 m-0 ${
-                          deleteState.ok ? "success-text" : "danger-text"
-                        }`}
-                      >
-                        {deleteState.message}
-                      </p>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </>
               )}
             </div>
