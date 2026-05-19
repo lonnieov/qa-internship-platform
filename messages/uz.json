@@ -14,17 +14,17 @@
     "logout": "Chiqish"
   },
   "SiteFooter": {
-    "brand": "LAP inc.",
+    "brand": "QA Guild",
     "description": "Buyurtma asosida raqamli mahsulotlar yaratadigan AI studiya: prototipdan xotirjam relizgacha.",
     "contactsLabel": "Huquq egalari kontaktlari",
     "ownerTitle": "Huquq egalari",
-    "ownerName": "LAP inc.",
-    "terms": "Platformadan foydalanish LAP inc. ichki qoidalari bilan tartibga solinadi.",
+    "ownerName": "QA Guild",
+    "terms": "Platformadan foydalanish QA Guild ichki qoidalari bilan tartibga solinadi.",
     "contactButton": "Hamkorlik uchun murojaat qiling",
     "contactDialogTitle": "Huquq egalari kontaktlari",
     "contactDialogDescription": "Ijodkorlardan biriga Telegram orqali yozing",
     "closeContactDialog": "Kontaktlarni yopish",
-    "copyright": "© {year} LAP inc. Barcha huquqlar himoyalangan"
+    "copyright": "© {year} QA Guild. Barcha huquqlar himoyalangan"
   },
   "CompanyPage": {
     "eyebrow": "Raqamli mahsulotlar uchun AI studiya",
