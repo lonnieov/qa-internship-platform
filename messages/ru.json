@@ -14,17 +14,17 @@
     "logout": "Выйти"
   },
   "SiteFooter": {
-    "brand": "LAP inc.",
+    "brand": "QA Guild",
     "description": "AI-студия, которая проектирует цифровые продукты на заказ: от прототипа до спокойного релиза.",
     "contactsLabel": "Контакты правообладателей",
     "ownerTitle": "Правообладатели",
-    "ownerName": "LAP inc.",
-    "terms": "Использование платформы регулируется внутренними правилами LAP inc.",
+    "ownerName": "QA Guild",
+    "terms": "Использование платформы регулируется внутренними правилами QA Guild.",
     "contactButton": "Связаться для сотрудничества",
     "contactDialogTitle": "Контакты правообладателей",
     "contactDialogDescription": "Напишите одному из создателей в Telegram.",
     "closeContactDialog": "Закрыть контакты",
-    "copyright": "© {year} LAP inc. Все права защищены"
+    "copyright": "© {year} QA Guild. Все права защищены"
   },
   "CompanyPage": {
     "eyebrow": "AI-студия цифровых продуктов",
