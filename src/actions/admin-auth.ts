@@ -100,7 +100,7 @@ export async function updateAdminAction(
   _prevState: AdminAuthState,
   formData: FormData,
 ): Promise<AdminAuthState> {
-  await requireAdmin();
+  const currentAdmin = await requireAdmin();
 
   const adminId = String(formData.get("adminId") ?? "");
   const email = normalizeEmail(formData.get("email"));
@@ -110,6 +110,12 @@ export async function updateAdminAction(
 
   if (!adminId) {
     return { ok: false, message: "Администратор не найден." };
+  }
+
+  // Non-seed admins can only edit their own profile
+  const isCurrentAdminSeed = currentAdmin.email?.toLowerCase() === seedAdminEmail;
+  if (!isCurrentAdminSeed && adminId !== currentAdmin.id) {
+    return { ok: false, message: "Вы можете изменять только свой профиль." };
   }
 
   const target = await prisma.profile.findUnique({ where: { id: adminId } });
@@ -157,6 +163,16 @@ export async function deleteAdminAction(
   formData: FormData,
 ): Promise<AdminAuthState> {
   const currentAdmin = await requireAdmin();
+
+  // Only seed admin can delete other admin accounts
+  const isCurrentAdminSeed = currentAdmin.email?.toLowerCase() === seedAdminEmail;
+  if (!isCurrentAdminSeed) {
+    return {
+      ok: false,
+      message: "Только главный администратор может удалять учётные записи.",
+    };
+  }
+
   const adminId = String(formData.get("adminId") ?? "");
 
   if (!adminId) {
