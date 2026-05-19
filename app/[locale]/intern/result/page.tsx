@@ -1,27 +1,22 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import {
-  Check,
-  CheckSquare,
-  Clock3,
-  Info,
-  LockKeyhole,
-  Mail,
-} from "lucide-react";
+import { Check, Info, LockKeyhole, Mail } from "lucide-react";
 import { getResultAttemptId, verifyResultTicket } from "@/lib/intern-token-auth";
 import { prisma } from "@/lib/prisma";
-import { formatDuration } from "@/lib/utils";
 import { CompletionConfetti } from "@/components/intern/completion-confetti";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function InternResultPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ ticket?: string }>;
 }) {
   const t = await getTranslations("InternResult");
+  const { locale } = await params;
   const { ticket } = await searchParams;
   const attemptId = verifyResultTicket(ticket) ?? (await getResultAttemptId());
 
@@ -46,22 +41,13 @@ export default async function InternResultPage({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-  const totalTimeMs =
-    typeof attempt.totalTimeSeconds === "number"
-      ? attempt.totalTimeSeconds * 1000
-      : Math.max(
-          0,
-          (attempt.submittedAt?.getTime() ?? Date.now()) -
-            attempt.startedAt.getTime(),
-        );
-
   return (
     <main className="page intern-finish-page">
       <CompletionConfetti />
 
       <div className="intern-page-top">
         <div className="brand">
-          <ServiceLogo />
+          <ServiceLogo href={`/${locale}`} />
           QA Assessment
         </div>
         <div className="hero-actions">
@@ -79,26 +65,6 @@ export default async function InternResultPage({
         <div className="intern-candidate-pill">
           <div className="intern-avatar">{initials || "QA"}</div>
           <strong>{attempt.internProfile.fullName}</strong>
-        </div>
-      </section>
-
-      <section className="intern-result-summary">
-        <div>
-          <span>
-            <CheckSquare size={14} />
-            {t("answersSent")}
-          </span>
-          <strong>
-            {attempt.questionCount}
-            <small>{t("ofTotal", { total: attempt.questionCount })}</small>
-          </strong>
-        </div>
-        <div>
-          <span>
-            <Clock3 size={14} />
-            {t("timeSpent")}
-          </span>
-          <strong>{formatDuration(totalTimeMs)}</strong>
         </div>
       </section>
 

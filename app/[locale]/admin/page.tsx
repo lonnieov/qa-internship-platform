@@ -58,9 +58,6 @@ export default async function AdminPage({
             {t("description")}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/interns">{t("grantAccess")}</Link>
-        </Button>
       </div>
 
       <section className="grid-3">

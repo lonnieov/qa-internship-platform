@@ -384,6 +384,85 @@ export async function revokeInvitationAction(formData: FormData) {
   revalidatePath("/admin/interns");
 }
 
+export async function deleteInternCandidateAction(formData: FormData) {
+  const profile = await requireAdminAccess();
+  const internProfileId = String(formData.get("internProfileId") ?? "").trim();
+  const invitationIds = Array.from(
+    new Set(
+      formData
+        .getAll("invitationId")
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (!internProfileId && invitationIds.length === 0) return;
+
+  const manageableTrackIds = await getManageableTrackIds(profile);
+  const intern = internProfileId
+    ? await prisma.internProfile.findUnique({
+        where: { id: internProfileId },
+        select: {
+          id: true,
+          invitationId: true,
+          profileId: true,
+          trackId: true,
+        },
+      })
+    : null;
+
+  if (internProfileId && !intern) return;
+  if (
+    manageableTrackIds &&
+    intern &&
+    (!intern.trackId || !manageableTrackIds.includes(intern.trackId))
+  ) {
+    return;
+  }
+
+  const deletionInvitationIds = new Set(invitationIds);
+  if (intern?.invitationId) {
+    deletionInvitationIds.add(intern.invitationId);
+  }
+
+  const invitations =
+    deletionInvitationIds.size > 0
+      ? await prisma.invitation.findMany({
+          where: { id: { in: Array.from(deletionInvitationIds) } },
+          select: { id: true, trackId: true },
+        })
+      : [];
+
+  if (
+    manageableTrackIds &&
+    invitations.some(
+      (invitation) =>
+        !invitation.trackId || !manageableTrackIds.includes(invitation.trackId),
+    )
+  ) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (intern) {
+      await tx.invitation.updateMany({
+        where: { acceptedByProfileId: intern.profileId },
+        data: { acceptedByProfileId: null },
+      });
+      await tx.profile.delete({ where: { id: intern.profileId } });
+    }
+
+    if (deletionInvitationIds.size > 0) {
+      await tx.invitation.deleteMany({
+        where: { id: { in: Array.from(deletionInvitationIds) } },
+      });
+    }
+  });
+
+  revalidatePath("/admin/interns");
+  revalidatePath("/admin");
+}
+
 export async function updateSettingsAction(formData: FormData) {
   await requireAdmin();
   const totalTimeMinutes = Number(formData.get("totalTimeMinutes") ?? 30);

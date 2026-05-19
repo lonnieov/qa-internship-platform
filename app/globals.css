@@ -3465,22 +3465,32 @@ button {
 
 .candidate-table th:nth-child(1),
 .candidate-table td:nth-child(1) {
-  width: 32%;
+  width: 22%;
 }
 
 .candidate-table th:nth-child(2),
 .candidate-table td:nth-child(2) {
-  width: 20%;
+  width: 14%;
 }
 
 .candidate-table th:nth-child(3),
 .candidate-table td:nth-child(3) {
-  width: 24%;
+  width: 16%;
+}
+
+.candidate-table th:nth-child(4),
+.candidate-table td:nth-child(4) {
+  width: 14%;
+}
+
+.candidate-table th:nth-child(5),
+.candidate-table td:nth-child(5) {
+  width: 22%;
 }
 
 .candidate-table th:last-child,
 .candidate-table td:last-child {
-  width: 24%;
+  width: 12%;
 }
 
 .candidate-table-row {
@@ -3656,6 +3666,10 @@ button {
   border-color: var(--warning);
   background: color-mix(in srgb, var(--warning) 22%, transparent);
   color: var(--warning);
+}
+
+.intern-action-delete {
+  box-shadow: 0 8px 20px rgba(185, 28, 28, 0.16);
 }
 
 .retake-action {
@@ -4203,6 +4217,14 @@ button {
   padding-bottom: 0;
 }
 
+.candidate-danger-section {
+  border-top-color: color-mix(in srgb, var(--destructive) 24%, transparent);
+}
+
+.candidate-danger-section form {
+  width: min(240px, 100%);
+}
+
 .candidate-modal-section-title {
   display: grid;
   gap: 4px;
@@ -4235,7 +4257,7 @@ button {
 }
 
 .candidate-details-table {
-  min-width: 800px;
+  min-width: 920px;
 }
 
 .candidate-details-table th {

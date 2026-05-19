@@ -19,6 +19,7 @@
 - In the modal, enter `Алина Каримова` as the candidate name.
 - Click `Создать стажёра`.
 - Expected: the modal shows a success message and a copyable token.
+- Expected: the submit button text changes to `Создать ещё`.
 - Close the modal.
 - Expected: the candidate appears in `Список стажёров`.
 - Open the candidate row.

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clock3, FileText, X } from "lucide-react";
+import { CheckCircle2, Clock3, FileText, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   createInvitationAction,
+  deleteInternCandidateAction,
   revokeInvitationAction,
   type InvitationState,
 } from "@/actions/admin";
@@ -15,7 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
-type SortKey = "created" | "name" | "access" | "attempt" | "result";
+type SortKey =
+  | "created"
+  | "name"
+  | "wave"
+  | "track"
+  | "access"
+  | "attempt"
+  | "result";
 type SortDirection = "asc" | "desc";
 
 const pageSize = 10;
@@ -33,6 +41,7 @@ export type CandidateInvitation = {
 
 export type CandidateAttempt = {
   id: string;
+  trackLabel: string;
   status: string;
   startedAt: string;
   submittedAt: string;
@@ -45,9 +54,11 @@ export type CandidateRow = {
   name: string;
   kind: "profile" | "invitation";
   internProfileId: string | null;
+  waveLabel: string;
   accessLabel: string;
   attemptLabel: string;
   resultLabel: string;
+  latestCompletedTrackLabel: string;
   createdAtSort: number;
   attemptAtSort: number;
   resultSort: number | null;
@@ -215,6 +226,19 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
       );
     }
 
+    if (sortKey === "wave") {
+      return left.waveLabel.localeCompare(right.waveLabel, "ru") * direction;
+    }
+
+    if (sortKey === "track") {
+      return (
+        left.latestCompletedTrackLabel.localeCompare(
+          right.latestCompletedTrackLabel,
+          "ru",
+        ) * direction
+      );
+    }
+
     if (sortKey === "attempt") {
       return (left.attemptAtSort - right.attemptAtSort) * direction;
     }
@@ -240,7 +264,12 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
 
     setSortKey(nextKey);
     setSortDirection(
-      nextKey === "name" || nextKey === "access" ? "asc" : "desc",
+      nextKey === "name" ||
+        nextKey === "access" ||
+        nextKey === "wave" ||
+        nextKey === "track"
+        ? "asc"
+        : "desc",
     );
   }
 
@@ -298,9 +327,27 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   <button
                     className="table-sort-button"
                     type="button"
+                    onClick={() => toggleSort("wave")}
+                  >
+                    {t("table.wave")} <span>{sortLabel("wave")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
                     onClick={() => toggleSort("access")}
                   >
                     {t("table.testStatus")} <span>{sortLabel("access")}</span>
+                  </button>
+                </th>
+                <th>
+                  <button
+                    className="table-sort-button"
+                    type="button"
+                    onClick={() => toggleSort("track")}
+                  >
+                    {t("table.track")} <span>{sortLabel("track")}</span>
                   </button>
                 </th>
                 <th>
@@ -341,11 +388,13 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   <td>
                     <strong>{row.name}</strong>
                   </td>
+                  <td>{row.waveLabel}</td>
                   <td>
                     <Badge variant={row.badgeVariant}>
                       {t(`status.${row.accessLabel}`)}
                     </Badge>
                   </td>
+                  <td>{row.latestCompletedTrackLabel}</td>
                   <td>{row.attemptLabel}</td>
                   <td>{row.resultLabel}</td>
                 </tr>
@@ -405,6 +454,14 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                 </h2>
                 <p className="body-2 muted m-0">
                   {t("tokensAttemptsActions")}
+                </p>
+                <p className="body-2 muted m-0">
+                  {t("internWave")}:{" "}
+                  <strong>{selected.waveLabel}</strong>
+                </p>
+                <p className="body-2 muted m-0">
+                  {t("latestCompletedTrack")}:{" "}
+                  <strong>{selected.latestCompletedTrackLabel}</strong>
                 </p>
               </div>
               <Button
@@ -510,6 +567,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                         <thead>
                           <tr>
                             <th>{t("table.status")}</th>
+                            <th>{t("table.track")}</th>
                             <th>{t("table.started")}</th>
                             <th>{t("table.submitted")}</th>
                             <th>{t("table.result")}</th>
@@ -520,6 +578,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                           {selected.attempts.map((attempt) => (
                             <tr key={attempt.id}>
                               <td>{t(`status.${attempt.status}`)}</td>
+                              <td>{attempt.trackLabel}</td>
                               <td>{attempt.startedAt}</td>
                               <td>{attempt.submittedAt}</td>
                               <td>{attempt.scorePercent}</td>
@@ -564,6 +623,49 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   </div>
                 </section>
               )}
+
+              <section className="candidate-modal-section candidate-danger-section">
+                <div className="candidate-modal-section-header">
+                  <div className="candidate-modal-section-title">
+                    <h3 className="section-title">{t("delete.title")}</h3>
+                    <p className="body-2 muted m-0">
+                      {selected.internProfileId
+                        ? t("delete.profileDescription")
+                        : t("delete.invitationDescription")}
+                    </p>
+                  </div>
+                  <form action={deleteInternCandidateAction}>
+                    <input
+                      type="hidden"
+                      name="internProfileId"
+                      value={selected.internProfileId ?? ""}
+                    />
+                    {selected.invitations.map((invitation) => (
+                      <input
+                        key={invitation.id}
+                        type="hidden"
+                        name="invitationId"
+                        value={invitation.id}
+                      />
+                    ))}
+                    <Button
+                      className="intern-action-button intern-action-delete"
+                      size="sm"
+                      type="submit"
+                      variant="destructive"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!window.confirm(t("delete.confirm"))) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <Trash2 size={15} />
+                      {t("delete.action")}
+                    </Button>
+                  </form>
+                </div>
+              </section>
             </div>
           </div>
         </div>

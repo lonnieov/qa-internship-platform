@@ -10,6 +10,7 @@ Create a new intern from a modal on `/admin/interns`.
 - The modal contains only the candidate name field.
 - A token is issued immediately after the intern is created.
 - The created token is shown inside the modal and remains copyable.
+- After the first token is created, the modal submit button changes to `Создать ещё`.
 - The created candidate appears in the unified intern candidate list.
 
 ## Data Model
@@ -27,6 +28,7 @@ Create a new intern from a modal on `/admin/interns`.
 - Admin fills candidate name.
 - Admin submits the form.
 - The modal displays the new intern access token immediately.
+- The submit button switches from `Создать стажёра` to `Создать ещё`.
 
 ## Touched Files
 

@@ -1,9 +1,97 @@
 import { NextResponse } from "next/server";
-import { normalizeApiSandboxConfig } from "@/lib/api-sandbox";
+import {
+  normalizeApiSandboxConfig,
+  type ApiSandboxConfig,
+} from "@/lib/api-sandbox";
 import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+
+function queryWithoutAttempt(searchParams: URLSearchParams) {
+  const query: Record<string, string> = {};
+
+  searchParams.forEach((value, key) => {
+    if (key !== "attempt") {
+      query[key] = value;
+    }
+  });
+
+  return query;
+}
+
+function equalQuery(
+  actual: Record<string, string>,
+  expected: Record<string, string>,
+) {
+  const actualEntries = Object.entries(actual).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  const expectedEntries = Object.entries(expected).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+
+  return JSON.stringify(actualEntries) === JSON.stringify(expectedEntries);
+}
+
+function hashText(value: string) {
+  let hash = 0;
+
+  for (const character of value) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+
+  return hash;
+}
+
+function buildNoiseBody(
+  questionId: string,
+  endpoint: string,
+  query: Record<string, string>,
+) {
+  const seed = hashText(`${questionId}:${endpoint}:${JSON.stringify(query)}`);
+  const messages = [
+    "queued for validation",
+    "session state refreshed",
+    "request accepted",
+    "preview data prepared",
+    "background sync complete",
+  ];
+  const statuses = ["ok", "accepted", "processed", "ready", "synced"];
+  const code = (seed % 9000) + 1000;
+
+  return {
+    status: statuses[seed % statuses.length],
+    message: messages[seed % messages.length],
+    data: {
+      id: `tmp_${code}`,
+      value: `check_${code}`,
+      reference: endpoint || "root",
+    },
+    meta: {
+      requestId: `req_${questionId.slice(0, 6)}_${code}`,
+      query,
+    },
+  };
+}
+
+function buildNoiseResponse(
+  config: ApiSandboxConfig,
+  questionId: string,
+  endpoint: string,
+  query: Record<string, string>,
+) {
+  const response = NextResponse.json(buildNoiseBody(questionId, endpoint, query), {
+    status: config.successStatus ?? 200,
+  });
+
+  for (const [key, value] of Object.entries(config.successHeaders ?? {})) {
+    response.headers.set(key, value);
+  }
+
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
 
 async function handleRequest(
   request: Request,
@@ -45,8 +133,10 @@ async function handleRequest(
   const config = normalizeApiSandboxConfig(question.apiConfig);
   const expectedEndpoint = config.path.replace(/^\/+/, "");
   const actualEndpoint = endpoint.join("/");
+  const actualQuery = queryWithoutAttempt(url.searchParams);
+  const expectedQuery = config.query ?? {};
 
-  if (config.mode !== "DEVTOOLS_RESPONSE" || actualEndpoint !== expectedEndpoint) {
+  if (config.mode !== "DEVTOOLS_RESPONSE") {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
@@ -55,6 +145,13 @@ async function handleRequest(
       { error: "method_not_allowed", expectedMethod: config.method.toUpperCase() },
       { status: 405 },
     );
+  }
+
+  if (
+    actualEndpoint !== expectedEndpoint ||
+    !equalQuery(actualQuery, expectedQuery)
+  ) {
+    return buildNoiseResponse(config, questionId, actualEndpoint, actualQuery);
   }
 
   const response = NextResponse.json(config.successBody ?? { ok: true }, {
