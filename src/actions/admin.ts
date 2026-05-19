@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { getManageableTrackIds, requireAdmin, requireAdminAccess } from "@/lib/auth";
+import { getRequestLocale, localizedPath } from "@/lib/locale";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { normalizeLegacyTrack } from "@/lib/question-classification";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
@@ -83,9 +84,13 @@ async function canManageTrack(profile: { id: string; role: string }, trackId: st
   return !manageableTrackIds || manageableTrackIds.includes(trackId);
 }
 
-async function ensureCanManageTrack(profile: { id: string; role: string }, trackId: string | null | undefined) {
+async function ensureCanManageTrack(
+  profile: { id: string; role: string },
+  trackId: string | null | undefined,
+  locale?: string,
+) {
   if (!(await canManageTrack(profile, trackId))) {
-    redirect("/admin");
+    redirect(localizedPath("/admin", await getRequestLocale(locale)));
   }
 }
 
@@ -142,6 +147,7 @@ function questionRedirectUrl(
   questionType: string,
   trackSlug: string,
   created = false,
+  locale: string,
 ) {
   const params = new URLSearchParams({
     type:
@@ -162,7 +168,7 @@ function questionRedirectUrl(
     params.set("created", "1");
   }
 
-  return `/admin/questions?${params.toString()}`;
+  return localizedPath(`/admin/questions?${params.toString()}`, locale);
 }
 
 function readManualQaSandboxConfig(formData: FormData, text: string) {
@@ -489,13 +495,14 @@ export async function updateSettingsAction(formData: FormData) {
 }
 
 export async function createQuestionAction(formData: FormData) {
-  const admin = await requireAdminAccess();
+  const locale = await getRequestLocale(formData.get("locale"));
+  const admin = await requireAdminAccess({ locale });
   const questionType = String(formData.get("questionType") ?? "QUIZ");
   const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
-  await ensureCanManageTrack(admin, track.trackId);
+  await ensureCanManageTrack(admin, track.trackId, locale);
   if (!isQuestionTypeAllowedForTrack(questionType, track.trackSlug)) {
-    redirect(questionRedirectUrl("QUIZ", track.trackSlug));
+    redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
 
   const text = String(formData.get("text") ?? "").trim();
@@ -690,7 +697,7 @@ export async function createQuestionAction(formData: FormData) {
 
       revalidatePath("/admin/questions");
       revalidatePath("/admin");
-      redirect(questionRedirectUrl(questionType, track.trackSlug, true));
+      redirect(questionRedirectUrl(questionType, track.trackSlug, true, locale));
     }
 
     const correctIndex = Number(formData.get("correctOption"));
@@ -729,18 +736,19 @@ export async function createQuestionAction(formData: FormData) {
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");
-  redirect(questionRedirectUrl(questionType, track.trackSlug, true));
+  redirect(questionRedirectUrl(questionType, track.trackSlug, true, locale));
 }
 
 export async function updateQuestionAction(formData: FormData) {
-  const profile = await requireAdminAccess();
+  const locale = await getRequestLocale(formData.get("locale"));
+  const profile = await requireAdminAccess({ locale });
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "QUIZ");
   const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
-  await ensureCanManageTrack(profile, track.trackId);
+  await ensureCanManageTrack(profile, track.trackId, locale);
   if (!isQuestionTypeAllowedForTrack(questionType, track.trackSlug)) {
-    redirect(questionRedirectUrl("QUIZ", track.trackSlug));
+    redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
 
   const text = String(formData.get("text") ?? "").trim();

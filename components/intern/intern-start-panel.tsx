@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check, Clock3, HelpCircle, Info, ShieldCheck } from "lucide-react";
-import { useTranslations } from "next-intl";
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  HelpCircle,
+  Info,
+  ShieldCheck,
+} from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { startAttemptAction } from "@/actions/intern";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +21,7 @@ export function InternStartPanel({
   hasActiveAttempt: boolean;
 }) {
   const t = useTranslations("InternHome");
+  const locale = useLocale();
   const readinessChecks = [
     t("checkQuiet"),
     t("checkTime"),
@@ -152,6 +160,7 @@ export function InternStartPanel({
           </p>
         </div>
         <form action={startAttemptAction}>
+          <input name="locale" type="hidden" value={locale} />
           <Button className="intern-start-button" disabled={!canStart} type="submit">
             {hasActiveAttempt ? t("continueButton") : t("startButton")}
             <ArrowRight size={15} />

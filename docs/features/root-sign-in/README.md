@@ -14,6 +14,7 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - Auth role links stay locale-prefixed to avoid an extra middleware redirect during client navigation.
 - Successful admin sign-in redirects directly to the current locale admin route.
 - Successful intern token sign-in redirects directly to the current locale intern route.
+- Intern start, continue, finish, result, onboarding, and logout redirects keep the current locale prefix.
 
 ## Main Flow
 
@@ -24,6 +25,7 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - Protected admin routes redirect unauthenticated users directly to the active locale sign-in URL.
 - Admin login submits the current locale and redirects to `/{locale}/admin` after session creation.
 - Intern login submits the current locale and redirects to `/{locale}/intern` after session creation.
+- The intern start form submits the current locale, then redirects directly to `/{locale}/intern/test` or `/{locale}/intern/result`.
 
 ## Touched Files
 
@@ -35,10 +37,19 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - `app/[locale]/admin/layout.tsx`
 - `components/admin/admin-login-form.tsx`
 - `components/intern/token-login-form.tsx`
+- `components/intern/intern-start-panel.tsx`
+- `components/intern/test-runner.tsx`
 - `components/auth-role-tabs.tsx`
 - `src/actions/admin-auth.ts`
 - `src/actions/intern.ts`
 - `src/lib/auth.ts`
+- `src/lib/intern-token-auth.ts`
+- `app/[locale]/intern/page.tsx`
+- `app/[locale]/intern/test/page.tsx`
+- `app/[locale]/intern/finish/route.ts`
+- `app/[locale]/intern/result/page.tsx`
+- `app/[locale]/intern/layout.tsx`
+- `app/[locale]/intern/onboarding/page.tsx`
 - `app/globals.css`
 
 ## Constraints
@@ -46,3 +57,4 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - Intern token login remains available from `/`.
 - Admin sign-in remains on `/ru/sign-in/admin` and `/uz/sign-in/admin`.
 - Intern sign-in remains on `/ru/sign-in/intern` and `/uz/sign-in/intern`.
+- Result access uses a short-lived ticket cookie scoped to `/` so localized result pages can read it.

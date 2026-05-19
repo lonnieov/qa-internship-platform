@@ -123,10 +123,10 @@ function apiSummary(question: AdminQuestion) {
   };
 }
 
-function filterUrl(type: QuestionType, track: string | "all") {
+function filterUrl(locale: string, type: QuestionType, track: string | "all") {
   const params = new URLSearchParams({ type });
   if (track !== "all") params.set("track", track);
-  return `/admin/questions?${params.toString()}`;
+  return `/${locale}/admin/questions?${params.toString()}`;
 }
 
 function renderQuestionCard(
@@ -293,9 +293,9 @@ export default async function AdminQuestionsPage({
   params: Promise<{ locale: "ru" | "uz" }>;
   searchParams: Promise<{ type?: string; track?: string; created?: string }>;
 }) {
-  await params;
+  const { locale } = await params;
   const t = await getTranslations("AdminQuestions");
-  const profile = await requireAdminAccess();
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const resolvedSearchParams = await searchParams;
   const allTracks = await ensureTracks();
@@ -303,7 +303,7 @@ export default async function AdminQuestionsPage({
     ? allTracks.filter((track) => manageableTrackIds.includes(track.id))
     : allTracks;
   if (tracks.length === 0) {
-    redirect("/admin/tracks");
+    redirect(`/${locale}/admin/tracks`);
   }
 
   const requestedTrack = resolvedSearchParams.track;
@@ -318,7 +318,7 @@ export default async function AdminQuestionsPage({
     manageableTrackIds &&
     (!requestedTrack || requestedTrack !== selectedTrackRecord?.slug)
   ) {
-    redirect(`/admin/questions?track=${selectedTrackRecord?.slug}`);
+    redirect(`/${locale}/admin/questions?track=${selectedTrackRecord?.slug}`);
   }
 
   const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
@@ -413,7 +413,7 @@ export default async function AdminQuestionsPage({
             </div>
             <Link
               className={`question-filter-item ${selectedTrackSlug === "all" ? "active" : ""}`}
-              href={filterUrl(activeSection.type, "all")}
+              href={filterUrl(locale, activeSection.type, "all")}
             >
               <span>{t("tracks.all")}</span>
               <span>{allAccessibleQuestions.length}</span>
@@ -427,7 +427,7 @@ export default async function AdminQuestionsPage({
                 <div className="track-filter-row" key={track.id}>
                   <Link
                     className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
-                    href={filterUrl(activeSection.type, track.slug)}
+                    href={filterUrl(locale, activeSection.type, track.slug)}
                   >
                     <span className="nav-row">
                       <span className={meta.dotClassName} />
@@ -457,7 +457,7 @@ export default async function AdminQuestionsPage({
                   size="sm"
                   variant={active ? "default" : "outline"}
                 >
-                  <Link href={filterUrl(type, selectedTrackSlug)}>
+                  <Link href={filterUrl(locale, type, selectedTrackSlug)}>
                     {meta.title} ({allTypeCount(type)})
                   </Link>
                 </Button>

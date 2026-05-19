@@ -55,7 +55,7 @@ export default async function AdminInternsPage({
   const { locale: localeParam } = await params;
   const locale = isLocale(localeParam) ? localeParam : routing.defaultLocale;
   const t = await getTranslations("AdminInterns");
-  const profile = await requireAdminAccess();
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
   const { q } = await searchParams;

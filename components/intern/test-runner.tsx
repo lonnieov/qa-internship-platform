@@ -2,7 +2,7 @@
 
 import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -583,6 +583,7 @@ export function TestRunner({
   questions: Question[];
 }) {
   const t = useTranslations("InternTest");
+  const locale = useLocale();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState(
@@ -1333,7 +1334,7 @@ export function TestRunner({
     }
     flushCurrentTime();
     startTransition(() => {
-      void submitAttemptAction({ attemptId, auto });
+      void submitAttemptAction({ attemptId, auto, locale });
     });
   }
 

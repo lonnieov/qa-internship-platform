@@ -214,6 +214,7 @@ export function AdminShell({
           <LanguageSwitcher />
           <ThemeToggle />
           <form action={logoutAdminAction}>
+            <input name="locale" type="hidden" value={locale} />
             <Button
               className="w-full justify-start"
               variant="ghost"

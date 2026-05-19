@@ -5,6 +5,7 @@
 - Docker or a compatible image builder is installed.
 - For standalone Docker, a reachable Postgres `DATABASE_URL` is available.
 - For Compose, no external database is required.
+- For custom-domain proxy testing, `SERVER_ACTIONS_ALLOWED_ORIGINS` is set before build or deploy.
 
 ## Smoke Check
 
@@ -34,5 +35,11 @@
 1. Deploy the image behind a reverse proxy with `x-forwarded-host` and `x-forwarded-proto`.
 2. Open the public root URL.
 3. Expected: redirect `Location` uses the public host and does not include the internal container port.
-4. Restart the app container with the same secrets.
-5. Expected: new admin sessions remain valid after restart.
+4. Create an intern token, open the public intern sign-in URL, enter the token, check personal data consent, and submit.
+5. Expected: the intern home opens and the browser keeps a `qa_intern` cookie for the public host.
+6. Click `Продолжить тестирование` or `Начать тестирование`.
+7. Expected: the test opens under `/{locale}/intern/test` and does not return to the login screen.
+8. Finish or expire the attempt.
+9. Expected: the result page opens under `/{locale}/intern/result` and does not require logging in again.
+10. Restart the app container with the same secrets.
+11. Expected: new admin sessions remain valid after restart.

@@ -7,11 +7,10 @@ export const runtime = "nodejs";
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ attemptId: string }> },
+  { params }: { params: Promise<{ locale: string; attemptId: string }> },
 ) {
-  const profile = await requireAdminAccess();
-
-  const { attemptId } = await params;
+  const { locale, attemptId } = await params;
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   if (manageableTrackIds) {
     const attempt = await prisma.assessmentAttempt.findUnique({

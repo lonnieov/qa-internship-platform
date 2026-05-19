@@ -68,19 +68,22 @@ function statTone(value: number | null | undefined) {
   return "var(--warning)";
 }
 
-function filterHref(status: TrackStatusFilter, q: string) {
+function filterHref(locale: string, status: TrackStatusFilter, q: string) {
   const params = new URLSearchParams();
   if (status !== "all") params.set("status", status);
   if (q) params.set("q", q);
-  return `/admin/tracks${params.size ? `?${params.toString()}` : ""}`;
+  return `/${locale}/admin/tracks${params.size ? `?${params.toString()}` : ""}`;
 }
 
 export default async function AdminTracksPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string; status?: string }>;
 }) {
-  const profile = await requireAdminAccess();
+  const { locale } = await params;
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const { q, status } = await searchParams;
   const query = String(q ?? "").trim().toLowerCase();
@@ -228,7 +231,7 @@ export default async function AdminTracksPage({
           </p>
         </div>
         <div className="nav-row">
-          <form action="/admin/tracks" className="nav-row">
+          <form action={`/${locale}/admin/tracks`} className="nav-row">
             <div style={{ position: "relative" }}>
               <Search
                 size={15}
@@ -351,7 +354,7 @@ export default async function AdminTracksPage({
               size="sm"
               variant={statusFilter === item ? "default" : "secondary"}
             >
-              <Link href={filterHref(item, query)}>
+              <Link href={filterHref(locale, item, query)}>
                 {item === "all"
                   ? "Все"
                   : item === "active"
@@ -456,7 +459,7 @@ export default async function AdminTracksPage({
                 {/* Action buttons */}
                 <StopPropagationSpan className="nav-row" style={{ justifyContent: "flex-end" }}>
                   <Button asChild size="sm" variant="secondary">
-                    <Link href={`/admin/questions?track=${track.slug}`}>
+                    <Link href={`/${locale}/admin/questions?track=${track.slug}`}>
                       <List size={14} />
                       Вопросы
                     </Link>

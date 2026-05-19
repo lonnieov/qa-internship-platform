@@ -21,7 +21,7 @@ export default async function InternResultPage({
   const attemptId = verifyResultTicket(ticket) ?? (await getResultAttemptId());
 
   if (!attemptId) {
-    redirect("/sign-in/intern");
+    redirect(`/${locale}/sign-in/intern`);
   }
 
   const attempt = await prisma.assessmentAttempt.findUnique({
@@ -32,7 +32,7 @@ export default async function InternResultPage({
   });
 
   if (!attempt || attempt.status === "IN_PROGRESS") {
-    redirect("/sign-in/intern");
+    redirect(`/${locale}/sign-in/intern`);
   }
 
   const initials = attempt.internProfile.fullName

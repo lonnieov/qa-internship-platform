@@ -20,7 +20,7 @@ export default async function AdminSettingsPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("AdminSettings");
-  const currentAdmin = await requireAdmin();
+  const currentAdmin = await requireAdmin({ locale });
   const [settings, admins] = await Promise.all([
     getSettings(),
     prisma.profile.findMany({

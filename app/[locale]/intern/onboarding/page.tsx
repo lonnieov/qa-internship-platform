@@ -1,16 +1,21 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
 
-export default async function InternOnboardingPage() {
+export default async function InternOnboardingPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   const profile = await getCurrentProfile();
 
   if (profile?.role === "ADMIN") {
-    redirect("/admin");
+    redirect(`/${locale}/admin`);
   }
 
   if (profile?.role === "INTERN") {
-    redirect("/intern");
+    redirect(`/${locale}/intern`);
   }
 
-  redirect("/sign-in/intern");
+  redirect(`/${locale}/sign-in/intern`);
 }

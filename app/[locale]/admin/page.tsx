@@ -29,7 +29,7 @@ export default async function AdminPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("AdminOverview");
-  const profile = await requireAdminAccess();
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
   const [settings, internCount, activeQuestionCount, attempts] =
@@ -132,7 +132,7 @@ export default async function AdminPage({
                     </td>
                     <td>
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/attempts/${attempt.id}`}>
+                        <Link href={`/${locale}/admin/attempts/${attempt.id}`}>
                           {t("recentAttempts.open")}
                         </Link>
                       </Button>

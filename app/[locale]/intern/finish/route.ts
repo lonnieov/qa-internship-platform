@@ -4,16 +4,28 @@ import {
   clearInternSession,
   createResultSession,
 } from "@/lib/intern-token-auth";
+import { isLocale } from "@/i18n/routing";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+function localeFromRequest(request: Request) {
+  const locale = new URL(request.url).pathname.split("/")[1];
+  return isLocale(locale) ? locale : "ru";
+}
+
 export async function GET(request: Request) {
+  const locale = localeFromRequest(request);
   const profile = await getCurrentProfile();
   const attemptId = new URL(request.url).searchParams.get("attempt");
 
-  if (!profile || profile.role !== "INTERN" || !profile.internProfile || !attemptId) {
-    redirect("/sign-in/intern");
+  if (
+    !profile ||
+    profile.role !== "INTERN" ||
+    !profile.internProfile ||
+    !attemptId
+  ) {
+    redirect(`/${locale}/sign-in/intern`);
   }
 
   const attempt = await prisma.assessmentAttempt.findFirst({
@@ -25,7 +37,7 @@ export async function GET(request: Request) {
   });
 
   if (!attempt) {
-    redirect("/intern");
+    redirect(`/${locale}/intern`);
   }
 
   if (profile.internProfile.invitationId) {
@@ -37,5 +49,5 @@ export async function GET(request: Request) {
 
   const ticket = await createResultSession(attempt.id);
   await clearInternSession();
-  redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+  redirect(`/${locale}/intern/result?ticket=${encodeURIComponent(ticket)}`);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
 import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,7 @@ export function QuestionForm({
   question?: EditableQuestion;
 }) {
   const t = useTranslations("AdminQuestionForm");
+  const locale = useLocale();
   const [draftType, setDraftType] = useState<QuestionType>(
     question?.type ?? initialType,
   );
@@ -205,6 +206,7 @@ export function QuestionForm({
       <input type="hidden" name="questionType" value={questionType} />
       <input type="hidden" name="quizMode" value={quizMode} />
       <input type="hidden" name="trackId" value={draftTrackId} />
+      <input type="hidden" name="locale" value={locale} />
       <input
         type="hidden"
         name="track"

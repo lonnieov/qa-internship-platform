@@ -27,9 +27,9 @@ export default async function AttemptDetailsPage({
 }: {
   params: Promise<{ locale: "ru" | "uz"; attemptId: string }>;
 }) {
-  const { attemptId } = await params;
+  const { attemptId, locale } = await params;
   const t = await getTranslations("AdminAttemptReport");
-  const profile = await requireAdminAccess();
+  const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const attempt = await prisma.assessmentAttempt.findUnique({
     where: { id: attemptId },

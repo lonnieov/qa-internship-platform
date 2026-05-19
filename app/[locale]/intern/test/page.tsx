@@ -7,11 +7,14 @@ import { compareQuestionOrder } from "@/lib/question-order";
 import { TestRunner } from "@/components/intern/test-runner";
 
 export default async function InternTestPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ attempt?: string }>;
 }) {
-  const profile = await requireIntern();
+  const { locale } = await params;
+  const profile = await requireIntern({ locale });
   const { attempt: attemptId } = await searchParams;
 
   const attempt = await prisma.assessmentAttempt.findFirst({
@@ -42,12 +45,16 @@ export default async function InternTestPage({
       },
       orderBy: { startedAt: "desc" },
     });
-    redirect(active ? `/intern/test?attempt=${active.id}` : "/intern");
+    redirect(
+      active
+        ? `/${locale}/intern/test?attempt=${active.id}`
+        : `/${locale}/intern`,
+    );
   }
 
   const checked = await expireAttemptIfNeeded(attempt.id);
   if (!checked || checked.status !== "IN_PROGRESS") {
-    redirect(`/intern/finish?attempt=${attempt.id}`);
+    redirect(`/${locale}/intern/finish?attempt=${attempt.id}`);
   }
 
   const questions = [...attempt.answers]
