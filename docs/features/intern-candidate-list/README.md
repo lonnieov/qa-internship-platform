@@ -10,11 +10,15 @@ Show interns and newly issued token candidates in one admin list.
 - A candidate appears in the list immediately after token creation.
 - New candidates are shown first by default.
 - The main status column shows test status, not token status.
+- The list shows the intern wave for both created profiles and token-only candidates.
 - Search updates automatically with a debounce as the admin types.
 - The table is paginated by 10 rows.
 - Each table column can be sorted by clicking its header.
 - Pagination stays pinned to the bottom of the list card on desktop.
 - Clicking a row opens a modal with masked token history, attempts, results, and token action.
+- The row modal shows the intern wave and includes a delete action.
+- Deleting a profile row removes the intern profile, attempts, and the token rows shown for that intern.
+- Deleting a token-only row removes the candidate tokens shown in that row.
 - New access tokens are created from the selected intern row modal.
 - Newly created tokens are added to the open row modal immediately.
 - Overdue in-progress attempts are expired before admin rows and modal data are built.
@@ -27,6 +31,8 @@ Show interns and newly issued token candidates in one admin list.
 - `Invitation.inviteCodeEncrypted` stores an encrypted token value for admin copy actions.
 - Pending candidates are built from `Invitation.candidateName`.
 - Existing interns are built from `InternProfile`.
+- Profile rows use `InternProfile.wave` first, then the latest related invitation wave.
+- Token-only rows use `Invitation.wave`.
 - Token history for an intern is matched by current invitation, accepted profile, and full-name match.
 - Token expiry is configured with `INTERN_INVITATION_EXPIRES_IN_DAYS`.
 - Token encryption uses `INVITATION_TOKEN_ENCRYPTION_SECRET`.
@@ -38,6 +44,7 @@ Show interns and newly issued token candidates in one admin list.
 - Admin opens `/admin/interns`.
 - Admin types in the search field and the list refreshes after a short pause.
 - Admin reads current test status in the `Статус теста` column.
+- Admin reads the candidate wave in the `Волна` column.
 - Admin reads the track of the latest completed attempt in the `Трек` column.
 - Admin creates a token.
 - The candidate appears in `Список стажёров`.
@@ -49,6 +56,8 @@ Show interns and newly issued token candidates in one admin list.
 - The new token value appears once and the token table prepends its mask.
 - After the intern signs in, the modal also shows attempts and result links.
 - The modal shows the latest completed attempt track near the title and shows each attempt track in the history table.
+- The modal shows `Волна стажёра` near the title.
+- Admin confirms `Удалить стажёра` to remove the selected intern or token-only candidate row.
 - If the latest attempt passed its deadline, the admin page marks it as expired and shows it as a result row.
 - The related access token is shown as `использован`, not `активный`.
 

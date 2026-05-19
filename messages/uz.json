@@ -92,6 +92,7 @@
     "failed": "Amal bajarilmadi",
     "newTokenShownOnce": "Yangi token bir marta ko‘rsatiladi.",
     "tokensAttemptsActions": "Stajyor tokenlari, urinishlari va amallari.",
+    "internWave": "Stajyor oqimi",
     "latestCompletedTrack": "Oxirgi yakunlangan urinish treki",
     "accessTokens": "Ruxsat tokenlari",
     "tokenHoverHint": "Yangi tokenlar maska ustiga olib borilganda ochiladi.",
@@ -122,6 +123,7 @@
       "intern": "Stajyor",
       "access": "Ruxsat",
       "testStatus": "Test holati",
+      "wave": "Oqim",
       "track": "Trek",
       "latestAttempt": "Oxirgi urinish",
       "result": "Natija",
@@ -151,6 +153,13 @@
     "retake": {
       "retry": "Qayta topshirish",
       "issueNew": "Yangi token berish"
+    },
+    "delete": {
+      "title": "Stajyorni o‘chirish",
+      "profileDescription": "Ushbu qatordagi profil, urinishlar va tokenlar o‘chiriladi.",
+      "invitationDescription": "Profilsiz nomzod va ushbu qatordagi tokenlar o‘chiriladi.",
+      "confirm": "Stajyor o‘chirilsinmi? Amalni ortga qaytarib bo‘lmaydi.",
+      "action": "Stajyorni o‘chirish"
     }
   },
   "AdminOverview": {

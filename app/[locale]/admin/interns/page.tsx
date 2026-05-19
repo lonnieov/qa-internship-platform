@@ -68,7 +68,7 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true },
+      include: { acceptedByProfile: true, wave: true },
     }),
     prisma.internProfile.findMany({
       where: {
@@ -85,6 +85,7 @@ export default async function AdminInternsPage({
       orderBy: { createdAt: "desc" },
       include: {
         profile: true,
+        wave: true,
         attempts: {
           orderBy: { startedAt: "desc" },
           take: 10,
@@ -142,7 +143,7 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true },
+      include: { acceptedByProfile: true, wave: true },
     });
   }
 
@@ -176,6 +177,7 @@ export default async function AdminInternsPage({
       name: intern.fullName,
       kind: "profile",
       internProfileId: intern.id,
+      waveLabel: intern.wave?.name ?? latestInvitation?.wave?.name ?? t("dash"),
       accessLabel: testStatus,
       attemptLabel: activeAttempt
         ? formatDateTime(activeAttempt.startedAt, locale)
@@ -262,6 +264,7 @@ export default async function AdminInternsPage({
       name: latestInvitation.candidateName,
       kind: "invitation",
       internProfileId: null,
+      waveLabel: latestInvitation.wave?.name ?? t("dash"),
       accessLabel: "NO_ATTEMPTS",
       attemptLabel: t("noAttemptsShort"),
       resultLabel: "—",
