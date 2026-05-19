@@ -2114,7 +2114,7 @@ export function TestRunner({
                     )}
                   </div>
 
-                  {currentAutotestConfig.exampleCode && !currentAutotestDraft.code.trim() ? (
+                  {currentAutotestConfig.exampleCode ? (
                     <div className="soft-panel">
                       <p className="body-2 muted m-0" style={{ marginBottom: "4px" }}>
                         Пример структуры:

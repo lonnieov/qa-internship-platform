@@ -162,7 +162,7 @@ export const clickAvtoTintingPresetConfig: AutotestSandboxConfig = {
       id: "navigate-to-tinting",
       title: "Открыть раздел тонировки",
       required: true,
-      // только то, что показано стажёру: названия методов + элементы из примера
+      // только то, что показано стажёру: названия методов + элементы задания
       matchKeywords: ["navigateTo", "Тонировка", "ClickAvto"],
     },
     {
@@ -197,18 +197,10 @@ export const clickAvtoTintingPresetConfig: AutotestSandboxConfig = {
     },
   ],
   exampleCode: `// Пример структуры псевдокода:
-// test('Название сценария', () => {
-//   navigateTo('Экран')
-//   tap('Элемент')
-//   expect('Результат').toBeVisible()
-// })
-
-test('Успешная оплата тонировки', () => {
-  navigateTo('ClickAvto')
-  tap('Тонировка')
-  tap('Мой автомобиль')
-  tap('Оплатить')
-  expect('Оплата прошла успешно').toBeVisible()
+test('Название сценария', () => {
+  navigateTo('Экран')
+  tap('Элемент')
+  expect('Результат').toBeVisible()
 })`,
 };
 
