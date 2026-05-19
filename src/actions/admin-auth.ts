@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { seedAdminEmail } from "@/lib/admin-constants";
-import { isLocale } from "@/i18n/routing";
 import { requireAdmin } from "@/lib/auth";
+import { getRequestLocale, localizedPath, normalizeLocale } from "@/lib/locale";
 import {
   clearAdminSession,
   createAdminSession,
@@ -26,11 +26,6 @@ function normalizeEmail(value: FormDataEntryValue | null) {
 
 function normalizePassword(value: FormDataEntryValue | null) {
   return String(value ?? "");
-}
-
-function normalizeLocale(value: FormDataEntryValue | null) {
-  const locale = String(value ?? "");
-  return isLocale(locale) ? locale : "ru";
 }
 
 export async function loginAdminAction(
@@ -200,7 +195,8 @@ export async function deleteAdminAction(
   return { ok: true, message: "Администратор удалён." };
 }
 
-export async function logoutAdminAction() {
+export async function logoutAdminAction(formData?: FormData) {
+  const locale = await getRequestLocale(formData?.get("locale"));
   await clearAdminSession();
-  redirect("/sign-in/admin");
+  redirect(localizedPath("/sign-in/admin", locale));
 }

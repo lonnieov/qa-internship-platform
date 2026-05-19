@@ -7,9 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { InternStartPanel } from "@/components/intern/intern-start-panel";
 import { Badge } from "@/components/ui/badge";
 
-export default async function InternHomePage() {
+export default async function InternHomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const t = await getTranslations("InternHome");
-  const profile = await requireIntern();
+  const { locale } = await params;
+  const profile = await requireIntern({ locale });
   const [settings, activeQuestionCount, latestAttempt, inProgress, invitation] =
     await Promise.all([
       getSettings({
@@ -49,7 +54,7 @@ export default async function InternHomePage() {
     latestAttempt.status !== "IN_PROGRESS" &&
     currentInvitationStatus === "COMPLETED"
   ) {
-    redirect(`/intern/finish?attempt=${latestAttempt.id}`);
+    redirect(`/${locale}/intern/finish?attempt=${latestAttempt.id}`);
   }
 
   const initials = profile.internProfile.fullName

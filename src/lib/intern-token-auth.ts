@@ -58,7 +58,7 @@ export async function createResultSession(attemptId: string) {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/intern/result",
+    path: "/",
     maxAge: Math.round(resultSessionTtlMs / 1000),
   });
 

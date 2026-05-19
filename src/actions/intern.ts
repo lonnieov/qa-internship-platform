@@ -50,6 +50,10 @@ function normalizeLocale(value: FormDataEntryValue | null) {
   return isLocale(locale) ? locale : "ru";
 }
 
+function localizedPath(locale: string, path: string) {
+  return `/${locale}${path}`;
+}
+
 function splitName(fullName: string) {
   const [firstName, ...rest] = fullName.trim().split(/\s+/);
   return {
@@ -262,13 +266,15 @@ export async function loginInternByTokenAction(
   redirect(`/${locale}/intern`);
 }
 
-export async function logoutInternAction() {
+export async function logoutInternAction(formData?: FormData) {
+  const locale = normalizeLocale(formData?.get("locale") ?? null);
   await clearInternSession();
-  redirect("/sign-in/intern");
+  redirect(localizedPath(locale, "/sign-in/intern"));
 }
 
-export async function startAttemptAction() {
-  const profile = await requireIntern();
+export async function startAttemptAction(formData: FormData) {
+  const locale = normalizeLocale(formData.get("locale"));
+  const profile = await requireIntern({ locale });
 
   const existing = await prisma.assessmentAttempt.findFirst({
     where: {
@@ -304,18 +310,27 @@ export async function startAttemptAction() {
 
       const ticket = await createResultSession(finishedAttemptForToken.id);
       await clearInternSession();
-      redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+      redirect(
+        localizedPath(
+          locale,
+          `/intern/result?ticket=${encodeURIComponent(ticket)}`,
+        ),
+      );
     }
   }
 
   if (currentExisting?.status === "IN_PROGRESS") {
-    redirect(`/intern/test?attempt=${currentExisting.id}`);
+    redirect(
+      localizedPath(locale, `/intern/test?attempt=${currentExisting.id}`),
+    );
   }
 
   if (currentExisting && invitation?.status === "COMPLETED") {
     const ticket = await createResultSession(currentExisting.id);
     await clearInternSession();
-    redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+    redirect(
+      localizedPath(locale, `/intern/result?ticket=${encodeURIComponent(ticket)}`),
+    );
   }
 
   const questions = await prisma.question.findMany({
@@ -331,7 +346,7 @@ export async function startAttemptAction() {
   questions.sort(compareQuestionOrder);
 
   if (questions.length === 0) {
-    redirect("/intern");
+    redirect(localizedPath(locale, "/intern"));
   }
 
   const settings = await getSettings({
@@ -359,7 +374,7 @@ export async function startAttemptAction() {
     },
   });
 
-  redirect(`/intern/test?attempt=${attempt.id}`);
+  redirect(localizedPath(locale, `/intern/test?attempt=${attempt.id}`));
 }
 
 export async function submitOpenQuizAnswerAction(input: {
@@ -584,8 +599,10 @@ export async function spendQuestionTimeAction(input: {
 export async function submitAttemptAction(input: {
   attemptId: string;
   auto?: boolean;
+  locale?: string;
 }) {
-  const profile = await requireIntern();
+  const locale = normalizeLocale(input.locale ?? null);
+  const profile = await requireIntern({ locale });
   const attempt = await prisma.assessmentAttempt.findFirst({
     where: {
       id: input.attemptId,
@@ -594,7 +611,7 @@ export async function submitAttemptAction(input: {
   });
 
   if (!attempt) {
-    redirect("/intern");
+    redirect(localizedPath(locale, "/intern"));
   }
 
   const expired = await expireAttemptIfNeeded(attempt.id);
@@ -611,9 +628,11 @@ export async function submitAttemptAction(input: {
 
   const ticket = await createResultSession(attempt.id);
   await clearInternSession();
-  revalidatePath("/intern");
+  revalidatePath(localizedPath(locale, "/intern"));
   revalidatePath("/admin");
-  redirect(`/intern/result?ticket=${encodeURIComponent(ticket)}`);
+  redirect(
+    localizedPath(locale, `/intern/result?ticket=${encodeURIComponent(ticket)}`),
+  );
 }
 
 export async function submitApiSandboxAction(input: {

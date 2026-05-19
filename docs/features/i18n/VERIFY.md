@@ -24,8 +24,12 @@
 4. Expected: the search input keeps `али`, and the empty state/table labels use Uzbek text.
 5. Create a new intern from the modal.
 6. Expected: modal copy explains that a token is created immediately, and the created token is still shown once.
-7. Log in as intern, start or continue a test, and switch language on the test page.
-8. Expected: URL keeps `?attempt=...`, and navigation, progress, finish dialog, and comment dialog labels use the selected language.
+7. Open `/ru/admin/questions`, create a quiz question with text `Locale smoke question?` and four options `A`, `B`, `C`, `D`.
+8. Expected: after submit, the page stays under `/ru/admin/questions?...created=1` and does not redirect to `/ru/sign-in/admin`.
+9. Switch to `/uz/admin/questions`, edit any question, and save.
+10. Expected: the admin remains under `/uz/admin/questions` and is not bounced to login.
+11. Log in as intern, start or continue a test, and switch language on the test page.
+12. Expected: URL keeps `?attempt=...`, and navigation, progress, finish dialog, and comment dialog labels use the selected language.
 
 ## Negative Cases
 
@@ -44,3 +48,5 @@
 6. Expected: current admin page remains open and translated labels return to Russian.
 7. Finish an intern attempt and switch language on the result page.
 8. Expected: answer summary, token notice, and next-step timeline labels switch language without showing the attempt identifier.
+9. From `/ru/admin`, open a recent attempt, then download the markdown report.
+10. Expected: links and download URL stay under `/ru/admin/attempts/...`.
