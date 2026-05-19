@@ -4,6 +4,7 @@ import { Check, Info, LockKeyhole, Mail } from "lucide-react";
 import { getResultAttemptId, verifyResultTicket } from "@/lib/intern-token-auth";
 import { prisma } from "@/lib/prisma";
 import { CompletionConfetti } from "@/components/intern/completion-confetti";
+import { InternName } from "@/components/ui/intern-name";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -64,7 +65,7 @@ export default async function InternResultPage({
         <p>{t("description")}</p>
         <div className="intern-candidate-pill">
           <div className="intern-avatar">{initials || "QA"}</div>
-          <strong>{attempt.internProfile.fullName}</strong>
+          <InternName name={attempt.internProfile.fullName} />
         </div>
       </section>
 

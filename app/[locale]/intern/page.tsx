@@ -6,6 +6,7 @@ import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { InternStartPanel } from "@/components/intern/intern-start-panel";
 import { Badge } from "@/components/ui/badge";
+import { InternName } from "@/components/ui/intern-name";
 
 export default async function InternHomePage({
   params,
@@ -78,7 +79,7 @@ export default async function InternHomePage({
         <div className="intern-candidate-card" aria-label="Профиль кандидата">
           <div className="intern-avatar">{initials || "QA"}</div>
           <div>
-            <strong>{profile.internProfile.fullName}</strong>
+            <InternName name={profile.internProfile.fullName} />
             <span>{t("candidateRole")}</span>
           </div>
         </div>

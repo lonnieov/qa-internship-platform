@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/assessment";
 import { formatPercent } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { InternName } from "@/components/ui/intern-name";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -114,7 +115,7 @@ export default async function AdminPage({
               <tbody>
                 {attempts.map((attempt) => (
                   <tr key={attempt.id}>
-                    <td>{attempt.internProfile.fullName}</td>
+                    <td><InternName name={attempt.internProfile.fullName} /></td>
                     <td>{formatDateTime(attempt.startedAt, locale)}</td>
                     <td>{formatDateTime(attempt.submittedAt, locale)}</td>
                     <td>
