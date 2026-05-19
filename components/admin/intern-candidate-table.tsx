@@ -13,6 +13,7 @@ import {
 import { CopyableToken } from "@/components/admin/copyable-token";
 import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form";
 import { Badge } from "@/components/ui/badge";
+import { InternName } from "@/components/ui/intern-name";
 import { Button } from "@/components/ui/button";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
@@ -386,7 +387,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   }}
                 >
                   <td>
-                    <strong>{row.name}</strong>
+                    <InternName name={row.name} />
                   </td>
                   <td>{row.waveLabel}</td>
                   <td>
@@ -450,7 +451,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id="candidate-details-title">
-                  {selected.name}
+                  <InternName name={selected.name} />
                 </h2>
                 <p className="body-2 muted m-0">
                   {t("tokensAttemptsActions")}
