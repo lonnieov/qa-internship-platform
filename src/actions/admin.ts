@@ -171,6 +171,13 @@ function questionRedirectUrl(
   return localizedPath(`/admin/questions?${params.toString()}`, locale);
 }
 
+function addMissionTranslation<T extends Record<string, unknown>>(
+  apiConfig: T,
+  textUz: string,
+) {
+  return textUz ? { ...apiConfig, missionUz: textUz } : apiConfig;
+}
+
 function readManualQaSandboxConfig(formData: FormData, text: string) {
   const presetId = String(
     formData.get("manualQaPreset") ??
@@ -506,6 +513,7 @@ export async function createQuestionAction(formData: FormData) {
   }
 
   const text = String(formData.get("text") ?? "").trim();
+  const textUz = String(formData.get("textUz") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
   const lastQuestion = await prisma.question.findFirst({
@@ -513,13 +521,16 @@ export async function createQuestionAction(formData: FormData) {
   });
 
   if (questionType === "SQL_SANDBOX") {
-    if (!text) {
+    if (!text || !textUz) {
       return;
     }
 
     let apiConfig;
     try {
-      apiConfig = readSqlSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readSqlSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -528,6 +539,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "SQL_SANDBOX",
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -537,13 +549,16 @@ export async function createQuestionAction(formData: FormData) {
       },
     });
   } else if (questionType === "MANUAL_QA_SANDBOX") {
-    if (!text) {
+    if (!text || !textUz) {
       return;
     }
 
     let apiConfig;
     try {
-      apiConfig = readManualQaSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readManualQaSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -552,6 +567,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "MANUAL_QA_SANDBOX",
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -561,13 +577,16 @@ export async function createQuestionAction(formData: FormData) {
       },
     });
   } else if (questionType === "AUTOTEST_SANDBOX") {
-    if (!text) {
+    if (!text || !textUz) {
       return;
     }
 
     let apiConfig;
     try {
-      apiConfig = readAutotestSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readAutotestSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -576,6 +595,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "AUTOTEST_SANDBOX",
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -602,7 +622,7 @@ export async function createQuestionAction(formData: FormData) {
       formData.get("apiExpectedAnswer") ?? "",
     ).trim();
 
-    if (!text || !path) {
+    if (!text || !textUz || !path) {
       return;
     }
 
@@ -657,6 +677,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: questionType,
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -673,7 +694,7 @@ export async function createQuestionAction(formData: FormData) {
       const answerLabel = String(formData.get("openAnswerLabel") ?? "").trim();
       const placeholder = String(formData.get("openPlaceholder") ?? "").trim();
 
-      if (!text) {
+      if (!text || !textUz) {
         return;
       }
 
@@ -681,6 +702,7 @@ export async function createQuestionAction(formData: FormData) {
         data: {
           type: "QUIZ",
           text,
+          textUz,
           track: track.trackName,
           trackId: track.trackId,
           explanation: explanation || null,
@@ -704,10 +726,15 @@ export async function createQuestionAction(formData: FormData) {
     const options = [0, 1, 2, 3].map((index) =>
       String(formData.get(`option-${index}`) ?? "").trim(),
     );
+    const optionsUz = [0, 1, 2, 3].map((index) =>
+      String(formData.get(`optionUz-${index}`) ?? "").trim(),
+    );
 
     if (
       !text ||
+      !textUz ||
       options.some((option) => !option) ||
+      optionsUz.some((option) => !option) ||
       !Number.isInteger(correctIndex)
     ) {
       return;
@@ -717,6 +744,7 @@ export async function createQuestionAction(formData: FormData) {
       data: {
         type: "QUIZ",
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -726,6 +754,7 @@ export async function createQuestionAction(formData: FormData) {
           create: options.map((option, index) => ({
             label: String.fromCharCode(65 + index),
             text: option,
+            textUz: optionsUz[index],
             order: index,
             isCorrect: index === correctIndex,
           })),
@@ -752,9 +781,10 @@ export async function updateQuestionAction(formData: FormData) {
   }
 
   const text = String(formData.get("text") ?? "").trim();
+  const textUz = String(formData.get("textUz") ?? "").trim();
   const explanation = String(formData.get("explanation") ?? "").trim();
 
-  if (!questionId || !text) {
+  if (!questionId || !text || !textUz) {
     return;
   }
 
@@ -770,7 +800,10 @@ export async function updateQuestionAction(formData: FormData) {
   if (questionType === "SQL_SANDBOX") {
     let apiConfig;
     try {
-      apiConfig = readSqlSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readSqlSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -779,6 +812,7 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -788,7 +822,10 @@ export async function updateQuestionAction(formData: FormData) {
   } else if (questionType === "MANUAL_QA_SANDBOX") {
     let apiConfig;
     try {
-      apiConfig = readManualQaSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readManualQaSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -797,6 +834,7 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -806,7 +844,10 @@ export async function updateQuestionAction(formData: FormData) {
   } else if (questionType === "AUTOTEST_SANDBOX") {
     let apiConfig;
     try {
-      apiConfig = readAutotestSandboxConfig(formData, text);
+      apiConfig = addMissionTranslation(
+        readAutotestSandboxConfig(formData, text),
+        textUz,
+      );
     } catch {
       return;
     }
@@ -815,6 +856,7 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -894,6 +936,7 @@ export async function updateQuestionAction(formData: FormData) {
       where: { id: questionId },
       data: {
         text,
+        textUz,
         track: track.trackName,
         trackId: track.trackId,
         explanation: explanation || null,
@@ -912,6 +955,7 @@ export async function updateQuestionAction(formData: FormData) {
         where: { id: questionId },
         data: {
           text,
+          textUz,
           track: track.trackName,
           trackId: track.trackId,
           explanation: explanation || null,
@@ -932,6 +976,7 @@ export async function updateQuestionAction(formData: FormData) {
     const options = [0, 1, 2, 3].map((index) => ({
       id: String(formData.get(`optionId-${index}`) ?? ""),
       text: String(formData.get(`option-${index}`) ?? "").trim(),
+      textUz: String(formData.get(`optionUz-${index}`) ?? "").trim(),
       order: index,
       label: String.fromCharCode(65 + index),
       isCorrect: index === correctIndex,
@@ -939,6 +984,7 @@ export async function updateQuestionAction(formData: FormData) {
 
     if (
       options.some((option) => !option.text) ||
+      options.some((option) => !option.textUz) ||
       !Number.isInteger(correctIndex) ||
       correctIndex < 0 ||
       correctIndex > 3
@@ -951,6 +997,7 @@ export async function updateQuestionAction(formData: FormData) {
         where: { id: questionId },
         data: {
           text,
+          textUz,
           track: track.trackName,
           trackId: track.trackId,
           explanation: explanation || null,
@@ -964,6 +1011,7 @@ export async function updateQuestionAction(formData: FormData) {
               data: {
                 label: option.label,
                 text: option.text,
+                textUz: option.textUz,
                 order: option.order,
                 isCorrect: option.isCorrect,
               },
@@ -973,6 +1021,7 @@ export async function updateQuestionAction(formData: FormData) {
                 questionId,
                 label: option.label,
                 text: option.text,
+                textUz: option.textUz,
                 order: option.order,
                 isCorrect: option.isCorrect,
               },

@@ -6,7 +6,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaSchemaVersion?: string;
 };
 
-const prismaSchemaVersion = "answer-submission-history-v1";
+const prismaSchemaVersion = "bilingual-question-text-v1";
 
 function databaseUrl() {
   const url = process.env.DATABASE_URL;

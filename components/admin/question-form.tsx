@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
 import { JsonEditor } from "@/components/admin/json-editor";
@@ -40,6 +40,7 @@ type QuestionType =
   | "DEVTOOLS_SANDBOX"
   | "MANUAL_QA_SANDBOX"
   | "AUTOTEST_SANDBOX";
+type QuestionLanguage = "ru" | "uz";
 type JsonRecord = Record<string, unknown>;
 type EditableQuestion = {
   id: string;
@@ -48,11 +49,13 @@ type EditableQuestion = {
   trackId: string | null;
   trackRef: { id: string; slug: string; name: string } | null;
   text: string;
+  textUz: string | null;
   explanation: string | null;
   apiConfig: unknown;
   options: Array<{
     id: string;
     text: string;
+    textUz: string | null;
     isCorrect: boolean;
     order: number;
   }>;
@@ -129,6 +132,9 @@ export function QuestionForm({
   const [draftQuizMode, setDraftQuizMode] = useState<"CHOICE" | "OPEN_TEXT">(
     getOpenQuizConfig(question?.apiConfig) ? "OPEN_TEXT" : "CHOICE",
   );
+  const [activeLanguage, setActiveLanguage] =
+    useState<QuestionLanguage>("ru");
+  const [validationMessage, setValidationMessage] = useState("");
   const activeTracks = tracks.filter((track) => track.isActive !== false);
   const selectableTracks = question?.trackRef
     ? [
@@ -179,7 +185,21 @@ export function QuestionForm({
   const title = isEditing ? t("title.edit") : t("title.new");
   const action = isEditing ? updateQuestionAction : createQuestionAction;
   const submitLabel = isEditing ? t("submit.save") : t("submit.add");
-  const defaultQuestionText =
+  const languageTabs: Array<{ value: QuestionLanguage; label: string }> = [
+    { value: "ru", label: t("languages.ru") },
+    { value: "uz", label: t("languages.uz") },
+  ];
+  const questionFieldLabel =
+    questionType === "QUIZ"
+      ? t("fields.questionText")
+      : questionType === "SQL_SANDBOX"
+        ? t("fields.sqlMission")
+        : questionType === "MANUAL_QA_SANDBOX"
+          ? t("fields.manualMission")
+          : questionType === "AUTOTEST_SANDBOX"
+            ? t("fields.autotestMission")
+            : t("fields.apiMission");
+  const defaultQuestionTextRu =
     questionType === "MANUAL_QA_SANDBOX" &&
     draftManualQaPresetId !== initialManualQaConfig.appPreset
       ? manualQaConfig.mission
@@ -198,8 +218,48 @@ export function QuestionForm({
                   : questionType === "AUTOTEST_SANDBOX"
                     ? autotestConfig.mission
                     : t("defaults.devtoolsPrompt")));
+  const defaultQuestionTextUz = question?.textUz ?? "";
+
+  function validateBilingualFields(event: FormEvent<HTMLFormElement>) {
+    const formData = new FormData(event.currentTarget);
+    const ruText = String(formData.get("text") ?? "").trim();
+    const uzText = String(formData.get("textUz") ?? "").trim();
+    const shouldValidateOptions =
+      questionType === "QUIZ" && quizMode === "CHOICE";
+    const ruOptionsComplete =
+      !shouldValidateOptions ||
+      [0, 1, 2, 3].every((index) =>
+        String(formData.get(`option-${index}`) ?? "").trim(),
+      );
+    const uzOptionsComplete =
+      !shouldValidateOptions ||
+      [0, 1, 2, 3].every((index) =>
+        String(formData.get(`optionUz-${index}`) ?? "").trim(),
+      );
+
+    if (!ruText || !ruOptionsComplete) {
+      event.preventDefault();
+      setActiveLanguage("ru");
+      setValidationMessage(t("languages.validation"));
+      return;
+    }
+
+    if (!uzText || !uzOptionsComplete) {
+      event.preventDefault();
+      setActiveLanguage("uz");
+      setValidationMessage(t("languages.validation"));
+      return;
+    }
+
+    setValidationMessage("");
+  }
+
   const form = (
-    <form action={action} className="form-grid">
+    <form
+      action={action}
+      className="form-grid"
+      onSubmit={validateBilingualFields}
+    >
       {question ? (
         <input type="hidden" name="questionId" value={question.id} />
       ) : null}
@@ -277,24 +337,66 @@ export function QuestionForm({
       </div>
 
       <div className="form-grid">
-        <Label htmlFor="text">
-          {questionType === "QUIZ"
-            ? t("fields.questionText")
-            : questionType === "SQL_SANDBOX"
-              ? t("fields.sqlMission")
-              : questionType === "MANUAL_QA_SANDBOX"
-                ? t("fields.manualMission")
-                : questionType === "AUTOTEST_SANDBOX"
-                  ? t("fields.autotestMission")
-                  : t("fields.apiMission")}
-        </Label>
-        <Textarea
-          id="text"
-          key={`${questionType}-${manualQaConfig.appPreset}`}
-          name="text"
-          defaultValue={defaultQuestionText}
-          required
-        />
+        <div className="question-language-header">
+          <Label htmlFor={activeLanguage === "ru" ? "text" : "textUz"}>
+            {questionFieldLabel}
+          </Label>
+          <div
+            aria-label={t("languages.label")}
+            className="question-language-tabs"
+            role="tablist"
+          >
+            {languageTabs.map((language) => (
+              <button
+                aria-controls={`question-text-${language.value}`}
+                aria-selected={activeLanguage === language.value}
+                className={
+                  activeLanguage === language.value ? "active" : undefined
+                }
+                key={language.value}
+                onClick={() => setActiveLanguage(language.value)}
+                role="tab"
+                type="button"
+              >
+                {language.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div
+          className="question-language-panel"
+          hidden={activeLanguage !== "ru"}
+          id="question-text-ru"
+          role="tabpanel"
+        >
+          <Textarea
+            id="text"
+            key={`${questionType}-${manualQaConfig.appPreset}-ru`}
+            name="text"
+            defaultValue={defaultQuestionTextRu}
+            required={activeLanguage === "ru"}
+          />
+        </div>
+        <div
+          className="question-language-panel"
+          hidden={activeLanguage !== "uz"}
+          id="question-text-uz"
+          role="tabpanel"
+        >
+          <Textarea
+            id="textUz"
+            key={`${questionType}-${manualQaConfig.appPreset}-uz`}
+            name="textUz"
+            defaultValue={defaultQuestionTextUz}
+            placeholder={t("languages.uzPlaceholder")}
+            required={activeLanguage === "uz"}
+          />
+        </div>
+        {validationMessage ? (
+          <p className="body-2 m-0" style={{ color: "var(--destructive)" }}>
+            {validationMessage}
+          </p>
+        ) : null}
       </div>
 
       {questionType === "QUIZ" ? (
@@ -395,20 +497,35 @@ export function QuestionForm({
                       {t("choice.option")} {String.fromCharCode(65 + index)}
                     </Label>
                     <div className="flex gap-2">
-                      <Input
-                        id={`option-${index}`}
-                        name={`option-${index}`}
-                        defaultValue={
-                          option?.text ??
-                          [
-                            t("defaults.choiceA"),
-                            t("defaults.choiceB"),
-                            t("defaults.choiceC"),
-                            t("defaults.choiceD"),
-                          ][index]
-                        }
-                        required={quizMode === "CHOICE"}
-                      />
+                      <div className="question-option-language-field">
+                        <Input
+                          hidden={activeLanguage !== "ru"}
+                          id={`option-${index}`}
+                          name={`option-${index}`}
+                          defaultValue={
+                            option?.text ??
+                            [
+                              t("defaults.choiceA"),
+                              t("defaults.choiceB"),
+                              t("defaults.choiceC"),
+                              t("defaults.choiceD"),
+                            ][index]
+                          }
+                          required={
+                            quizMode === "CHOICE" && activeLanguage === "ru"
+                          }
+                        />
+                        <Input
+                          hidden={activeLanguage !== "uz"}
+                          id={`optionUz-${index}`}
+                          name={`optionUz-${index}`}
+                          defaultValue={option?.textUz ?? ""}
+                          placeholder={t("languages.uzOptionPlaceholder")}
+                          required={
+                            quizMode === "CHOICE" && activeLanguage === "uz"
+                          }
+                        />
+                      </div>
                       <label className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--muted)] px-3 text-[12.5px] font-semibold">
                         <input
                           name="correctOption"

@@ -151,6 +151,11 @@ function renderQuestionCard(
         </div>
         <div>
           <h3 className="section-title">{question.text}</h3>
+          {question.textUz ? (
+            <p className="body-2 muted m-0">
+              <strong>{t("translation.uz")}:</strong> {question.textUz}
+            </p>
+          ) : null}
           {question.explanation ? (
             <p className="body-2 muted m-0">{question.explanation}</p>
           ) : null}
@@ -241,6 +246,9 @@ function renderQuestionCard(
                     </span>
                     <span>
                       <strong>{option.label}.</strong> {option.text}
+                      {option.textUz ? (
+                        <span className="muted"> · {option.textUz}</span>
+                      ) : null}
                     </span>
                   </div>
                 ))}

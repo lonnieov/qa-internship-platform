@@ -3310,6 +3310,51 @@ button {
   accent-color: var(--primary);
 }
 
+.question-language-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.question-language-tabs {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--muted);
+  padding: 3px;
+}
+
+.question-language-tabs button {
+  min-width: 82px;
+  height: 30px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.question-language-tabs button.active {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.question-language-panel[hidden] {
+  display: none;
+}
+
+.question-option-language-field {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .nav-row {
   display: flex;
   gap: 8px;

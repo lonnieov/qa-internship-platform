@@ -246,6 +246,9 @@
     "dragQuestion": "Savolni sudrash",
     "deleteConfirm": "Savolni qayta tiklab bo‘lmaydigan tarzda o‘chirish kerakmi?",
     "empty": "Tanlangan kesimda hali savollar yo‘q.",
+    "translation": {
+      "uz": "O‘zbekcha matn"
+    },
     "status": {
       "active": "faol",
       "hidden": "yashirin"
@@ -378,6 +381,14 @@
     "questionType": "Savol turi",
     "classification": "Tasnif",
     "createTrackFirst": "Savol qo‘shishdan oldin faol trek yarating.",
+    "languages": {
+      "label": "Savol tili",
+      "ru": "Русский",
+      "uz": "O‘zbekcha",
+      "uzPlaceholder": "Savolning o‘zbekcha matnini kiriting",
+      "uzOptionPlaceholder": "Javob variantining o‘zbekcha matni",
+      "validation": "Savol matni va javob variantlarini rus hamda o‘zbek tillarida to‘ldiring."
+    },
     "fields": {
       "questionText": "Savol matni",
       "sqlMission": "SQL vazifa tavsifi",

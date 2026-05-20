@@ -214,6 +214,7 @@ model Question {
   track       String       @default("QA")
   trackId     String?
   text        String
+  textUz      String?
   explanation String?
   isActive    Boolean      @default(true)
   order       Int          @default(0)
@@ -238,6 +239,7 @@ model QuestionOption {
   questionId String
   label      String
   text       String
+  textUz     String?
   isCorrect  Boolean  @default(false)
   order      Int
   createdAt  DateTime @default(now())

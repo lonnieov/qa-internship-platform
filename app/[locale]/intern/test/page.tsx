@@ -6,6 +6,31 @@ import { prisma } from "@/lib/prisma";
 import { compareQuestionOrder } from "@/lib/question-order";
 import { TestRunner } from "@/components/intern/test-runner";
 
+function localizedText(locale: string, ru: string, uz?: string | null) {
+  return locale === "uz" && uz?.trim() ? uz : ru;
+}
+
+function localizeApiConfig(config: unknown, locale: string) {
+  if (
+    locale !== "uz" ||
+    !config ||
+    typeof config !== "object" ||
+    Array.isArray(config)
+  ) {
+    return config;
+  }
+
+  const missionUz = (config as { missionUz?: unknown }).missionUz;
+  if (typeof missionUz !== "string" || !missionUz.trim()) {
+    return config;
+  }
+
+  return {
+    ...config,
+    mission: missionUz,
+  };
+}
+
 export default async function InternTestPage({
   params,
   searchParams,
@@ -76,7 +101,7 @@ export default async function InternTestPage({
       id: answer.question.id,
       type: answer.question.type,
       track: answer.question.trackRef?.name ?? answer.question.track,
-      text: answer.question.text,
+      text: localizedText(locale, answer.question.text, answer.question.textUz),
       explanation: answer.question.explanation,
       selectedOptionId: answer.selectedOptionId,
       textAnswer:
@@ -94,7 +119,7 @@ export default async function InternTestPage({
           : "",
       timeSpentMs: answer.timeSpentMs,
       submissionCount: answer.submissionCount,
-      apiConfig: answer.question.apiConfig,
+      apiConfig: localizeApiConfig(answer.question.apiConfig, locale),
       apiRequest: answer.apiRequest,
       apiResponse: answer.apiResponse,
       isCorrect: answer.isCorrect,
@@ -102,7 +127,7 @@ export default async function InternTestPage({
       options: answer.question.options.map((option) => ({
         id: option.id,
         label: option.label,
-        text: option.text,
+        text: localizedText(locale, option.text, option.textUz),
         order: option.order,
       })),
     }));
