@@ -8,6 +8,7 @@ Allow admins to reorder questions with drag-and-drop from the question bank.
 
 - Adds drag handles to question cards in `/admin/questions`.
 - Saves the dropped order into `Question.order`.
+- Keeps hidden questions after active questions in the admin list.
 - Revalidates admin question pages after ordering changes.
 
 ## Data Model
@@ -21,10 +22,11 @@ Allow admins to reorder questions with drag-and-drop from the question bank.
 - Admin selects a question type and optional track.
 - Admin drags a question card by the handle.
 - On drop, the visible order is saved.
+- When an admin hides a question, it is moved to the end of its type and track order.
 
 ## Touched Files
 
-- `app/admin/questions/page.tsx`
+- `app/[locale]/admin/questions/page.tsx`
 - `components/admin/sortable-question-list.tsx`
 - `src/actions/admin.ts`
 - `app/globals.css`
