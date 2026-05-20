@@ -1578,7 +1578,6 @@ export function TestRunner({
                           <span>
                             <strong>{option.label}.</strong> {option.text}
                           </span>
-                          <small>{option.label}</small>
                         </button>
                       );
                     })}
