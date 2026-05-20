@@ -1095,13 +1095,29 @@ export async function toggleQuestionAction(formData: FormData) {
 
   const question = await prisma.question.findUnique({
     where: { id: questionId },
-    select: { trackId: true },
+    select: { track: true, trackId: true, type: true },
   });
+  if (!question) return;
+
   await ensureCanManageTrack(profile, question?.trackId);
+
+  const data: Prisma.QuestionUpdateInput = { isActive: !isActive };
+  if (isActive) {
+    const { _max } = await prisma.question.aggregate({
+      where: {
+        type: question.type,
+        track: question.track,
+        trackId: question.trackId,
+      },
+      _max: { order: true },
+    });
+
+    data.order = (_max.order ?? 0) + 1;
+  }
 
   await prisma.question.update({
     where: { id: questionId },
-    data: { isActive: !isActive },
+    data,
   });
 
   revalidatePath("/admin/questions");

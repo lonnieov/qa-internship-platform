@@ -30,3 +30,5 @@
 - Expected: the edit form still saves normally.
 - Hide, activate, and delete questions.
 - Expected: existing actions still work.
+- Hide a question from the middle of a visible section.
+- Expected: the hidden question appears after active questions in that section.

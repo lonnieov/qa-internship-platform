@@ -36,6 +36,7 @@ async function getQuestions(trackIds?: string[] | null) {
   return prisma.question.findMany({
     where: trackIds ? { trackId: { in: trackIds } } : undefined,
     orderBy: [
+      { isActive: "desc" },
       { trackRef: { order: "asc" } },
       { track: "asc" },
       { order: "asc" },
