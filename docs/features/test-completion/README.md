@@ -11,6 +11,8 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - A visible info bubble warns that unanswered questions count as fail.
 - Manual finish opens a confirmation dialog before submitting the attempt.
 - Automatic finish by timer, tab close, or hidden tab still submits immediately.
+- Timer auto-submit is accepted only after the server-side deadline has passed.
+- The client timer uses server-calculated remaining time, so incorrect device clocks do not finish the attempt early.
 - The result screen plays a short full-screen confetti burst when a completed attempt opens.
 
 ## Main Flow
@@ -35,5 +37,6 @@ Protect interns from accidentally finishing an assessment before they are ready.
 
 - The confirmation only applies to manual finish.
 - Auto-submit paths must not wait for a dialog.
+- Early client auto-submit requests are ignored until the server deadline is reached.
 - Unanswered questions remain scored as fail by the existing submit flow.
 - Confetti is CSS-only, has no extra package dependency, and is hidden when reduced motion is enabled.

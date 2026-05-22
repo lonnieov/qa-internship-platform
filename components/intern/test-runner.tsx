@@ -65,6 +65,10 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+function elapsedNow() {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
+}
+
 type Option = {
   id: string;
   label: string;
@@ -576,10 +580,12 @@ function ManualQaPresetRenderer({ appPreset }: { appPreset: string }) {
 export function TestRunner({
   attemptId,
   deadlineAt,
+  initialRemainingMs,
   questions,
 }: {
   attemptId: string;
   deadlineAt: string;
+  initialRemainingMs: number;
   questions: Question[];
 }) {
   const t = useTranslations("InternTest");
@@ -681,12 +687,11 @@ export function TestRunner({
           ]),
       ),
   );
-  const [remainingMs, setRemainingMs] = useState(
-    Math.max(0, new Date(deadlineAt).getTime() - Date.now()),
-  );
+  const safeInitialRemainingMs = Math.max(0, Math.round(initialRemainingMs));
+  const [remainingMs, setRemainingMs] = useState(safeInitialRemainingMs);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const enteredAtRef = useRef(Date.now());
+  const enteredAtRef = useRef(elapsedNow());
   const submittedRef = useRef(false);
   const devtoolsAutosaveRef = useRef<number | null>(null);
   const sqlDragRef = useRef<{
@@ -735,8 +740,9 @@ export function TestRunner({
 
   function flushCurrentTime() {
     const questionId = currentQuestion?.id;
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    const now = elapsedNow();
+    const timeSpentMs = now - enteredAtRef.current;
+    enteredAtRef.current = now;
 
     if (questionId && timeSpentMs > 150) {
       startTransition(() => {
@@ -770,8 +776,9 @@ export function TestRunner({
     if (currentQuestion.type !== "QUIZ") return;
 
     const questionId = currentQuestion.id;
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    const now = elapsedNow();
+    const timeSpentMs = now - enteredAtRef.current;
+    enteredAtRef.current = now;
     setAnswers((prev) => new Map(prev).set(questionId, optionId));
 
     startTransition(() => {
@@ -796,8 +803,9 @@ export function TestRunner({
     if (!config) return;
 
     const answerText = textAnswers.get(question.id) ?? "";
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    const now = elapsedNow();
+    const timeSpentMs = now - enteredAtRef.current;
+    enteredAtRef.current = now;
 
     startTransition(() => {
       void submitOpenQuizAnswerAction({
@@ -886,8 +894,9 @@ export function TestRunner({
     if (currentQuestion.type !== "SQL_SANDBOX") return;
 
     const draft = sqlDrafts.get(currentQuestion.id) ?? createInitialSqlDraft(currentQuestion);
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    const now = elapsedNow();
+    const timeSpentMs = now - enteredAtRef.current;
+    enteredAtRef.current = now;
 
     startTransition(() => {
       void submitSqlSandboxAction({
@@ -962,8 +971,9 @@ export function TestRunner({
     const draft =
       apiDrafts.get(currentQuestion.id) ??
       createInitialApiDraft(currentQuestion);
-    const timeSpentMs = Date.now() - enteredAtRef.current;
-    enteredAtRef.current = Date.now();
+    const now = elapsedNow();
+    const timeSpentMs = now - enteredAtRef.current;
+    enteredAtRef.current = now;
 
     startTransition(() => {
       void submitApiSandboxAction({
@@ -1066,10 +1076,10 @@ export function TestRunner({
     const timeSpentMs =
       typeof options.timeSpentMs === "number"
         ? options.timeSpentMs
-        : Date.now() - enteredAtRef.current;
+        : elapsedNow() - enteredAtRef.current;
 
     if (typeof options.timeSpentMs !== "number") {
-      enteredAtRef.current = Date.now();
+      enteredAtRef.current = elapsedNow();
     }
 
     setApiDrafts((prev) => {
@@ -1213,10 +1223,10 @@ export function TestRunner({
     const timeSpentMs =
       typeof options.timeSpentMs === "number"
         ? options.timeSpentMs
-        : Date.now() - enteredAtRef.current;
+        : elapsedNow() - enteredAtRef.current;
 
     if (typeof options.timeSpentMs !== "number") {
-      enteredAtRef.current = Date.now();
+      enteredAtRef.current = elapsedNow();
     }
 
     setManualQaDrafts((prev) => {
@@ -1280,10 +1290,10 @@ export function TestRunner({
     const timeSpentMs =
       typeof options.timeSpentMs === "number"
         ? options.timeSpentMs
-        : Date.now() - enteredAtRef.current;
+        : elapsedNow() - enteredAtRef.current;
 
     if (typeof options.timeSpentMs !== "number") {
-      enteredAtRef.current = Date.now();
+      enteredAtRef.current = elapsedNow();
     }
 
     setAutotestDrafts((prev) => {
@@ -1334,7 +1344,11 @@ export function TestRunner({
     }
     flushCurrentTime();
     startTransition(() => {
-      void submitAttemptAction({ attemptId, auto, locale });
+      void submitAttemptAction({ attemptId, auto, locale }).then((result) => {
+        if (result?.ok === false) {
+          submittedRef.current = false;
+        }
+      });
     });
   }
 
@@ -1356,7 +1370,7 @@ export function TestRunner({
   }
 
   useEffect(() => {
-    enteredAtRef.current = Date.now();
+    enteredAtRef.current = elapsedNow();
     if (currentQuestion) {
       startTransition(() => {
         void spendQuestionTimeAction({
@@ -1371,8 +1385,13 @@ export function TestRunner({
   }, [attemptId, currentQuestion?.id]);
 
   useEffect(() => {
+    const startedAt = elapsedNow();
+
     const interval = window.setInterval(() => {
-      const next = Math.max(0, new Date(deadlineAt).getTime() - Date.now());
+      const next = Math.max(
+        0,
+        Math.round(safeInitialRemainingMs - (elapsedNow() - startedAt)),
+      );
       setRemainingMs(next);
       if (next === 0) {
         submit(true);
@@ -1381,7 +1400,7 @@ export function TestRunner({
 
     return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deadlineAt]);
+  }, [deadlineAt, safeInitialRemainingMs]);
 
   useEffect(() => {
     return () => {

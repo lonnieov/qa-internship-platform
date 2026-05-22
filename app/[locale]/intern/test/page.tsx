@@ -82,6 +82,11 @@ export default async function InternTestPage({
     redirect(`/${locale}/intern/finish?attempt=${attempt.id}`);
   }
 
+  const initialRemainingMs = Math.max(
+    0,
+    checked.deadlineAt.getTime() - Date.now(),
+  );
+
   const questions = [...attempt.answers]
     .sort((left, right) =>
       compareQuestionOrder(
@@ -136,6 +141,7 @@ export default async function InternTestPage({
     <TestRunner
       attemptId={attempt.id}
       deadlineAt={attempt.deadlineAt.toISOString()}
+      initialRemainingMs={initialRemainingMs}
       questions={questions}
     />
   );
