@@ -14,7 +14,8 @@
 4. Use the language switcher and select Uzbek.
 5. Expected: URL changes to `/uz/admin/interns` and admin navigation plus interns page labels switch to Uzbek.
 6. Open the intern start page in Russian and switch to Uzbek.
-7. Expected: URL changes to `/uz/intern` and start-page labels switch to Uzbek.
+7. Expected: the language switcher is visible in the top row of the start page.
+8. Expected: URL changes to `/uz/intern` and start-page labels switch to Uzbek.
 
 ## Positive Case
 

@@ -8,6 +8,7 @@ Allow admin and intern assessment UI to work in Russian and Uzbek.
 
 - Locale-prefixed routes use `/ru/...` and `/uz/...`.
 - The admin shell, `/admin/interns`, intern start, intern test, and intern result workflows read UI text from message files.
+- Language switchers are visible on auth, admin, intern start, intern test, and intern result surfaces.
 - Language switchers preserve the current path and query string, including active assessment attempts.
 - Proxy locale redirects use the forwarded public host so reverse proxies do not leak internal ports.
 - Auth guards and Server Action redirects infer the active locale from the request and keep `/ru` or `/uz`.

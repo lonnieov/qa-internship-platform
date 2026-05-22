@@ -5,6 +5,9 @@ import { getSettings } from "@/lib/assessment";
 import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { InternStartPanel } from "@/components/intern/intern-start-panel";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ServiceLogo } from "@/components/service-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { InternName } from "@/components/ui/intern-name";
 
@@ -67,6 +70,17 @@ export default async function InternHomePage({
 
   return (
     <main className="page intern-assessment-page">
+      <div className="intern-page-top">
+        <div className="brand">
+          <ServiceLogo href={`/${locale}`} />
+          QA Assessment
+        </div>
+        <div className="hero-actions">
+          <LanguageSwitcher />
+          <ThemeToggle variant="icon" />
+        </div>
+      </div>
+
       <section className="intern-assessment-hero">
         <div>
           <span className="intern-eyebrow">
