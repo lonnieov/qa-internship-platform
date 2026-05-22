@@ -616,6 +616,10 @@ export async function submitAttemptAction(input: {
 
   const expired = await expireAttemptIfNeeded(attempt.id);
   if (expired?.status === "IN_PROGRESS") {
+    if (input.auto && expired.deadlineAt.getTime() > Date.now()) {
+      return { ok: false, reason: "deadline_not_reached" } as const;
+    }
+
     await finalizeAttempt(attempt.id, Boolean(input.auto));
   }
 

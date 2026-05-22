@@ -34,6 +34,8 @@
 
 - Start a test and wait for the timer to expire.
 - Expected: the test submits automatically without waiting for confirmation.
+- Start a test in a browser or device where the local clock is moved forward before opening the first question.
+- Expected: the first question remains open and the attempt is not marked `AUTO_SUBMITTED` before the server deadline.
 - Start a test and close or hide the tab.
 - Expected: the anti-cheat auto-submit path is not blocked by the confirmation dialog.
 
