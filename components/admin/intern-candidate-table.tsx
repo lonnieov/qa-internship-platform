@@ -15,6 +15,7 @@ import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form"
 import { Badge } from "@/components/ui/badge";
 import { InternName } from "@/components/ui/intern-name";
 import { Button } from "@/components/ui/button";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
 type SortKey =
@@ -193,6 +194,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
     Record<string, CandidateInvitation[]>
   >({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("created");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [page, setPage] = useState(1);
@@ -295,6 +297,11 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
     });
   }
 
+  function openDetails(rowId: string) {
+    setSelectedId(rowId);
+    setIsDetailsOpen(true);
+  }
+
   if (rows.length === 0) {
     return (
       <div className="empty-state candidate-empty-state">
@@ -378,11 +385,11 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   className="candidate-table-row"
                   role="button"
                   tabIndex={0}
-                  onClick={() => setSelectedId(row.id)}
+                  onClick={() => openDetails(row.id)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setSelectedId(row.id);
+                      openDetails(row.id);
                     }
                   }}
                 >
@@ -436,18 +443,13 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
         </div>
       </div>
 
-      {selected ? (
-        <div
-          aria-labelledby="candidate-details-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setSelectedId(null)}
-        >
-          <div
-            className="candidate-modal surface"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy="candidate-details-title"
+        onOpenChange={setIsDetailsOpen}
+        open={isDetailsOpen && Boolean(selected)}
+      >
+        {selected ? (
+          <div className="candidate-modal surface">
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id="candidate-details-title">
@@ -469,7 +471,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                 aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
-                onClick={() => setSelectedId(null)}
+                onClick={() => setIsDetailsOpen(false)}
               >
                 <X size={18} />
               </Button>
@@ -669,8 +671,8 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
               </section>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </NativeDialog>
     </>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
+import { NativeDialog } from "@/components/ui/native-dialog";
 import type { TrackSummary } from "@/lib/question-classification";
 
 type QuestionType =
@@ -38,6 +39,7 @@ export function QuestionCreateModal({
 }) {
   const t = useTranslations("AdminQuestions");
   const [isOpen, setIsOpen] = useState(false);
+  const titleId = useId();
 
   return (
     <>
@@ -46,21 +48,15 @@ export function QuestionCreateModal({
         {t("add")}
       </Button>
 
-      {isOpen ? (
-        <div
-          aria-labelledby="create-question-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="question-modal surface"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={titleId}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="question-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id="create-question-title">
+                <h2 className="head-3 m-0" id={titleId}>
                   {t("newQuestion")}
                 </h2>
                 <p className="body-2 muted m-0">{typeLabel(t, initialType)}</p>
@@ -84,8 +80,7 @@ export function QuestionCreateModal({
               tracks={tracks}
             />
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
     </>
   );
 }

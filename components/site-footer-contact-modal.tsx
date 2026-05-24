@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { ExternalLink, MessageCircle, X } from "lucide-react";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type ContactLink = {
   href: string;
@@ -26,19 +27,6 @@ export function SiteFooterContactModal({
   const [isOpen, setIsOpen] = useState(false);
   const titleId = useId();
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
   return (
     <>
       <button
@@ -50,18 +38,12 @@ export function SiteFooterContactModal({
         {buttonLabel}
       </button>
 
-      {isOpen ? (
-        <div
-          className="site-footer-modal-backdrop"
-          onClick={() => setIsOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-        >
-          <div
-            className="site-footer-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={titleId}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="site-footer-modal">
             <div className="site-footer-modal-header">
               <div>
                 <h2 id={titleId}>{title}</h2>
@@ -91,8 +73,7 @@ export function SiteFooterContactModal({
               ))}
             </div>
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
     </>
   );
 }

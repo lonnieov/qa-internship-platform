@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { createPortal } from "react-dom";
+import { useId, useState, useTransition } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   createWaveAction,
@@ -10,6 +9,7 @@ import {
 } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type Wave = {
   id: string;
@@ -25,6 +25,9 @@ type WaveManageModalProps =
 export function WaveManageModal(props: WaveManageModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const titleId = useId();
+  const nameFieldId = `${titleId}-name`;
+  const orderFieldId = `${titleId}-order`;
   const isEdit = props.mode === "edit";
 
   const close = () => setIsOpen(false);
@@ -84,15 +87,15 @@ export function WaveManageModal(props: WaveManageModalProps) {
         </Button>
       )}
 
-      {isOpen && createPortal(
-        <div className="modal-backdrop" onClick={close}>
-          <div
-            className="wave-modal surface"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={titleId}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="wave-modal surface">
             <div className="wave-modal-header">
               <div>
-                <h2 className="head-3 m-0">
+                <h2 className="head-3 m-0" id={titleId}>
                   {isEdit ? `Поток · ${props.wave.name}` : "Новый поток"}
                 </h2>
               </div>
@@ -115,22 +118,22 @@ export function WaveManageModal(props: WaveManageModalProps) {
                 >
                   <input type="hidden" name="waveId" value={props.wave.id} />
                   <div className="form-field">
-                    <label className="body-2 muted" htmlFor="wave-edit-name">
+                    <label className="body-2 muted" htmlFor={nameFieldId}>
                       Название
                     </label>
                     <Input
-                      id="wave-edit-name"
+                      id={nameFieldId}
                       name="name"
                       defaultValue={props.wave.name}
                       required
                     />
                   </div>
                   <div className="form-field">
-                    <label className="body-2 muted" htmlFor="wave-edit-order">
+                    <label className="body-2 muted" htmlFor={orderFieldId}>
                       Порядок сортировки
                     </label>
                     <Input
-                      id="wave-edit-order"
+                      id={orderFieldId}
                       name="order"
                       type="number"
                       min="0"
@@ -185,11 +188,11 @@ export function WaveManageModal(props: WaveManageModalProps) {
                     value={props.trackId}
                   />
                   <div className="form-field">
-                    <label className="body-2 muted" htmlFor="wave-new-name">
+                    <label className="body-2 muted" htmlFor={nameFieldId}>
                       Название
                     </label>
                     <Input
-                      id="wave-new-name"
+                      id={nameFieldId}
                       name="name"
                       placeholder="Wave 2, Spring 2026…"
                       required
@@ -221,9 +224,7 @@ export function WaveManageModal(props: WaveManageModalProps) {
               )}
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+      </NativeDialog>
     </>
   );
 }

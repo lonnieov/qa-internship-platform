@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QA Spring 26: shortlist report</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9dee8;
+      --soft: #eef2f7;
+      --green: #117a4b;
+      --green-bg: #e8f6ee;
+      --amber: #956000;
+      --amber-bg: #fff4d6;
+      --red: #b42318;
+      --red-bg: #ffe9e6;
+      --blue: #1e5aa8;
+      --blue-bg: #e8f1ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1220px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 56px;
+    }
+
+    header, .card, table {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    header { padding: 28px; }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 920px;
+      font-size: 34px;
+    }
+
+    h2 {
+      margin-top: 34px;
+      margin-bottom: 14px;
+      font-size: 24px;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    p { margin: 10px 0 0; }
+    ul { margin: 10px 0 0; padding-left: 20px; }
+    li { margin: 5px 0; }
+
+    code {
+      padding: 1px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--soft);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .pill.good { color: var(--green); background: var(--green-bg); border-color: #bce3cd; }
+    .pill.warn { color: var(--amber); background: var(--amber-bg); border-color: #f2d98b; }
+    .pill.bad { color: var(--red); background: var(--red-bg); border-color: #ffc7bf; }
+    .pill.blue { color: var(--blue); background: var(--blue-bg); border-color: #b9d1f8; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card { padding: 18px; }
+    .hero { grid-column: span 7; border-color: #bce3cd; background: linear-gradient(180deg, #ffffff 0%, var(--green-bg) 100%); }
+    .method { grid-column: span 5; }
+    .third { grid-column: span 4; }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 11px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    th {
+      background: #eef2f8;
+      color: #344054;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .score {
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .note {
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      background: var(--blue-bg);
+    }
+
+    .warning { border-left-color: var(--amber); background: var(--amber-bg); }
+
+    .rank {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .rank:last-child { border-bottom: 0; }
+
+    .rank-num {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--soft);
+      font-weight: 800;
+    }
+
+    .rank-num.gold {
+      color: #6f4900;
+      background: #ffe6a3;
+      border: 1px solid #e7bf45;
+    }
+
+    .candidate { border-left: 5px solid var(--line); }
+    .candidate.invite { border-left-color: var(--green); }
+    .candidate.reserve { border-left-color: var(--amber); }
+    .candidate.no { border-left-color: var(--red); }
+
+    @media (max-width: 920px) {
+      main {
+        width: min(100% - 24px, 1220px);
+        padding-top: 18px;
+      }
+
+      h1 { font-size: 27px; }
+      .hero, .method, .third { grid-column: 1 / -1; }
+      .metric-row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>QA Spring 26: полный анализ assessment и shortlist на собеседование</h1>
+      <p>
+        Отчет сравнивает 15 результатов QA assessment. Статус <code>EXPIRED</code> не используется как минус:
+        он трактуется только как завершение сессии. Все open/manual/autotest блоки оценены единым self review
+        по одной шкале.
+      </p>
+      <div class="meta">
+        <span class="pill">Дата анализа: 2026-05-23</span>
+        <span class="pill">Track: QA</span>
+        <span class="pill">Wave: QA Spring 26</span>
+        <span class="pill">Кандидатов: 15</span>
+        <span class="pill good">Shortlist: 5</span>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Краткий вывод">
+      <article class="card hero">
+        <h2>Кого зовём</h2>
+        <p>
+          По единой self review модели на собеседование рекомендую позвать:
+          <strong>Алексея Семикина, Виктора Хегая, Нодира Усмонова, Nodira Axmedova и Виталия Гольденгорина</strong>.
+        </p>
+        <div class="metric-row">
+          <div class="metric"><b>89.3%</b><span>лучший официальный score: Виктор</span></div>
+          <div class="metric"><b>3/3</b><span>manual QA: Алексей, Nodira</span></div>
+          <div class="metric"><b>SQL</b><span>закрыли Виктор, Нодир, Виталий</span></div>
+          <div class="metric"><b>API</b><span>закрыл Алексей</span></div>
+        </div>
+        <p class="note warning">
+          Почему Алексей выше Виктора в shortlist-порядке: Виктор сильнее по official score и autotest,
+          но Алексей единственный закрыл API sandbox и показал лучший manual QA блок. На роль QA intern это
+          даёт более прикладной сигнал для интервью.
+        </p>
+      </article>
+
+      <article class="card method">
+        <h2>Методика</h2>
+        <p>
+          По <code>src/lib/assessment.ts</code> официальный score считается только по scored-заданиям:
+          закрытые quiz + API sandbox + SQL sandbox + DevTools sandbox. <code>MANUAL_QA_SANDBOX</code>,
+          <code>AUTOTEST_SANDBOX</code> и open-text quiz не входят в процент.
+        </p>
+        <p>
+          Self review: open-text сверялся с ожидаемым смыслом вопросов; manual QA — с known bugs из
+          <code>src/lib/manual-qa-sandbox.ts</code>; autotest — с expected scenarios из
+          <code>src/lib/autotest-sandbox.ts</code>. Статус сессии не влияет на оценку.
+        </p>
+      </article>
+    </section>
+
+    <section>
+      <h2>Top 5 Для Собеседования</h2>
+      <div class="card">
+        <div class="rank">
+          <div class="rank-num gold">1</div>
+          <div>
+            <h3>Алексей Семикин</h3>
+            <p>
+              78.6%, 22/28. Лучший manual QA: 3/3 сценария засчитаны по known bugs. Единственный кандидат,
+              который закрыл API sandbox. Риски: SQL, DevTools, autotest и часть open-text теории.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">2</div>
+          <div>
+            <h3>Виктор Хегай</h3>
+            <p>
+              89.3%, 25/28. Лучший официальный score, SQL решен, autotest засчитан, open-text 3/5.
+              Риски: API/DevTools не закрыты, manual QA reports не совпали с known bugs.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">3</div>
+          <div>
+            <h3>Нодир Усмонов</h3>
+            <p>
+              82.1%, 23/28. SQL закрыт, open-text 2/5, manual QA 2/3. Хороший баланс теории и практики.
+              Риски: API/DevTools, autotest, Charles/proxy.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">4</div>
+          <div>
+            <h3>Nodira Axmedova</h3>
+            <p>
+              78.6%, 22/28. Self review: open-text 3/5, manual QA 3/3. Сильный ручной сигнал.
+              Риски: API, SQL, DevTools и autotest не закрыты.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">5</div>
+          <div>
+            <h3>Виталий Гольденгорин</h3>
+            <p>
+              78.6%, 22/28. SQL закрыт, manual QA 2/3 по known bugs, open-text 1/5.
+              Риски: API/DevTools, autotest и техническая теория.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Единая Self Review Оценка</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Кандидат</th>
+            <th>Решение</th>
+            <th>Score</th>
+            <th>Quiz</th>
+            <th>API/SQL/DevTools</th>
+            <th>Open / Manual / Auto</th>
+            <th>Короткий вывод</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Алексей Семикин</strong></td>
+            <td><span class="pill good">Invite</span></td>
+            <td><span class="score">78.6%</span><br><span class="muted">22/28</span></td>
+            <td>21/25</td>
+            <td>API pass, SQL fail, DevTools fail</td>
+            <td>Open 1/5, Manual 3/3, Auto 0/1</td>
+            <td>Лучший ручной QA + единственный API pass.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Виктор Хегай</strong></td>
+            <td><span class="pill good">Invite</span></td>
+            <td><span class="score">89.3%</span><br><span class="muted">25/28</span></td>
+            <td>24/25</td>
+            <td>API fail, SQL pass, DevTools fail</td>
+            <td>Open 3/5, Manual 0/3, Auto 1/1</td>
+            <td>Лучший scored technical result, но manual QA надо проверить live.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Нодир Усмонов</strong></td>
+            <td><span class="pill good">Invite</span></td>
+            <td><span class="score">82.1%</span><br><span class="muted">23/28</span></td>
+            <td>22/25</td>
+            <td>API fail, SQL pass, DevTools fail</td>
+            <td>Open 2/5, Manual 2/3, Auto 0/1</td>
+            <td>Сильный баланс: теория + SQL + два manual сценария.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Nodira Axmedova</strong></td>
+            <td><span class="pill good">Invite</span></td>
+            <td><span class="score">78.6%</span><br><span class="muted">22/28</span></td>
+            <td>22/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 3/5, Manual 3/3, Auto 0/1</td>
+            <td>Сильный manual/open блок, практические sandbox надо проверить.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Виталий Гольденгорин</strong></td>
+            <td><span class="pill good">Invite</span></td>
+            <td><span class="score">78.6%</span><br><span class="muted">22/28</span></td>
+            <td>21/25</td>
+            <td>API fail, SQL pass, DevTools fail</td>
+            <td>Open 1/5, Manual 2/3, Auto 0/1</td>
+            <td>SQL + manual QA signal, но теория/API слабее top-4.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Мирсаид Миржалилов</strong></td>
+            <td><span class="pill warn">Reserve</span></td>
+            <td><span class="score">82.1%</span><br><span class="muted">23/28</span></td>
+            <td>23/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 3/5, Manual 1/3, Auto 0/1</td>
+            <td>Неплохой open-text, но нет scored sandbox pass.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Боситхон Эркинхонов</strong></td>
+            <td><span class="pill warn">Reserve</span></td>
+            <td><span class="score">85.7%</span><br><span class="muted">24/28</span></td>
+            <td>24/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 2/5, Manual 1/3, Auto 0/1</td>
+            <td>Высокий quiz, но практика и open/manual слабее shortlist.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Акбархужа Юсупов</strong></td>
+            <td><span class="pill warn">Reserve</span></td>
+            <td><span class="score">71.4%</span><br><span class="muted">20/28</span></td>
+            <td>19/25</td>
+            <td>API fail, SQL pass, DevTools fail</td>
+            <td>Open 1/5, Manual 1/3, Auto 0/1</td>
+            <td>SQL есть, но closed/open база ниже top-5.</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Ойбек Абсамитов</strong></td>
+            <td><span class="pill warn">Reserve</span></td>
+            <td><span class="score">85.7%</span><br><span class="muted">24/28</span></td>
+            <td>24/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 1/5, Manual 1/3, Auto 0/1</td>
+            <td>Высокий score, но практический сигнал слабый.</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td><strong>Бунёд Шаюнусов</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">60.7%</span><br><span class="muted">17/28</span></td>
+            <td>17/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 0/5, Manual 2/3, Auto 0/1</td>
+            <td>Есть manual observations, но scored база слишком низкая.</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td><strong>Suleyman Bashirov</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">75.0%</span><br><span class="muted">21/28</span></td>
+            <td>21/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 0/5, Manual 1/3, Auto 0/1</td>
+            <td>Средняя теория, практические блоки не закрыты.</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td><strong>Сухроб Эшкуватов</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">64.3%</span><br><span class="muted">18/28</span></td>
+            <td>18/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 0/5, Manual 2/3, Auto 0/1</td>
+            <td>Manual есть, но общая scored база низкая.</td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td><strong>Нурзат Сейдирахимов</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">67.9%</span><br><span class="muted">19/28</span></td>
+            <td>19/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 1/5, Manual 1/3, Auto 0/1</td>
+            <td>Есть overloading и один Shishka report, но overall ниже порога.</td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td><strong>Bobur Toshpo'latov</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">71.4%</span><br><span class="muted">20/28</span></td>
+            <td>20/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 0/5, Manual 0/3, Auto 0/1</td>
+            <td>Слабая практика и open/manual/autotest.</td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td><strong>Диана Фоменко</strong></td>
+            <td><span class="pill bad">No invite</span></td>
+            <td><span class="score">67.9%</span><br><span class="muted">19/28</span></td>
+            <td>19/25</td>
+            <td>API fail, SQL fail, DevTools fail</td>
+            <td>Open 0/5, Manual 0/3, Auto 0/1</td>
+            <td>Пыталась в API/SQL, но manual/autotest/open почти пустые.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Почему Не По Одному Score</h2>
+      <div class="grid">
+        <article class="card third candidate invite">
+          <h3>Score</h3>
+          <p>Официальный процент показывает закрытую базу и scored sandbox, но не включает manual QA, open-text и autotest.</p>
+        </article>
+        <article class="card third candidate invite">
+          <h3>Manual QA</h3>
+          <p>Для QA intern важно уметь найти баг, описать шаги, actual/expected и попасть в реальные known bugs сценария.</p>
+        </article>
+        <article class="card third candidate invite">
+          <h3>Практика</h3>
+          <p>API, SQL и DevTools дают сигнал технической готовности. На интервью их нужно проверить у всех top-5.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Что Проверить На Собеседовании</h2>
+      <div class="card">
+        <ul>
+          <li><strong>Всем top-5:</strong> короткий DevTools task, потому что никто из shortlist не закрыл DevTools sandbox.</li>
+          <li><strong>Алексею:</strong> SQL projection/filter + autotest pseudocode.</li>
+          <li><strong>Виктору:</strong> live bug report по known bug, чтобы проверить manual QA.</li>
+          <li><strong>Нодиру:</strong> API request по спецификации и Charles/proxy troubleshooting.</li>
+          <li><strong>Nodira:</strong> API + SQL + DevTools live, потому что manual/open сильнее, чем sandbox-практика.</li>
+          <li><strong>Виталию:</strong> OOP/STLC/HTTP basics и API request.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

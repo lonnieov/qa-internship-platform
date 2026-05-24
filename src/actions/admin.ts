@@ -1067,6 +1067,8 @@ export async function reviewAnswerAction(input: {
       ? (answer.apiResponse as Record<string, unknown>)
       : {};
 
+  const reviewedAt = new Date().toISOString();
+
   await prisma.assessmentAnswer.update({
     where: { id: input.answerId },
     data: {
@@ -1076,14 +1078,14 @@ export async function reviewAnswerAction(input: {
         adminReview: {
           passed: input.passed,
           note: input.note.trim().slice(0, 500),
-          at: new Date().toISOString(),
+          at: reviewedAt,
         },
       },
     },
   });
 
   revalidatePath(`/admin/attempts/${answer.attemptId}`);
-  return { ok: true };
+  return { ok: true, at: reviewedAt };
 }
 
 export async function toggleQuestionAction(formData: FormData) {

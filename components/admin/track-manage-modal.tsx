@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff, MoreHorizontal, Trash2, X } from "lucide-react";
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/lib/question-classification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type TrackManageModalProps = {
   track: TrackSummary & { questionCount: number };
@@ -37,18 +37,12 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
         <MoreHorizontal size={18} />
       </button>
 
-      {isOpen ? createPortal(
-        <div
-          aria-labelledby={`track-modal-title-${track.id}`}
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="track-modal surface"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={`track-modal-title-${track.id}`}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="track-modal surface">
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id={`track-modal-title-${track.id}`}>
@@ -166,9 +160,7 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      ) : null}
+      </NativeDialog>
     </>
   );
 }

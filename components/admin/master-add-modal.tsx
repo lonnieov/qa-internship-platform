@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { createPortal } from "react-dom";
+import { useId, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { assignTrackMasterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type MasterAddModalProps = {
   trackId: string;
@@ -15,6 +15,7 @@ type MasterAddModalProps = {
 export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const titleId = useId();
   const close = () => setIsOpen(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,15 +40,17 @@ export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
         Добавить
       </Button>
 
-      {isOpen && createPortal(
-        <div className="modal-backdrop" onClick={close}>
-          <div
-            className="admin-modal surface"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={titleId}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="admin-modal surface">
             <div className="wave-modal-header">
               <div>
-                <h2 className="head-3 m-0">Добавить мастера</h2>
+                <h2 className="head-3 m-0" id={titleId}>
+                  Добавить мастера
+                </h2>
                 <p className="body-2 muted m-0">
                   В трек {trackName}
                 </p>
@@ -114,9 +117,7 @@ export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
               </div>
             </form>
           </div>
-        </div>,
-        document.body
-      )}
+      </NativeDialog>
     </>
   );
 }

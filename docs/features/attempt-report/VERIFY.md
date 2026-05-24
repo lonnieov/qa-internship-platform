@@ -42,3 +42,6 @@
 - Open the attempt details page after Markdown download.
 - Expected: on-page report still renders normally.
 - Expected: manual review remains editable after reloading the page.
+- On the same reviewable answer, change the note to `Повторная проверка без перезагрузки` and click `Отклонить`.
+- Expected: the page does not crash or show an error overlay.
+- Expected: the review panel shows a saved status and the badge changes to `Не принято`.

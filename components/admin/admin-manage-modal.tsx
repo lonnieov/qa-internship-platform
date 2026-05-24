@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 const initialState: AdminAuthState = {
   ok: false,
@@ -58,18 +59,12 @@ export function AdminManageModal({ admin, currentAdminIsSeed }: AdminManageModal
         <MoreHorizontal size={18} />
       </button>
 
-      {isOpen ? (
-        <div
-          aria-labelledby={`admin-modal-title-${admin.id}`}
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="admin-modal surface"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={`admin-modal-title-${admin.id}`}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="admin-modal surface">
             <div className="modal-header">
               <div>
                 <h2 className="head-3 m-0" id={`admin-modal-title-${admin.id}`}>
@@ -196,8 +191,7 @@ export function AdminManageModal({ admin, currentAdminIsSeed }: AdminManageModal
               )}
             </div>
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
     </>
   );
 }
