@@ -1003,21 +1003,26 @@ button {
 }
 
 .auth-stats div {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 275px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: start;
 }
 
 .auth-stats strong {
-  min-width: 88px;
+  min-width: 0;
   color: #ffffff;
   font-size: 22px;
   font-weight: 600;
+  line-height: 1.28;
 }
 
 .auth-stats span {
+  min-width: 0;
   color: rgba(255, 255, 255, 0.72);
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .auth-form-panel {
@@ -6633,6 +6638,11 @@ button {
   .auth-brand-panel {
     min-height: 420px;
     padding: 32px;
+  }
+
+  .auth-stats div {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .auth-form-panel {
