@@ -1240,7 +1240,7 @@ button {
 }
 
 .test-layout-sql {
-  grid-template-columns: minmax(0, 1fr) 272px !important;
+  grid-template-columns: minmax(0, 1fr) 320px !important;
   gap: 20px;
 }
 
@@ -2775,42 +2775,44 @@ button {
 }
 
 .test-nav-card-sql {
-  border-radius: 24px;
+  border-radius: var(--radius-garden);
 }
 
 .test-page-sql .test-card-content {
-  padding: 0 20px 18px;
+  padding: 0 24px 20px;
 }
 
 .test-page-sql .test-nav-summary {
-  gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-garden);
 }
 
 .question-grid-sql {
-  grid-template-columns: repeat(5, minmax(44px, 1fr));
-  gap: 10px;
-}
-
-.question-dot-sql {
-  height: 58px;
-  border-radius: 14px;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.test-page-sql .question-nav-legend {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   gap: 8px;
 }
 
+.question-dot-sql {
+  min-width: 40px;
+  height: 40px;
+  border-radius: var(--radius-garden);
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.test-page-sql .question-nav-legend {
+  gap: 10px;
+}
+
 .test-page-sql .question-nav-legend span {
-  font-size: 15px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .test-page-sql .submit-info-bubble.compact {
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 @media (max-width: 1320px) {
