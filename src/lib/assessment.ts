@@ -34,7 +34,8 @@ export async function getSettings(scope?: {
 export async function calculateAttemptScore(attemptId: string) {
   const answers = await prisma.assessmentAnswer.findMany({
     where: { attemptId },
-    include: {
+    select: {
+      isCorrect: true,
       question: {
         select: {
           type: true,

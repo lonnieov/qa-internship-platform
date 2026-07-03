@@ -7,7 +7,9 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-ARG DATABASE_URL="postgresql://user:password@localhost:5432/qa_internship?schema=public"
+# Build-time placeholder only: `prisma generate` + `next build` do not connect
+# to a database. The real DATABASE_URL is injected at runtime, never baked in.
+ARG DATABASE_URL="postgresql://build:build@localhost:5432/build_placeholder?schema=public"
 ENV DATABASE_URL=$DATABASE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -39,6 +41,9 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health-check').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 USER node
 

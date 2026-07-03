@@ -40,6 +40,14 @@ export type ApiSandboxEvaluation = {
   errorCode?: string;
 };
 
+function normalizeHttpStatus(value: unknown, fallback = 200) {
+  const status = typeof value === "number" ? value : Number(value);
+  if (Number.isInteger(status) && status >= 100 && status <= 599) {
+    return status;
+  }
+  return fallback;
+}
+
 function asStringRecord(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -150,8 +158,7 @@ export function normalizeApiSandboxConfig(input: unknown): ApiSandboxConfig {
     query: asStringRecord(raw.query),
     headers: asStringRecord(raw.headers),
     body: raw.body as JsonValue | undefined,
-    successStatus:
-      typeof raw.successStatus === "number" ? raw.successStatus : Number(raw.successStatus ?? 200),
+    successStatus: normalizeHttpStatus(raw.successStatus),
     successHeaders: asStringRecord(raw.successHeaders),
     successBody:
       typeof raw.successBody === "undefined" ? ({ ok: true } as JsonValue) : (raw.successBody as JsonValue),
