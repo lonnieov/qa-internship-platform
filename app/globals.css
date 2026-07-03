@@ -154,6 +154,31 @@ button {
   cursor: pointer;
 }
 
+:is(
+  a:any-link,
+  button,
+  input,
+  textarea,
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
 .site-shell {
   min-height: 100vh;
   display: flex;
@@ -2494,6 +2519,25 @@ button {
 .sql-schema-panel,
 .sql-brief-panel {
   border-radius: 22px;
+}
+
+@supports (content-visibility: auto) {
+  .sql-result-panel,
+  .sql-schema-panel,
+  .manual-qa-report-card,
+  .autotest-method-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
+  }
+}
+
+@supports not (content-visibility: auto) {
+  .sql-result-panel,
+  .sql-schema-panel,
+  .manual-qa-report-card,
+  .autotest-method-item {
+    contain: layout style paint;
+  }
 }
 
 .sql-editor-panel,

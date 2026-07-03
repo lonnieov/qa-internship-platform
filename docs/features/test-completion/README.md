@@ -7,20 +7,20 @@ Protect interns from accidentally finishing an assessment before they are ready.
 ## Scope
 
 - The manual finish control is placed in the test header, away from question navigation.
-- When every question is answered and the intern is on the last question, an extra finish control appears in the question card footer.
 - A visible info bubble warns that unanswered questions count as fail.
 - Manual finish opens a confirmation dialog before submitting the attempt.
 - Automatic finish by timer, tab close, or hidden tab still submits immediately.
 - Timer auto-submit is accepted only after the server-side deadline has passed.
 - The client timer uses server-calculated remaining time, so incorrect device clocks do not finish the attempt early.
 - The result screen plays a short full-screen confetti burst when a completed attempt opens.
+- Test controls use native labels, table captions, and visible keyboard focus for
+  manual verification accessibility.
 
 ## Main Flow
 
 - Intern starts an active attempt.
 - Intern answers questions and navigates with `Назад` and `Далее`.
-- Intern clicks `Завершить` in the header.
-- Or, after all questions are answered on the last question, intern clicks `Завершить` in the question card footer.
+- Intern clicks `Завершить` in the navigation card near the timer.
 - The confirmation dialog explains the result of submitting.
 - `Продолжить` submits the attempt.
 - `Отмена` closes the dialog and keeps the attempt active.
@@ -32,6 +32,7 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - `components/intern/completion-confetti.tsx`
 - `app/[locale]/intern/result/page.tsx`
 - `app/globals.css`
+- `components/ui/native-dialog.tsx`
 
 ## Constraints
 
@@ -40,3 +41,4 @@ Protect interns from accidentally finishing an assessment before they are ready.
 - Early client auto-submit requests are ignored until the server deadline is reached.
 - Unanswered questions remain scored as fail by the existing submit flow.
 - Confetti is CSS-only, has no extra package dependency, and is hidden when reduced motion is enabled.
+- Accessibility improvements must not change answer payloads or scoring.

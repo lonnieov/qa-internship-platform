@@ -14,6 +14,8 @@
 - Expected: the modal closes and keyboard focus returns to the page.
 - Reopen the modal and click the backdrop outside the panel.
 - Expected: the modal closes without changing the candidate list.
+- Reopen the modal with keyboard navigation.
+- Expected: the focused control has a visible outline.
 
 ## Positive Case
 
@@ -26,6 +28,9 @@
 - Expected: each modal opens and closes with the same fade/scale animation.
 - Start an intern test, click `Завершить`, then click `Отмена`.
 - Expected: the finish confirmation closes and the attempt remains active.
+- Start an intern test, click the question comment button, type `Need review`.
+- Expected: the comment textarea is focused, labelled by the dialog content, and
+  can be saved or cancelled.
 
 ## Negative Cases
 

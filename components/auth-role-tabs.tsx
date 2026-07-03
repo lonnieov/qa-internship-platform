@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,7 +9,6 @@ type AuthRole = "intern" | "admin";
 export function AuthRoleTabs({ activeRole }: { activeRole: AuthRole }) {
   const locale = useLocale();
   const t = useTranslations("AuthRoleTabs");
-  const router = useRouter();
   const [pendingRole, setPendingRole] = useState<AuthRole | null>(null);
   const visibleRole = pendingRole ?? activeRole;
   const roleLinks: Array<{ href: string; label: string; role: AuthRole }> = [
@@ -38,7 +35,7 @@ export function AuthRoleTabs({ activeRole }: { activeRole: AuthRole }) {
     setPendingRole(targetRole);
 
     window.setTimeout(() => {
-      router.push(href);
+      window.location.assign(href);
     }, 180);
   }
 
@@ -48,7 +45,7 @@ export function AuthRoleTabs({ activeRole }: { activeRole: AuthRole }) {
       data-active-role={visibleRole}
     >
       {roleLinks.map((link) => (
-        <Link
+        <a
           aria-current={activeRole === link.role ? "page" : undefined}
           className={activeRole === link.role ? "active" : undefined}
           href={link.href}
@@ -56,7 +53,7 @@ export function AuthRoleTabs({ activeRole }: { activeRole: AuthRole }) {
           onClick={(event) => switchRole(event, link.role, link.href)}
         >
           {link.label}
-        </Link>
+        </a>
       ))}
     </div>
   );

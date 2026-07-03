@@ -21,7 +21,8 @@
 - Click `Продолжить тестирование` or complete the readiness checklist and click `Начать тестирование`.
 - Expected: the next page opens as `/ru/intern/test?...` and does not bounce to `/ru/sign-in/intern`.
 - Open `/ru` again and click `Администратор`.
-- Expected: the tab indicator moves smoothly, `/ru/sign-in/admin` opens, and the admin login form fades into place.
+- Expected: the tab indicator moves smoothly, `/#/ru/sign-in/admin` opens, and the admin login form fades into place.
+- Expected: no `ChunkLoadError` appears in the page or browser console.
 - Click `Стажёр`.
 - Expected: the role switch animates back and the token login form is shown.
 
@@ -38,6 +39,8 @@
 - Expected: admin sign-in still works and can switch back to `Стажёр`.
 - Submit valid admin credentials on `/ru/sign-in/admin`.
 - Expected: the POST returns a redirect to `/ru/admin`, sets `qa_admin`, and the admin dashboard opens.
+- Expected: no request to `/_next/static/chunks/app/%5Blocale%5D/sign-in/admin/page.js`
+  fails during the submit flow.
 - Open `/ru/admin` in a logged-out browser.
 - Expected: the page redirects to `/ru/sign-in/admin` without a client chunk loading error.
 - Use Cmd/Ctrl-click on a role tab.

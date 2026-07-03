@@ -12,6 +12,7 @@ Move user-facing modal windows from custom overlay markup to the native
 - Footer contact modal uses `<dialog>`.
 - Dialogs open with `showModal()`, close with Esc, close buttons, or backdrop clicks.
 - Dialog enter and exit states animate with modern CSS top-layer transitions.
+- Dialogs keep a single shared close listener and render only after client mount.
 
 ## Data Model
 
@@ -20,7 +21,8 @@ No storage or schema changes.
 ## Main Flow
 
 1. A component stores its modal open state.
-2. `components/ui/native-dialog.tsx` syncs that state to `dialog.showModal()` or
+2. `components/ui/native-dialog.tsx` mounts the portal on the client and syncs
+   that state to `dialog.showModal()` or
    `dialog.close()`.
 3. The dialog gets `closedby="any"` for native light-dismiss support.
 4. A shared coordinate-based fallback backs up backdrop clicks across browsers.
@@ -47,5 +49,7 @@ No storage or schema changes.
 - CSS transitions include `display`, `overlay`, and `transition-behavior:
   allow-discrete`.
 - Reduced-motion users get shortened fade-only transitions.
+- Dialog close state must be reported through the shared `close`/`cancel`
+  listener, not duplicated per caller.
 - The manual QA sandbox bottom sheet remains custom because it represents a mocked
   mobile app screen, not the platform modal primitive.

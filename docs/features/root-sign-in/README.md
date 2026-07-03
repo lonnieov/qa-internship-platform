@@ -12,6 +12,8 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - Sign-in screens no longer show a home-page link.
 - Role switching uses animated tabs and a soft form-card entrance between intern and admin screens.
 - Auth role links stay locale-prefixed to avoid an extra middleware redirect during client navigation.
+- Auth role switching uses document navigation after the tab animation to avoid
+  stale client route chunks during login flows.
 - Successful admin sign-in redirects directly to the current locale admin route.
 - Successful intern token sign-in redirects directly to the current locale intern route.
 - Intern start, continue, finish, result, onboarding, and logout redirects keep the current locale prefix.
@@ -21,7 +23,8 @@ Show the sign-in experience immediately at `/` instead of the previous public la
 - User opens `/` and is redirected to `/ru`.
 - The intern token login form is shown immediately.
 - User can switch to administrator sign-in through the sign-in role tabs.
-- The active tab indicator slides before navigation and the target form fades into place.
+- The active tab indicator slides, then the browser opens the target sign-in URL
+  and the hash-route bridge shows it as `/#/{locale}/sign-in/...`.
 - Protected admin routes redirect unauthenticated users directly to the active locale sign-in URL.
 - Admin login submits the current locale and redirects to `/{locale}/admin` after session creation.
 - Intern login submits the current locale and redirects to `/{locale}/intern` after session creation.

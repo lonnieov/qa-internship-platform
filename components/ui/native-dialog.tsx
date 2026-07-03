@@ -30,11 +30,11 @@ export function NativeDialog({
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const frame = window.requestAnimationFrame(() => {
       setIsClient(true);
-    }, 0);
+    });
 
-    return () => window.clearTimeout(timer);
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -62,7 +62,11 @@ export function NativeDialog({
     }
 
     dialog.addEventListener("close", handleClose);
-    return () => dialog.removeEventListener("close", handleClose);
+    dialog.addEventListener("cancel", handleClose);
+    return () => {
+      dialog.removeEventListener("close", handleClose);
+      dialog.removeEventListener("cancel", handleClose);
+    };
   }, [onOpenChange]);
 
   function handleLightDismiss(event: MouseEvent<HTMLDialogElement>) {
@@ -92,7 +96,6 @@ export function NativeDialog({
       aria-modal="true"
       className={["native-dialog", className].filter(Boolean).join(" ")}
       onClick={handleLightDismiss}
-      onClose={() => onOpenChange(false)}
       ref={dialogRef}
     >
       {children}
