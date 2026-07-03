@@ -69,7 +69,18 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true, wave: true },
+      select: {
+        id: true,
+        candidateName: true,
+        inviteCodeMask: true,
+        inviteCodeEncrypted: true,
+        status: true,
+        expiresAt: true,
+        acceptedAt: true,
+        createdAt: true,
+        acceptedByProfileId: true,
+        wave: { select: { name: true } },
+      },
     }),
     prisma.internProfile.findMany({
       where: {
@@ -84,13 +95,24 @@ export default async function AdminInternsPage({
           : {}),
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        profile: true,
-        wave: true,
+      select: {
+        id: true,
+        profileId: true,
+        fullName: true,
+        invitationId: true,
+        trackId: true,
+        createdAt: true,
+        wave: { select: { name: true } },
         attempts: {
           orderBy: { startedAt: "desc" },
           take: 10,
-          include: {
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            submittedAt: true,
+            deadlineAt: true,
+            scorePercent: true,
             track: {
               select: { name: true },
             },
@@ -104,10 +126,13 @@ export default async function AdminInternsPage({
         ...(manageableTrackIds ? { id: { in: manageableTrackIds } } : {}),
       },
       orderBy: [{ order: "asc" }, { name: "asc" }],
-      include: {
+      select: {
+        id: true,
+        name: true,
         waves: {
           where: { isActive: true },
           orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
         },
       },
     }),
@@ -144,7 +169,18 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true, wave: true },
+      select: {
+        id: true,
+        candidateName: true,
+        inviteCodeMask: true,
+        inviteCodeEncrypted: true,
+        status: true,
+        expiresAt: true,
+        acceptedAt: true,
+        createdAt: true,
+        acceptedByProfileId: true,
+        wave: { select: { name: true } },
+      },
     });
   }
 

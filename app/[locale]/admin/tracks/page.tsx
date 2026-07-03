@@ -95,12 +95,36 @@ export default async function AdminTracksPage({
   const allTracks = await prisma.track.findMany({
     where: manageableTrackIds ? { id: { in: manageableTrackIds } } : undefined,
     orderBy: [{ order: "asc" }, { name: "asc" }],
-    include: {
-      waves: { orderBy: [{ order: "asc" }, { name: "asc" }] },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      isActive: true,
+      order: true,
+      waves: {
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          isActive: true,
+          order: true,
+        },
+      },
       members: {
         where: { role: "TRACK_MASTER" },
-        include: { profile: true },
         orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          profileId: true,
+          profile: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       },
     },
   });
@@ -116,84 +140,144 @@ export default async function AdminTracksPage({
     return matchesQuery && matchesStatus;
   });
 
+  const trackIds = allTracks.map((track) => track.id);
+  const waveIds = allTracks.flatMap((track) =>
+    track.waves.map((wave) => wave.id),
+  );
+  const [
+    questionCounts,
+    activeQuestionCounts,
+    internCounts,
+    invitationCounts,
+    attemptCounts,
+    completedAttemptStats,
+    waveInternCounts,
+    waveAttemptCounts,
+    waveCompletedAttemptStats,
+  ] = await Promise.all([
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds }, isActive: true },
+      _count: { _all: true },
+    }),
+    prisma.internProfile.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.invitation.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["trackId"],
+      where: {
+        trackId: { in: trackIds },
+        status: { not: "IN_PROGRESS" },
+        scorePercent: { not: null },
+      },
+      _count: { _all: true },
+      _avg: { scorePercent: true },
+    }),
+    prisma.internProfile.groupBy({
+      by: ["waveId"],
+      where: { waveId: { in: waveIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["waveId"],
+      where: { waveId: { in: waveIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["waveId"],
+      where: {
+        waveId: { in: waveIds },
+        status: { not: "IN_PROGRESS" },
+        scorePercent: { not: null },
+      },
+      _count: { _all: true },
+      _avg: { scorePercent: true },
+    }),
+  ]);
+  const countByTrack = (items: typeof questionCounts) =>
+    new Map(
+      items
+        .filter((item) => item.trackId)
+        .map((item) => [item.trackId as string, item._count._all]),
+    );
+  const questionCountByTrack = countByTrack(questionCounts);
+  const activeQuestionCountByTrack = countByTrack(activeQuestionCounts);
+  const internCountByTrack = countByTrack(internCounts);
+  const invitationCountByTrack = countByTrack(invitationCounts);
+  const attemptCountByTrack = countByTrack(attemptCounts);
+  const completedStatsByTrack = new Map(
+    completedAttemptStats
+      .filter((item) => item.trackId)
+      .map((item) => [
+        item.trackId as string,
+        {
+          completedCount: item._count._all,
+          avgScore: item._avg.scorePercent,
+        },
+      ]),
+  );
+  const waveInternCountByWave = new Map(
+    waveInternCounts
+      .filter((item) => item.waveId)
+      .map((item) => [item.waveId as string, item._count._all]),
+  );
+  const waveAttemptCountByWave = new Map(
+    waveAttemptCounts
+      .filter((item) => item.waveId)
+      .map((item) => [item.waveId as string, item._count._all]),
+  );
+  const waveCompletedStatsByWave = new Map(
+    waveCompletedAttemptStats
+      .filter((item) => item.waveId)
+      .map((item) => [
+        item.waveId as string,
+        {
+          avgScore: item._avg.scorePercent,
+        },
+      ]),
+  );
   const statsMap = new Map(
-    await Promise.all(
-      allTracks.map(async (track) => {
-        const [
-          questionCount,
-          activeQuestionCount,
-          internCount,
-          invitationCount,
-          attemptCount,
-          completedAttempts,
-          waveStats,
-        ] = await Promise.all([
-          prisma.question.count({ where: { trackId: track.id } }),
-          prisma.question.count({ where: { trackId: track.id, isActive: true } }),
-          prisma.internProfile.count({ where: { trackId: track.id } }),
-          prisma.invitation.count({ where: { trackId: track.id } }),
-          prisma.assessmentAttempt.count({ where: { trackId: track.id } }),
-          prisma.assessmentAttempt.findMany({
-            where: {
-              trackId: track.id,
-              status: { not: "IN_PROGRESS" },
-              scorePercent: { not: null },
+    allTracks.map((track) => [
+      track.id,
+      {
+        questionCount: questionCountByTrack.get(track.id) ?? 0,
+        activeQuestionCount: activeQuestionCountByTrack.get(track.id) ?? 0,
+        internCount: internCountByTrack.get(track.id) ?? 0,
+        invitationCount: invitationCountByTrack.get(track.id) ?? 0,
+        attemptCount: attemptCountByTrack.get(track.id) ?? 0,
+        completedCount:
+          completedStatsByTrack.get(track.id)?.completedCount ?? 0,
+        avgScore: completedStatsByTrack.get(track.id)?.avgScore ?? null,
+        waveStats: new Map(
+          track.waves.map((wave) => [
+            wave.id,
+            {
+              interns: waveInternCountByWave.get(wave.id) ?? 0,
+              attempts: waveAttemptCountByWave.get(wave.id) ?? 0,
+              avgScore:
+                waveCompletedStatsByWave.get(wave.id)?.avgScore ?? null,
             },
-            select: { scorePercent: true },
-          }),
-          Promise.all(
-            track.waves.map(async (wave) => {
-              const [waveInterns, waveAttempts, waveCompleted] =
-                await Promise.all([
-                  prisma.internProfile.count({ where: { waveId: wave.id } }),
-                  prisma.assessmentAttempt.count({ where: { waveId: wave.id } }),
-                  prisma.assessmentAttempt.findMany({
-                    where: {
-                      waveId: wave.id,
-                      status: { not: "IN_PROGRESS" },
-                      scorePercent: { not: null },
-                    },
-                    select: { scorePercent: true },
-                  }),
-                ]);
-              const avgScore =
-                waveCompleted.length === 0
-                  ? null
-                  : waveCompleted.reduce(
-                      (sum, a) => sum + (a.scorePercent ?? 0),
-                      0,
-                    ) / waveCompleted.length;
-              return [
-                wave.id,
-                { interns: waveInterns, attempts: waveAttempts, avgScore },
-              ] as const;
-            }),
-          ),
-        ]);
-
-        const avgScore =
-          completedAttempts.length === 0
-            ? null
-            : completedAttempts.reduce(
-                (sum, a) => sum + (a.scorePercent ?? 0),
-                0,
-              ) / completedAttempts.length;
-
-        return [
-          track.id,
-          {
-            questionCount,
-            activeQuestionCount,
-            internCount,
-            invitationCount,
-            attemptCount,
-            completedCount: completedAttempts.length,
-            avgScore,
-            waveStats: new Map(waveStats),
-          },
-        ] as const;
-      }),
-    ),
+          ]),
+        ),
+      },
+    ]),
   );
 
   const totals = Array.from(statsMap.values()).reduce(

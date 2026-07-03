@@ -32,9 +32,19 @@ type QuestionType =
   | "AUTOTEST_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
-async function getQuestions(trackIds?: string[] | null) {
+async function getQuestions({
+  selectedTrackId,
+  trackIds,
+}: {
+  selectedTrackId?: string | null;
+  trackIds?: string[] | null;
+}) {
   return prisma.question.findMany({
-    where: trackIds ? { trackId: { in: trackIds } } : undefined,
+    where: selectedTrackId
+      ? { trackId: selectedTrackId }
+      : trackIds
+        ? { trackId: { in: trackIds } }
+        : undefined,
     orderBy: [
       { isActive: "desc" },
       { trackRef: { order: "asc" } },
@@ -42,9 +52,30 @@ async function getQuestions(trackIds?: string[] | null) {
       { order: "asc" },
       { createdAt: "asc" },
     ],
-    include: {
-      trackRef: true,
-      options: { orderBy: { order: "asc" } },
+    select: {
+      id: true,
+      type: true,
+      track: true,
+      trackId: true,
+      text: true,
+      textUz: true,
+      explanation: true,
+      isActive: true,
+      order: true,
+      apiConfig: true,
+      createdAt: true,
+      trackRef: { select: { id: true, slug: true, name: true } },
+      options: {
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          label: true,
+          text: true,
+          textUz: true,
+          isCorrect: true,
+          order: true,
+        },
+      },
     },
   });
 }
@@ -331,12 +362,17 @@ export default async function AdminQuestionsPage({
   }
 
   const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
-  const allAccessibleQuestions = await getQuestions(manageableTrackIds);
-  const questions = selectedTrackRecord
-    ? allAccessibleQuestions.filter(
-        (question) => question.trackId === selectedTrackRecord.id,
-      )
-    : allAccessibleQuestions;
+  const [questions, questionCountsByTrack] = await Promise.all([
+    getQuestions({
+      selectedTrackId: selectedTrackRecord?.id,
+      trackIds: manageableTrackIds,
+    }),
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: manageableTrackIds ? { trackId: { in: manageableTrackIds } } : undefined,
+      _count: { _all: true },
+    }),
+  ]);
   const requestedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
     resolvedSearchParams.type === "SQL_SANDBOX" ||
@@ -390,10 +426,14 @@ export default async function AdminQuestionsPage({
   const trackCounts = Object.fromEntries(
     tracks.map((track) => [
       track.id,
-      allAccessibleQuestions.filter((question) => question.trackId === track.id)
-        .length,
+      questionCountsByTrack.find((item) => item.trackId === track.id)?._count
+        ._all ?? 0,
     ]),
   ) as Record<string, number>;
+  const totalAccessibleQuestionCount = Object.values(trackCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const tracksForForms = tracks.map((track) => ({
     id: track.id,
     slug: track.slug,
@@ -425,7 +465,7 @@ export default async function AdminQuestionsPage({
               href={filterUrl(locale, activeSection.type, "all")}
             >
               <span>{t("tracks.all")}</span>
-              <span>{allAccessibleQuestions.length}</span>
+              <span>{totalAccessibleQuestionCount}</span>
             </Link>
             {tracks.map((track) => {
               const meta = getQuestionTrackMeta(track);
