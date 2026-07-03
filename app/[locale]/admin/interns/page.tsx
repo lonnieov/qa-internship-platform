@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/intern-candidate-table";
 import { InternSearchForm } from "@/components/admin/intern-search-form";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
+import { InternDeletedToast } from "@/components/admin/intern-deleted-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ensureTracks } from "@/lib/tracks";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
@@ -50,7 +51,7 @@ export default async function AdminInternsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; deleted?: string }>;
 }) {
   const { locale: localeParam } = await params;
   const locale = isLocale(localeParam) ? localeParam : routing.defaultLocale;
@@ -58,7 +59,7 @@ export default async function AdminInternsPage({
   const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
-  const { q } = await searchParams;
+  const { q, deleted } = await searchParams;
   const internSearch = String(q ?? "").trim();
 
   await ensureTracks();
@@ -200,7 +201,7 @@ export default async function AdminInternsPage({
       badgeVariant: activeAttempt
         ? "warning"
         : latest?.status === "EXPIRED"
-          ? "danger"
+          ? "warning"
           : latest
             ? "success"
             : "default",
@@ -295,6 +296,7 @@ export default async function AdminInternsPage({
 
   return (
     <main className="page stack-lg admin-interns-page">
+      {deleted === "1" ? <InternDeletedToast /> : null}
       <div className="page-header">
         <div>
           <h1 className="head-1">{t("pageTitle")}</h1>

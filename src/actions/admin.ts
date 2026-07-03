@@ -247,7 +247,8 @@ export async function revokeInvitationAction(formData: FormData) {
 }
 
 export async function deleteInternCandidateAction(formData: FormData) {
-  const profile = await requireAdminAccess();
+  const locale = await getRequestLocale(formData.get("locale"));
+  const profile = await requireAdminAccess({ locale });
   const internProfileId = String(formData.get("internProfileId") ?? "").trim();
   const invitationIds = Array.from(
     new Set(
@@ -323,6 +324,7 @@ export async function deleteInternCandidateAction(formData: FormData) {
 
   revalidatePath("/admin/interns");
   revalidatePath("/admin");
+  redirect(localizedPath("/admin/interns?deleted=1", locale));
 }
 
 export async function updateSettingsAction(formData: FormData) {

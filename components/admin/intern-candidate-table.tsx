@@ -638,6 +638,7 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                     </p>
                   </div>
                   <form action={deleteInternCandidateAction}>
+                    <input type="hidden" name="locale" value={locale} />
                     <input
                       type="hidden"
                       name="internProfileId"
