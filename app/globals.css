@@ -879,6 +879,26 @@ button {
   overflow-y: auto;
 }
 
+.site-shell-content > .admin-shell:has(.admin-attempt-page),
+.admin-shell:has(.admin-attempt-page) {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.site-shell-content > .admin-shell:has(.admin-attempt-page) .admin-sidebar,
+.admin-shell:has(.admin-attempt-page) .admin-sidebar {
+  max-height: none;
+}
+
+.admin-content:has(.admin-attempt-page) {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
 .admin-content > .page {
   width: min(1180px, calc(100% - 64px));
 }

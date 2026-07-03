@@ -21,12 +21,18 @@ export default function InternSignInPage() {
           </p>
           <div className="auth-stats">
             <div>
-              <strong>3</strong>
-              <span>типа вопросов</span>
+              <strong>Гибкие форматы</strong>
+              <span>
+                Конструируйте тесты из любых категорий: от теории до
+                практических кейсов
+              </span>
             </div>
             <div>
-              <strong>30 мин</strong>
-              <span>лимит по умолчанию</span>
+              <strong>Настраиваемое время</strong>
+              <span>
+                Задавайте любое время на прохождение всего теста или отдельных
+                вопросов.
+              </span>
             </div>
           </div>
         </div>
