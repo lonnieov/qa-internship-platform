@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { NativeDialog } from "@/components/ui/native-dialog";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
 import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
@@ -2536,18 +2537,12 @@ export function TestRunner({
         </div>
       </section>
 
-      {isSubmitDialogOpen ? (
-        <div
-          aria-labelledby="finish-test-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsSubmitDialogOpen(false)}
-        >
-          <div
-            className="confirm-dialog"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy="finish-test-title"
+        onOpenChange={setIsSubmitDialogOpen}
+        open={isSubmitDialogOpen}
+      >
+          <div className="confirm-dialog">
             <div className="stack">
               <div className="nav-row">
                 <span className="confirm-dialog-icon">
@@ -2578,21 +2573,14 @@ export function TestRunner({
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
 
-      {isCommentDialogOpen ? (
-        <div
-          aria-labelledby="question-comment-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsCommentDialogOpen(false)}
-        >
-          <div
-            className="confirm-dialog question-comment-dialog"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy="question-comment-title"
+        onOpenChange={setIsCommentDialogOpen}
+        open={isCommentDialogOpen}
+      >
+          <div className="confirm-dialog question-comment-dialog">
             <div className="stack">
               <div
                 className="nav-row"
@@ -2642,8 +2630,7 @@ export function TestRunner({
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
     </main>
   );
 }

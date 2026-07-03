@@ -28,9 +28,11 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-qa_user}:${POSTGRES_PASSWORD:-qa_password}@postgres:5432/${POSTGRES_DB:-qa_internship}?schema=public
-      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-me-admin-session-secret}
-      INTERN_SESSION_SECRET: ${INTERN_SESSION_SECRET:-change-me-intern-session-secret}
-      INVITATION_TOKEN_ENCRYPTION_SECRET: ${INVITATION_TOKEN_ENCRYPTION_SECRET:-change-me-invitation-token-secret}
+      # Secrets have no defaults on purpose: compose fails loudly if they are
+      # unset so a deployment can never run with a publicly-known key.
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET must be set to a long random value}
+      INTERN_SESSION_SECRET: ${INTERN_SESSION_SECRET:?INTERN_SESSION_SECRET must be set to a long random value}
+      INVITATION_TOKEN_ENCRYPTION_SECRET: ${INVITATION_TOKEN_ENCRYPTION_SECRET:?INVITATION_TOKEN_ENCRYPTION_SECRET must be set to a long random value}
     ports:
       - "${APP_PORT:-3000}:3000"
 

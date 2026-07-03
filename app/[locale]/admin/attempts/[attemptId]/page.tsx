@@ -198,7 +198,7 @@ export default async function AttemptDetailsPage({
   }
 
   return (
-    <main className="page stack-lg report-print-area">
+    <main className="page stack-lg report-print-area admin-attempt-page">
       <div className="page-header">
         <div>
           <h1 className="head-1">{t("title")}</h1>

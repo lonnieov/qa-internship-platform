@@ -12,6 +12,8 @@ Run the Next.js app as a production container for a self-hosted server, Kubernet
 - Runtime image includes Prisma CLI and always runs schema setup before app start.
 - `docker-compose.yml` can run the app with a local Postgres service.
 - Container startup applies Prisma schema and seeds the default admin.
+- Seed keeps the shared admin/master passwords by default and avoids resetting
+  existing assessment settings or tracks.
 - Next.js Server Actions allow public proxy origins from `RENDER_EXTERNAL_HOSTNAME`, `APP_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_URL`, and `SERVER_ACTIONS_ALLOWED_ORIGINS`.
 
 ## Main Flow
@@ -31,6 +33,7 @@ Run the Next.js app as a production container for a self-hosted server, Kubernet
 - `docker-entrypoint.sh`
 - `docker-compose.yml`
 - `next.config.ts`
+- `prisma/seed.ts`
 - `src/lib/intern-token-auth.ts`
 
 ## Constraints
@@ -40,7 +43,8 @@ Run the Next.js app as a production container for a self-hosted server, Kubernet
 - Keep `ADMIN_SESSION_SECRET`, `INTERN_SESSION_SECRET`, and `INVITATION_TOKEN_ENCRYPTION_SECRET` stable between restarts.
 - Server Action origin values are read during Next.js build/start config loading; after changing them, rebuild or redeploy the app.
 - For custom domains, `SERVER_ACTIONS_ALLOWED_ORIGINS` stores hostnames only or comma-separated hostnames, for example `qa.example.com,*.qa.example.com`.
-- Seed admin credentials are `admin@resting.chat` and `RESTingChat`.
+- Seed admin credentials are `admin@resting.chat` and `RESTingChat`; seed track masters use `TrackMaster123`.
+- `SEED_ADMIN_PASSWORD` and `SEED_TRACK_MASTER_PASSWORD` are optional overrides, not required Render variables.
 - Startup schema setup is intended for a single app container on a self-hosted server.
 - For multiple replicas or Kubernetes, move `prisma db push` and `prisma db seed` into a one-off job.
 - Compose defaults are for local/self-hosted bootstrap and should be overridden with strong secrets in production.

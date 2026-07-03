@@ -5,14 +5,28 @@ import { seedAdminEmail } from "../src/lib/admin-constants";
 import { defaultTracks } from "../src/lib/question-classification";
 import { ensureDefaultWave } from "../src/lib/waves";
 
+// Seed passwords intentionally default to the shared training credentials used
+// by this project. Environment variables can still override them for a separate
+// deployment, but Render can run this seed without extra SEED_* variables.
+function seedPassword(envVar: string, devDefault: string) {
+  const fromEnv = process.env[envVar];
+  if (fromEnv && fromEnv.trim().length > 0) {
+    return fromEnv;
+  }
+  return devDefault;
+}
+
 const seedAdmin = {
   email: seedAdminEmail,
-  password: "RESTingChat",
+  password: seedPassword("SEED_ADMIN_PASSWORD", "RESTingChat"),
   firstName: "Test",
   lastName: "Admin",
 };
 
-const seedTrackMasterPassword = "TrackMaster123";
+const seedTrackMasterPassword = seedPassword(
+  "SEED_TRACK_MASTER_PASSWORD",
+  "TrackMaster123",
+);
 
 const seedTrackMasters = [
   {
@@ -880,7 +894,7 @@ async function main() {
 
   await prisma.assessmentSettings.upsert({
     where: { id: "global" },
-    update: { totalTimeMinutes: 30 },
+    update: {},
     create: { id: "global", totalTimeMinutes: 30 },
   });
 
@@ -888,11 +902,7 @@ async function main() {
     defaultTracks.map(async (track) => {
       const saved = await prisma.track.upsert({
         where: { slug: track.slug },
-        update: {
-          name: track.name,
-          order: track.order,
-          isActive: true,
-        },
+        update: {},
         create: track,
       });
 

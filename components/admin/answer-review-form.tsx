@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useActionState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { reviewAnswerAction } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,13 @@ type AdminReview = {
   at: string;
 };
 
+type ReviewFormState = {
+  ok: boolean;
+  passed: boolean | null;
+  message: string;
+  at: string | null;
+};
+
 export function AnswerReviewForm({
   answerId,
   existingReview,
@@ -20,21 +27,59 @@ export function AnswerReviewForm({
   answerId: string;
   existingReview: AdminReview | null;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const [note, setNote] = useState(existingReview?.note ?? "");
-  const [submitted, setSubmitted] = useState<boolean | null>(
-    existingReview?.passed ?? null,
-  );
+  const [state, formAction, isPending] = useActionState(
+    async (
+      previous: ReviewFormState,
+      formData: FormData,
+    ): Promise<ReviewFormState> => {
+      const passedValue = String(formData.get("passed") ?? "");
+      const passed =
+        passedValue === "true" ? true : passedValue === "false" ? false : null;
+      const note = String(formData.get("note") ?? "");
 
-  function submit(passed: boolean) {
-    startTransition(async () => {
-      const result = await reviewAnswerAction({ answerId, passed, note });
-      if (result?.ok) setSubmitted(passed);
-    });
-  }
+      if (passed === null) {
+        return {
+          ...previous,
+          ok: false,
+          message: "Выберите результат проверки.",
+        };
+      }
+
+      try {
+        const result = await reviewAnswerAction({ answerId, passed, note });
+        if (!result?.ok) {
+          return {
+            ...previous,
+            ok: false,
+            message: "Не удалось сохранить проверку. Обновите страницу и попробуйте ещё раз.",
+          };
+        }
+
+        return {
+          ok: true,
+          passed,
+          message: "Проверка сохранена.",
+          at: result.at ?? new Date().toISOString(),
+        };
+      } catch {
+        return {
+          ...previous,
+          ok: false,
+          message: "Проверка не сохранилась. Попробуйте ещё раз без перезагрузки страницы.",
+        };
+      }
+    },
+    {
+      ok: true,
+      passed: existingReview?.passed ?? null,
+      message: "",
+      at: existingReview?.at ?? null,
+    },
+  );
+  const submitted = state.passed;
 
   return (
-    <div className="answer-review-form stack">
+    <form action={formAction} className="answer-review-form stack">
       <div className="nav-row" style={{ justifyContent: "space-between" }}>
         <strong className="body-2">Ручная проверка</strong>
         {submitted !== null ? (
@@ -48,18 +93,19 @@ export function AnswerReviewForm({
 
       <Textarea
         className="answer-review-note"
+        defaultValue={existingReview?.note ?? ""}
         disabled={isPending}
-        onChange={(e) => setNote(e.target.value)}
+        name="note"
         placeholder="Комментарий проверяющего (необязательно)"
-        value={note}
       />
 
       <div className="nav-row">
         <Button
           className={`answer-review-action answer-review-accept${submitted === true ? " is-selected" : ""}`}
           disabled={isPending}
-          onClick={() => submit(true)}
-          type="button"
+          name="passed"
+          type="submit"
+          value="true"
           variant="secondary"
         >
           <CheckCircle2 size={16} />
@@ -68,19 +114,28 @@ export function AnswerReviewForm({
         <Button
           className={`answer-review-action answer-review-reject${submitted === false ? " is-selected" : ""}`}
           disabled={isPending}
-          onClick={() => submit(false)}
-          type="button"
+          name="passed"
+          type="submit"
+          value="false"
           variant="secondary"
         >
           <XCircle size={16} />
           Отклонить
         </Button>
-        {existingReview?.at ? (
+        {state.at ? (
           <span className="body-2 muted">
-            {new Date(existingReview.at).toLocaleString("ru")}
+            {new Date(state.at).toLocaleString("ru")}
           </span>
         ) : null}
       </div>
-    </div>
+      {state.message ? (
+        <p
+          aria-live="polite"
+          className={`body-2 m-0 ${state.ok ? "success-text" : "danger-text"}`}
+        >
+          {state.message}
+        </p>
+      ) : null}
+    </form>
   );
 }

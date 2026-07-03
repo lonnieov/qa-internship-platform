@@ -15,33 +15,60 @@ function escapeSqlValue(value: SqlScalar) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+// Hard limits protect the server from a validated-but-expensive query (e.g. a
+// recursive CTE or a cross join over admin-defined tables): the child is killed
+// after SQL_TIMEOUT_MS and output is capped at SQL_MAX_OUTPUT_BYTES.
+const SQL_TIMEOUT_MS = 5000;
+const SQL_MAX_OUTPUT_BYTES = 5_000_000;
+
 async function runSqliteScript(databasePath: string, script: string) {
   const { spawn } = await import("node:child_process");
   return await new Promise<{
     stdout: string;
     stderr: string;
     exitCode: number;
+    limited: boolean;
   }>((resolve, reject) => {
     const child = spawn("/usr/bin/sqlite3", [databasePath], {
       stdio: ["pipe", "pipe", "pipe"],
+      timeout: SQL_TIMEOUT_MS,
+      killSignal: "SIGKILL",
     });
 
     let stdout = "";
     let stderr = "";
+    let limited = false;
+
+    const enforceOutputLimit = () => {
+      if (stdout.length + stderr.length > SQL_MAX_OUTPUT_BYTES) {
+        limited = true;
+        child.kill("SIGKILL");
+      }
+    };
 
     child.stdout.on("data", (chunk) => {
       stdout += String(chunk);
+      enforceOutputLimit();
     });
 
     child.stderr.on("data", (chunk) => {
       stderr += String(chunk);
+      enforceOutputLimit();
     });
 
     child.on("error", reject);
-    child.on("close", (code) => {
-      resolve({ stdout, stderr, exitCode: code ?? 0 });
+    child.on("close", (code, signal) => {
+      resolve({
+        stdout,
+        stderr,
+        exitCode: code ?? 0,
+        limited: limited || signal === "SIGKILL" || signal === "SIGTERM",
+      });
     });
 
+    child.stdin.on("error", () => {
+      // Ignore EPIPE if the child was killed before consuming stdin.
+    });
     child.stdin.write(script);
     child.stdin.end();
   });
@@ -210,6 +237,16 @@ export async function executeSqlSandboxQuery(
 
     const execution = await runSqliteScript(databasePath, script);
     await rm(tempDir, { recursive: true, force: true });
+
+    if (execution.limited) {
+      return {
+        ok: false,
+        columns: [],
+        rows: [],
+        error:
+          "Запрос выполнялся слишком долго или вернул слишком много данных. Упростите его.",
+      } satisfies SqlSandboxExecutionResult;
+    }
 
     if (execution.exitCode !== 0) {
       return {

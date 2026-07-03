@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QA Spring 26: сравнительный отчет по 4 assessment-результатам</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9dee8;
+      --soft: #eef2f7;
+      --green: #117a4b;
+      --green-bg: #e8f6ee;
+      --amber: #956000;
+      --amber-bg: #fff4d6;
+      --red: #b42318;
+      --red-bg: #ffe9e6;
+      --blue: #1e5aa8;
+      --blue-bg: #e8f1ff;
+      --violet: #7047a8;
+      --violet-bg: #f0e9ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 56px;
+    }
+
+    header {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 34px;
+      max-width: 880px;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-top: 34px;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin: 10px 0 0;
+    }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    code {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .pill.good {
+      color: var(--green);
+      background: var(--green-bg);
+      border-color: #bce3cd;
+    }
+
+    .pill.warn {
+      color: var(--amber);
+      background: var(--amber-bg);
+      border-color: #f2d98b;
+    }
+
+    .pill.bad {
+      color: var(--red);
+      background: var(--red-bg);
+      border-color: #ffc7bf;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .winner {
+      grid-column: span 7;
+      border-color: #afc9f5;
+      background: linear-gradient(180deg, #ffffff 0%, var(--blue-bg) 100%);
+    }
+
+    .method {
+      grid-column: span 5;
+    }
+
+    .candidate {
+      grid-column: span 6;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    th, td {
+      padding: 12px 11px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    th {
+      background: #eef2f8;
+      color: #344054;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .score {
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .score.best {
+      color: var(--green);
+    }
+
+    .score.mid {
+      color: var(--blue);
+    }
+
+    .score.low {
+      color: var(--amber);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .rank {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .rank:last-child {
+      border-bottom: 0;
+    }
+
+    .rank-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--soft);
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .rank-num.gold {
+      color: #6f4900;
+      background: #ffe6a3;
+      border: 1px solid #e7bf45;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .subcard {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      background: #fbfcff;
+    }
+
+    .subcard.strong {
+      border-color: #bce3cd;
+      background: var(--green-bg);
+    }
+
+    .subcard.weak {
+      border-color: #ffc7bf;
+      background: var(--red-bg);
+    }
+
+    .note {
+      border-left: 4px solid var(--blue);
+      background: var(--blue-bg);
+      padding: 13px 15px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 14px;
+    }
+
+    .warning {
+      border-left-color: var(--amber);
+      background: var(--amber-bg);
+    }
+
+    .source-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .tiny {
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100% - 24px, 1180px);
+        padding-top: 18px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .winner, .method, .candidate {
+        grid-column: 1 / -1;
+      }
+
+      .metric-row, .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      .card, table, header {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>QA Spring 26: сравнительный анализ 4 assessment-результатов</h1>
+      <p>
+        Отчет сравнивает результаты Bobur Toshpo'latov, Виталия Гольденгорина, Алексея Семикина и Виктора Хегая
+        на основе экспортированных markdown-отчетов и правил скоринга в кодовой базе проекта.
+      </p>
+      <div class="meta">
+        <span class="pill">Дата анализа: 2026-05-21</span>
+        <span class="pill">Track: QA</span>
+        <span class="pill">Wave: QA Spring 26</span>
+        <span class="pill">Scored-вопросов: 28</span>
+        <span class="pill good">Лучший overall: Виктор Хегай</span>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Краткий вывод">
+      <article class="card winner">
+        <h2>Ключевой вывод</h2>
+        <p>
+          Лучший общий результат показал <strong>Виктор Хегай</strong>: 89.3% по проектному скорингу,
+          25/28 зачтенных заданий, 24/25 закрытых quiz-вопросов, корректный SQL, единственный успешно
+          принятый автотестовый псевдокод и статус <strong>SUBMITTED</strong> вместо EXPIRED.
+        </p>
+        <div class="metric-row">
+          <div class="metric"><b>89.3%</b><span>официальный score</span></div>
+          <div class="metric"><b>25/28</b><span>correct/scored</span></div>
+          <div class="metric"><b>24/25</b><span>закрытая теория</span></div>
+          <div class="metric"><b>4/9</b><span>manual review passed</span></div>
+        </div>
+        <p class="note warning">
+          Важный риск: все три manual QA sandbox-задания у Виктора отклонены админ-ревью. Если нужен кандидат
+          именно под ручное exploratory/manual QA, стоит дополнительно смотреть Алексея и Виталия. Но как общий
+          technical QA intern Виктор выглядит сильнее.
+        </p>
+      </article>
+
+      <article class="card method">
+        <h2>Методика</h2>
+        <p>
+          В проекте итог считается в <code>src/lib/assessment.ts</code>: из score исключены
+          <code>MANUAL_QA_SANDBOX</code>, <code>AUTOTEST_SANDBOX</code> и open-text quiz, а scored-зачет включает
+          закрытые quiz-вопросы, API sandbox, SQL sandbox и DevTools sandbox.
+        </p>
+        <p>
+          Структуру данных и admin review я брал из markdown-экспорта, который формируется логикой
+          <code>src/lib/attempt-report-md.ts</code>.
+        </p>
+        <div class="source-list tiny muted">
+          <span>Источники: assessment-Bobur-Toshpo-latov.md</span>
+          <span>Источники: assessment-Виталий-Гольденгорин.md</span>
+          <span>Источники: assessment-Алексей-Семикин.md</span>
+          <span>Источники: assessment-Виктор-Хегай.md</span>
+        </div>
+      </article>
+    </section>
+
+    <section>
+      <h2>Сводная таблица</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Кандидат</th>
+            <th>Статус</th>
+            <th>Score</th>
+            <th>Scored-разбивка</th>
+            <th>Manual review</th>
+            <th>Практика</th>
+            <th>Короткий вывод</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Виктор Хегай</strong></td>
+            <td><span class="pill good">SUBMITTED</span></td>
+            <td><span class="score best">89.3%</span><br><span class="muted">25/28</span></td>
+            <td>Quiz 24/25, API 0/1, SQL 1/1, DevTools 0/1</td>
+            <td>4/9 passed: open text 3/5, autotest 1/1, manual QA 0/3</td>
+            <td>Сильный SQL и автотесты; слабые API/DevTools и ручные bug reports.</td>
+            <td>Лучший overall: самая высокая база и лучший технический профиль, но нужен follow-up по manual QA.</td>
+          </tr>
+          <tr>
+            <td><strong>Алексей Семикин</strong></td>
+            <td><span class="pill warn">EXPIRED</span><br><span class="tiny muted">примерно +1.3 сек после deadline</span></td>
+            <td><span class="score mid">78.6%</span><br><span class="muted">22/28</span></td>
+            <td>Quiz 21/25, API 1/1, SQL 0/1, DevTools 0/1</td>
+            <td>4/9 passed: manual QA 3/3, open text 1/5, autotest 0/1</td>
+            <td>Хорошие bug reports и API; слабые SQL, DevTools, автотесты и часть теории.</td>
+            <td>Сильный runner-up для manual QA, но техническая универсальность ниже Виктора.</td>
+          </tr>
+          <tr>
+            <td><strong>Виталий Гольденгорин</strong></td>
+            <td><span class="pill warn">EXPIRED</span><br><span class="tiny muted">примерно +1.4 сек после deadline</span></td>
+            <td><span class="score mid">78.6%</span><br><span class="muted">22/28</span></td>
+            <td>Quiz 21/25, API 0/1, SQL 1/1, DevTools 0/1</td>
+            <td>3/9 passed: manual QA 3/3, open text 0/5, autotest 0/1</td>
+            <td>Хороший manual QA и SQL; заметные пробелы в HTTP/API, DevTools, OOP/STLC.</td>
+            <td>Подходит как manual QA trainee, но требует прокачки технического фундамента.</td>
+          </tr>
+          <tr>
+            <td><strong>Bobur Toshpo'latov</strong></td>
+            <td><span class="pill warn">EXPIRED</span><br><span class="tiny muted">примерно +1.5 сек после deadline</span></td>
+            <td><span class="score low">71.4%</span><br><span class="muted">20/28</span></td>
+            <td>Quiz 20/25, API 0/1, SQL 0/1, DevTools 0/1</td>
+            <td>1/9 passed: manual QA 1/3, open text 0/5, autotest 0/1</td>
+            <td>Есть отдельные QA-интуиции, но слабая практическая и теоретическая база.</td>
+            <td>Сейчас самый рискованный кандидат из четверки.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Рейтинг</h2>
+      <div class="card">
+        <div class="rank">
+          <div class="rank-num gold">1</div>
+          <div>
+            <h3>Виктор Хегай</h3>
+            <p>
+              Лучший по официальному score и по закрытой теории. Единственный не ушел в EXPIRED, закрыл SQL и
+              получил положительную оценку за автотестовый сценарий. Выбор не идеальный из-за слабых manual QA
+              sandbox-отчетов, но суммарная technical readiness выше остальных.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">2</div>
+          <div>
+            <h3>Алексей Семикин</h3>
+            <p>
+              Тот же официальный score, что у Виталия, но лучше manual review total: 4/9 против 3/9. Сильная сторона —
+              ручное тестирование и API sandbox. Проигрывает Виктору в закрытой теории, SQL и автотестах.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">3</div>
+          <div>
+            <h3>Виталий Гольденгорин</h3>
+            <p>
+              Хорошо нашел баги в manual QA и закрыл SQL. При этом API/DevTools провалены, автотест не раскрыт,
+              open-text ответы по OOP/STLC/Charles в основном не приняты.
+            </p>
+          </div>
+        </div>
+        <div class="rank">
+          <div class="rank-num">4</div>
+          <div>
+            <h3>Bobur Toshpo'latov</h3>
+            <p>
+              Ни один scored sandbox не закрыт, open-text блок почти полностью отклонен, автотест фактически отсутствует.
+              Для продолжения нужен более длинный учебный трек по QA basics, HTTP, SQL и оформлению баг-репортов.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Детальный разбор кандидатов</h2>
+      <div class="grid">
+        <article class="card candidate">
+          <h3>Виктор Хегай</h3>
+          <div class="meta">
+            <span class="pill good">89.3%</span>
+            <span class="pill good">25/28 scored</span>
+            <span class="pill good">24/25 quiz</span>
+            <span class="pill">4/9 manual review</span>
+          </div>
+          <div class="two-col">
+            <div class="subcard strong">
+              <h3>Сильные стороны</h3>
+              <ul>
+                <li>Самый высокий официальный результат: на 10.7 п.п. выше ближайших конкурентов.</li>
+                <li>Почти безошибочная закрытая теория: единственная ошибка — HTTP 404.</li>
+                <li>SQL выполнен корректно коротким запросом: <code>select name from Employee where department_id = 1</code>.</li>
+                <li>Автотестовый псевдокод принят админ-ревью как “отлично”: покрыты happy path и негативные суммы.</li>
+                <li>Open-text ответы лучше группы: приняты OOP, Charles/proxy и STLC.</li>
+              </ul>
+            </div>
+            <div class="subcard weak">
+              <h3>Слабые стороны</h3>
+              <ul>
+                <li>API sandbox не доведен до 201 Created, несмотря на 2 submission и 7 visits.</li>
+                <li>DevTools sandbox не закрыт после 9 submission и 10 visits.</li>
+                <li>Все 3 manual QA sandbox-задания не приняты; по первому есть явная note “слабая база”.</li>
+                <li>Путает Java-аннотацию для override и нечетко объясняет перегрузку методов.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="note">
+            Итог: лучший кандидат overall. Перед оффером или следующим этапом стоит дать короткую live-задачу
+            на оформление одного баг-репорта и повторить API/DevTools.
+          </p>
+        </article>
+
+        <article class="card candidate">
+          <h3>Алексей Семикин</h3>
+          <div class="meta">
+            <span class="pill">78.6%</span>
+            <span class="pill">22/28 scored</span>
+            <span class="pill">21/25 quiz</span>
+            <span class="pill good">Manual QA 3/3</span>
+          </div>
+          <div class="two-col">
+            <div class="subcard strong">
+              <h3>Сильные стороны</h3>
+              <ul>
+                <li>Все 3 manual QA sandbox-задания приняты: баги по “Мой дом”, ClickAvto и Shishka.</li>
+                <li>Единственный из четверки, кто корректно закрыл API sandbox.</li>
+                <li>Неплохая базовая закрытая теория: 21/25.</li>
+                <li>Open-text по концепциям OOP принят, пусть и с рекомендацией подтянуть теорию.</li>
+              </ul>
+            </div>
+            <div class="subcard weak">
+              <h3>Слабые стороны</h3>
+              <ul>
+                <li>SQL sandbox провален из-за синтаксиса <code>ORDER BY ASC</code> без поля сортировки.</li>
+                <li>DevTools sandbox не закрыт.</li>
+                <li>Автотестовый блок пустой и отклонен.</li>
+                <li>Open-text по method overloading, Java <code>@Override</code>, Charles/proxy и STLC не принят.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="note">
+            Итог: сильный кандидат для ручного тестирования, но для универсального QA-интерна уступает Виктору
+            из-за SQL/autotest/theory gaps.
+          </p>
+        </article>
+
+        <article class="card candidate">
+          <h3>Виталий Гольденгорин</h3>
+          <div class="meta">
+            <span class="pill">78.6%</span>
+            <span class="pill">22/28 scored</span>
+            <span class="pill">21/25 quiz</span>
+            <span class="pill good">Manual QA 3/3</span>
+          </div>
+          <div class="two-col">
+            <div class="subcard strong">
+              <h3>Сильные стороны</h3>
+              <ul>
+                <li>Все 3 manual QA sandbox-задания приняты, хоть и с повторяющейся рекомендацией улучшить формулировки.</li>
+                <li>SQL sandbox закрыт корректным JOIN-запросом по отделу “ИТ”.</li>
+                <li>Достаточно уверенно проходит базовую закрытую QA-теорию: 21/25.</li>
+              </ul>
+            </div>
+            <div class="subcard weak">
+              <h3>Слабые стороны</h3>
+              <ul>
+                <li>Ошибки в базовом HTTP: 404 и 500, а также DevTools Network выбран как Elements.</li>
+                <li>API sandbox не закрыт после 4 submission.</li>
+                <li>DevTools sandbox не закрыт.</li>
+                <li>Open-text блок полностью не принят: OOP, overloading, Java annotation, Charles/proxy, STLC.</li>
+                <li>Автотестовый ответ фактически не раскрыт.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="note">
+            Итог: хорошая ручная наблюдательность, но заметно слабее технический фундамент. Нужны HTTP/API,
+            DevTools и базовая теория программирования.
+          </p>
+        </article>
+
+        <article class="card candidate">
+          <h3>Bobur Toshpo'latov</h3>
+          <div class="meta">
+            <span class="pill warn">71.4%</span>
+            <span class="pill">20/28 scored</span>
+            <span class="pill">20/25 quiz</span>
+            <span class="pill bad">1/9 manual review</span>
+          </div>
+          <div class="two-col">
+            <div class="subcard strong">
+              <h3>Сильные стороны</h3>
+              <ul>
+                <li>Закрыл 20 из 25 закрытых quiz-вопросов, то есть совсем базовая QA-ориентация есть.</li>
+                <li>В Shishka manual QA один баг-репорт принят как “не плохо”.</li>
+                <li>Пытался работать с boundary/value validation и payment-сценариями.</li>
+              </ul>
+            </div>
+            <div class="subcard weak">
+              <h3>Слабые стороны</h3>
+              <ul>
+                <li>Все scored sandbox-задания провалены: API, SQL и DevTools.</li>
+                <li>SQL-запрос некорректен синтаксически и не демонстрирует понимания связей таблиц.</li>
+                <li>Автотестовый ответ сведен к <code>class</code>.</li>
+                <li>Open-text блок полностью не принят: нет STLC, нет понимания proxy/Charles, перепутана перегрузка методов.</li>
+                <li>Manual QA reports часто описывают проблему вместо воспроизводимых шагов; критичные базовые баги пропущены.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="note warning">
+            Итог: кандидат требует существенного обучения перед продуктивной стажировкой.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Общие паттерны ошибок</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Зона</th>
+            <th>Что видно по результатам</th>
+            <th>Кандидаты</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>HTTP и DevTools</td>
+            <td>Даже сильные кандидаты не закрыли DevTools sandbox; 404/500 и Network panel часто путаются.</td>
+            <td>Bobur, Виталий, Алексей, Виктор</td>
+          </tr>
+          <tr>
+            <td>API sandbox</td>
+            <td>Создание пользователя с ответом 201 смог закрыть только Алексей.</td>
+            <td>Bobur, Виталий, Виктор ошиблись; Алексей прошел</td>
+          </tr>
+          <tr>
+            <td>SQL</td>
+            <td>SQL хорошо различает кандидатов: Виталий и Виктор решили, Bobur и Алексей застряли на синтаксисе/структуре запроса.</td>
+            <td>Виталий, Виктор сильнее</td>
+          </tr>
+          <tr>
+            <td>Manual QA</td>
+            <td>Алексей и Виталий лучше оформляют ручные баги. Виктор техничнее overall, но его bug reports не прошли ревью.</td>
+            <td>Алексей, Виталий сильнее; Виктор риск</td>
+          </tr>
+          <tr>
+            <td>Open-text theory</td>
+            <td>Типичные пробелы: method overloading vs overriding, <code>@Override</code>, STLC, диагностика proxy/Charles.</td>
+            <td>Особенно Bobur, Виталий, Алексей; частично Виктор</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Финальное решение</h2>
+      <div class="card">
+        <p>
+          <strong>Выбор: Виктор Хегай.</strong> Он дает лучший общий сигнал: максимальный score в логике проекта,
+          лучший результат в закрытой теории, корректный SQL, единственный принятый автотестовый ответ и своевременный
+          статус SUBMITTED. Это делает его наиболее перспективным кандидатом для QA internship, где ожидается не только
+          ручное нахождение багов, но и техническая обучаемость.
+        </p>
+        <p>
+          <strong>Условие к следующему шагу:</strong> отдельно проверить manual QA skill в живой задаче на один сценарий:
+          найти баг, оформить шаги, actual/expected, severity и объяснить приоритет. Если эта проверка пройдет нормально,
+          Виктор — лучший выбор из четверки.
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

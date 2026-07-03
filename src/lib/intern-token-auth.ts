@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { requireSecret } from "@/lib/env";
 
 const cookieName = "qa_intern";
 const resultCookieName = "qa_result";
@@ -8,11 +9,9 @@ const sessionTtlMs = 1000 * 60 * 60 * 24 * 14;
 const resultSessionTtlMs = 1000 * 60 * 30;
 
 function sessionSecret() {
-  return (
-    process.env.INTERN_SESSION_SECRET ||
-    process.env.ADMIN_SESSION_SECRET ||
-    "local-intern-session-secret"
-  );
+  // Dev fallback matches the historical value so existing local intern sessions
+  // keep working; production throws via requireSecret instead.
+  return requireSecret("INTERN_SESSION_SECRET", "local-intern-session-secret");
 }
 
 function sign(payload: string) {

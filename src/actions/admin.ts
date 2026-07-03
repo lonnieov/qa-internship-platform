@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { passwordPolicyError } from "@/lib/admin-auth";
 import { expireAttemptIfNeeded } from "@/lib/assessment";
 import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { getManageableTrackIds, requireAdmin, requireAdminAccess } from "@/lib/auth";
@@ -20,21 +21,24 @@ import {
 import { ensureTracks, nextTrackOrder, uniqueTrackSlug } from "@/lib/tracks";
 import { ensureDefaultWave, nextWaveOrder, uniqueWaveSlug } from "@/lib/waves";
 import {
-  clickSuperAppClickAvtoPresetConfig,
-  manualQaPresetOptions,
-  type ManualQaKnownBug,
-} from "@/lib/manual-qa-sandbox";
-import {
-  autotestPresetOptions,
-  clickAvtoTintingPresetConfig,
-  type AutotestScenario,
-} from "@/lib/autotest-sandbox";
-import {
-  getSqlSandboxConfig,
-  sampleSqlSandboxConfig,
-} from "@/lib/sql-sandbox-config";
+  addMissionTranslation,
+  readAutotestSandboxConfig,
+  readManualQaSandboxConfig,
+  readSqlSandboxConfig,
+} from "@/lib/question-config-form";
 
 const defaultInvitationExpiryDays = 14;
+
+// Upper bounds for free-text fields persisted to the database. Prevents a
+// malicious or buggy client from writing unbounded strings into text columns.
+const MAX_NAME_LENGTH = 200;
+const MAX_TEXT_LENGTH = 5000;
+
+function clampText(value: FormDataEntryValue | null, maxLength: number) {
+  return String(value ?? "")
+    .trim()
+    .slice(0, maxLength);
+}
 
 export type InvitationState = {
   ok: boolean;
@@ -171,167 +175,12 @@ function questionRedirectUrl(
   return localizedPath(`/admin/questions?${params.toString()}`, locale);
 }
 
-function addMissionTranslation<T extends Record<string, unknown>>(
-  apiConfig: T,
-  textUz: string,
-) {
-  return textUz ? { ...apiConfig, missionUz: textUz } : apiConfig;
-}
-
-function readManualQaSandboxConfig(formData: FormData, text: string) {
-  const presetId = String(
-    formData.get("manualQaPreset") ??
-      clickSuperAppClickAvtoPresetConfig.appPreset,
-  );
-  const preset =
-    manualQaPresetOptions.find((option) => option.value === presetId)?.config ??
-    clickSuperAppClickAvtoPresetConfig;
-  const scenarioTitle = String(
-    formData.get("manualQaScenarioTitle") ?? preset.scenarioTitle,
-  ).trim();
-  const viewportWidth = Number(formData.get("manualQaViewportWidth"));
-  const viewportHeight = Number(formData.get("manualQaViewportHeight"));
-  const timeHintMinutes = Number(formData.get("manualQaTimeHintMinutes"));
-  const categories = String(formData.get("manualQaCategories") ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const knownBugsText = String(formData.get("manualQaKnownBugs") ?? "").trim();
-
-  let knownBugs: ManualQaKnownBug[] = preset.knownBugs;
-  if (knownBugsText) {
-    const parsed = JSON.parse(knownBugsText);
-    if (!Array.isArray(parsed)) {
-      throw new Error("Known bugs must be an array.");
-    }
-
-    knownBugs = parsed
-      .filter(
-        (item): item is Partial<ManualQaKnownBug> =>
-          Boolean(item) && typeof item === "object" && !Array.isArray(item),
-      )
-      .map((item) => ({
-        id: String(item.id ?? "").trim(),
-        title: String(item.title ?? "").trim(),
-        severity:
-          item.severity === "blocker" ||
-          item.severity === "critical" ||
-          item.severity === "major" ||
-          item.severity === "minor" ||
-          item.severity === "trivial"
-            ? item.severity
-            : "major",
-        matchKeywords: Array.isArray(item.matchKeywords)
-          ? item.matchKeywords.map((keyword) => String(keyword)).filter(Boolean)
-          : [],
-      }))
-      .filter((item) => item.id && item.title);
-  }
-
-  return {
-    mode: "MANUAL_QA_SANDBOX" as const,
-    scenarioTitle: scenarioTitle || preset.scenarioTitle,
-    mission: text || preset.mission,
-    appPreset: preset.appPreset,
-    viewport: {
-      width: Number.isFinite(viewportWidth)
-        ? Math.min(Math.max(Math.round(viewportWidth), 320), 520)
-        : preset.viewport.width,
-      height: Number.isFinite(viewportHeight)
-        ? Math.min(Math.max(Math.round(viewportHeight), 568), 980)
-        : preset.viewport.height,
-    },
-    timeHintMinutes: Number.isFinite(timeHintMinutes)
-      ? Math.min(Math.max(Math.round(timeHintMinutes), 1), 60)
-      : preset.timeHintMinutes,
-    bugCategories: categories.length > 0 ? categories : preset.bugCategories,
-    knownBugs,
-  };
-}
-
-function readAutotestSandboxConfig(formData: FormData, text: string) {
-  const presetId = String(
-    formData.get("autotestPreset") ?? clickAvtoTintingPresetConfig.appPreset,
-  );
-  const preset =
-    autotestPresetOptions.find((option) => option.value === presetId)?.config ??
-    clickAvtoTintingPresetConfig;
-  const scenarioTitle = String(
-    formData.get("autotestScenarioTitle") ?? preset.scenarioTitle,
-  ).trim();
-  const timeHintMinutes = Number(formData.get("autotestTimeHintMinutes"));
-  const scenariosText = String(
-    formData.get("autotestExpectedScenarios") ?? "",
-  ).trim();
-
-  let expectedScenarios: AutotestScenario[] = preset.expectedScenarios;
-  if (scenariosText) {
-    const parsed = JSON.parse(scenariosText);
-    if (!Array.isArray(parsed)) {
-      throw new Error("Expected scenarios must be an array.");
-    }
-
-    expectedScenarios = parsed
-      .filter(
-        (item): item is Partial<AutotestScenario> =>
-          Boolean(item) && typeof item === "object" && !Array.isArray(item),
-      )
-      .map((item) => ({
-        id: String(item.id ?? "").trim(),
-        title: String(item.title ?? "").trim(),
-        required: item.required !== false,
-        matchKeywords: Array.isArray(item.matchKeywords)
-          ? item.matchKeywords.map((kw) => String(kw)).filter(Boolean)
-          : [],
-      }))
-      .filter((item) => item.id && item.title);
-  }
-
-  return {
-    mode: "AUTOTEST_SANDBOX" as const,
-    scenarioTitle: scenarioTitle || preset.scenarioTitle,
-    mission: text || preset.mission,
-    appPreset: preset.appPreset,
-    timeHintMinutes: Number.isFinite(timeHintMinutes)
-      ? Math.min(Math.max(Math.round(timeHintMinutes), 5), 60)
-      : preset.timeHintMinutes,
-    availableMethods: preset.availableMethods,
-    expectedScenarios,
-    exampleCode: preset.exampleCode,
-  };
-}
-
-function readSqlSandboxConfig(formData: FormData, text: string) {
-  const taskTitle = String(
-    formData.get("sqlTaskTitle") ?? sampleSqlSandboxConfig.taskTitle,
-  ).trim();
-  const tablesText = String(formData.get("sqlTables") ?? "").trim();
-  const expectedText = String(formData.get("sqlExpectedResult") ?? "").trim();
-
-  const config = getSqlSandboxConfig({
-    mode: "SQL_SANDBOX",
-    taskTitle,
-    mission: text,
-    dialect: sampleSqlSandboxConfig.dialect,
-    tables: tablesText ? JSON.parse(tablesText) : sampleSqlSandboxConfig.tables,
-    expectedResult: expectedText
-      ? JSON.parse(expectedText)
-      : sampleSqlSandboxConfig.expectedResult,
-  });
-
-  if (!config) {
-    throw new Error("Invalid SQL sandbox config");
-  }
-
-  return config;
-}
-
 export async function createInvitationAction(
   _prevState: InvitationState,
   formData: FormData,
 ): Promise<InvitationState> {
   const admin = await requireAdminAccess();
-  const candidateName = String(formData.get("candidateName") ?? "").trim();
+  const candidateName = clampText(formData.get("candidateName"), MAX_NAME_LENGTH);
 
   if (!candidateName) {
     return { ok: false, message: "Укажите имя и фамилию кандидата." };
@@ -512,9 +361,9 @@ export async function createQuestionAction(formData: FormData) {
     redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
 
-  const text = String(formData.get("text") ?? "").trim();
-  const textUz = String(formData.get("textUz") ?? "").trim();
-  const explanation = String(formData.get("explanation") ?? "").trim();
+  const text = clampText(formData.get("text"), MAX_TEXT_LENGTH);
+  const textUz = clampText(formData.get("textUz"), MAX_TEXT_LENGTH);
+  const explanation = clampText(formData.get("explanation"), MAX_TEXT_LENGTH);
 
   const lastQuestion = await prisma.question.findFirst({
     orderBy: { order: "desc" },
@@ -780,9 +629,9 @@ export async function updateQuestionAction(formData: FormData) {
     redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
 
-  const text = String(formData.get("text") ?? "").trim();
-  const textUz = String(formData.get("textUz") ?? "").trim();
-  const explanation = String(formData.get("explanation") ?? "").trim();
+  const text = clampText(formData.get("text"), MAX_TEXT_LENGTH);
+  const textUz = clampText(formData.get("textUz"), MAX_TEXT_LENGTH);
+  const explanation = clampText(formData.get("explanation"), MAX_TEXT_LENGTH);
 
   if (!questionId || !text || !textUz) {
     return;
@@ -796,6 +645,11 @@ export async function updateQuestionAction(formData: FormData) {
   if (!question || question.type !== questionType) {
     return;
   }
+
+  // Verify the caller may manage the question's CURRENT track before allowing
+  // any edit or track transfer. Without this a track master could move another
+  // track's question into their own by supplying a foreign questionId (IDOR).
+  await ensureCanManageTrack(profile, question.trackId, locale);
 
   if (questionType === "SQL_SANDBOX") {
     let apiConfig;
@@ -1067,6 +921,8 @@ export async function reviewAnswerAction(input: {
       ? (answer.apiResponse as Record<string, unknown>)
       : {};
 
+  const reviewedAt = new Date().toISOString();
+
   await prisma.assessmentAnswer.update({
     where: { id: input.answerId },
     data: {
@@ -1076,14 +932,14 @@ export async function reviewAnswerAction(input: {
         adminReview: {
           passed: input.passed,
           note: input.note.trim().slice(0, 500),
-          at: new Date().toISOString(),
+          at: reviewedAt,
         },
       },
     },
   });
 
   revalidatePath(`/admin/attempts/${answer.attemptId}`);
-  return { ok: true };
+  return { ok: true, at: reviewedAt };
 }
 
 export async function toggleQuestionAction(formData: FormData) {
@@ -1181,7 +1037,7 @@ export async function deleteQuestionAction(formData: FormData) {
 
 export async function createTrackAction(formData: FormData) {
   await requireAdmin();
-  const name = String(formData.get("name") ?? "").trim();
+  const name = clampText(formData.get("name"), MAX_NAME_LENGTH);
 
   if (!name) return;
 
@@ -1201,7 +1057,7 @@ export async function createTrackAction(formData: FormData) {
 export async function updateTrackAction(formData: FormData) {
   await requireAdmin();
   const trackId = String(formData.get("trackId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const name = clampText(formData.get("name"), MAX_NAME_LENGTH);
   const order = Number(formData.get("order") ?? 0);
 
   if (!trackId || !name) return;
@@ -1251,7 +1107,7 @@ export async function deleteTrackAction(formData: FormData) {
 export async function createWaveAction(formData: FormData) {
   const profile = await requireAdminAccess();
   const trackId = String(formData.get("trackId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const name = clampText(formData.get("name"), MAX_NAME_LENGTH);
 
   if (!trackId || !name) return;
   await ensureCanManageTrack(profile, trackId);
@@ -1273,7 +1129,7 @@ export async function createWaveAction(formData: FormData) {
 export async function updateWaveAction(formData: FormData) {
   const profile = await requireAdminAccess();
   const waveId = String(formData.get("waveId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const name = clampText(formData.get("name"), MAX_NAME_LENGTH);
   const order = Number(formData.get("order") ?? 0);
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
@@ -1328,7 +1184,12 @@ export async function createTrackMasterAction(formData: FormData) {
   const lastName = String(formData.get("lastName") ?? "").trim() || null;
   const trackIds = formData.getAll("trackIds").map(String).filter(Boolean);
 
-  if (!email || !email.includes("@") || password.length < 6 || trackIds.length === 0) {
+  if (
+    !email ||
+    !email.includes("@") ||
+    trackIds.length === 0 ||
+    passwordPolicyError(password)
+  ) {
     return;
   }
 
@@ -1380,7 +1241,9 @@ export async function assignTrackMasterAction(formData: FormData) {
 
   const existing = await prisma.profile.findUnique({ where: { email } });
   if (existing && existing.role !== "TRACK_MASTER") return;
-  if (!existing && password.length < 6) return;
+  // A new profile must set a policy-compliant password; for an existing profile
+  // the password is optional, but if supplied it must still satisfy the policy.
+  if (password ? passwordPolicyError(password) : !existing) return;
 
   const { hashPassword } = await import("@/lib/admin-auth");
   const profile = existing

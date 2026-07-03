@@ -1,17 +1,17 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { requireSecret } from "@/lib/env";
 
 const cookieName = "qa_admin";
 const sessionTtlMs = 1000 * 60 * 60 * 12;
 const passwordIterations = 310000;
 
 function sessionSecret() {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.INTERN_SESSION_SECRET ||
-    "local-admin-session-secret"
-  );
+  // Dev fallback intentionally matches the historical value so existing local
+  // sessions keep working. In production requireSecret throws instead, so this
+  // publicly-known string is never used to sign real tokens.
+  return requireSecret("ADMIN_SESSION_SECRET", "local-admin-session-secret");
 }
 
 function safeEqual(left: string, right: string) {
@@ -28,6 +28,23 @@ function hashSessionToken(token: string) {
     .createHmac("sha256", sessionSecret())
     .update(token)
     .digest("hex");
+}
+
+export const MIN_PASSWORD_LENGTH = 10;
+
+/**
+ * Returns a Russian-language error message when the password is too weak, or
+ * null when it is acceptable. Used everywhere a password is set so the policy
+ * stays consistent across admin, self-service and track-master flows.
+ */
+export function passwordPolicyError(password: string): string | null {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов.`;
+  }
+  if (!/[a-zA-Zа-яА-Я]/.test(password) || !/[0-9]/.test(password)) {
+    return "Пароль должен содержать буквы и цифры.";
+  }
+  return null;
 }
 
 export function hashPassword(password: string) {

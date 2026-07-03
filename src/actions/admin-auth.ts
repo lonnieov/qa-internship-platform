@@ -10,6 +10,7 @@ import {
   clearAdminSession,
   createAdminSession,
   hashPassword,
+  passwordPolicyError,
   verifyPassword,
 } from "@/lib/admin-auth";
 
@@ -70,8 +71,9 @@ export async function createAdminAction(
     return { ok: false, message: "Введите корректный email." };
   }
 
-  if (password.length < 6) {
-    return { ok: false, message: "Пароль должен быть не короче 6 символов." };
+  const passwordError = passwordPolicyError(password);
+  if (passwordError) {
+    return { ok: false, message: passwordError };
   }
 
   try {
@@ -132,8 +134,11 @@ export async function updateAdminAction(
     return { ok: false, message: "Введите корректный email." };
   }
 
-  if (password && password.length < 6) {
-    return { ok: false, message: "Пароль должен быть не короче 6 символов." };
+  if (password) {
+    const passwordError = passwordPolicyError(password);
+    if (passwordError) {
+      return { ok: false, message: passwordError };
+    }
   }
 
   try {

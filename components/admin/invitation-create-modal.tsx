@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { InvitationForm } from "@/components/admin/invitation-form";
 import { Button } from "@/components/ui/button";
+import { NativeDialog } from "@/components/ui/native-dialog";
 
 type InvitationCreateModalProps = {
   tracks?: {
@@ -17,6 +18,7 @@ type InvitationCreateModalProps = {
 export function InvitationCreateModal({ tracks = [] }: InvitationCreateModalProps) {
   const t = useTranslations("AdminInterns");
   const [isOpen, setIsOpen] = useState(false);
+  const titleId = useId();
 
   return (
     <>
@@ -25,21 +27,15 @@ export function InvitationCreateModal({ tracks = [] }: InvitationCreateModalProp
         {t("createIntern")}
       </Button>
 
-      {isOpen ? (
-        <div
-          aria-labelledby="create-invitation-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          role="dialog"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="invitation-modal surface"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <NativeDialog
+        labelledBy={titleId}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      >
+          <div className="invitation-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id="create-invitation-title">
+                <h2 className="head-3 m-0" id={titleId}>
                   {t("createInternTitle")}
                 </h2>
                 <p className="body-2 muted m-0">
@@ -58,8 +54,7 @@ export function InvitationCreateModal({ tracks = [] }: InvitationCreateModalProp
 
             <InvitationForm embedded tracks={tracks} />
           </div>
-        </div>
-      ) : null}
+      </NativeDialog>
     </>
   );
 }

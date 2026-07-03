@@ -367,19 +367,80 @@ button {
     var(--card);
 }
 
-.site-footer-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: color-mix(in srgb, var(--background) 78%, transparent);
+.native-dialog {
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  overflow: visible;
+  transform: translateY(14px) scale(0.98);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-behavior: allow-discrete;
+}
+
+.native-dialog:focus {
+  outline: 0;
+}
+
+.native-dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .native-dialog[open] {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+.native-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+.native-dialog[open]::backdrop {
+  background-color: color-mix(in srgb, var(--background) 78%, transparent);
   backdrop-filter: blur(10px);
 }
 
+@starting-style {
+  .native-dialog[open]::backdrop {
+    background-color: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-dialog {
+    transform: none;
+    transition-duration: 0.08s;
+  }
+
+  .native-dialog[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .native-dialog[open] {
+      transform: none;
+    }
+  }
+}
+
 .site-footer-modal {
-  width: min(420px, 100%);
+  width: min(420px, calc(100vw - 32px));
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-island);
   background: var(--card);
@@ -818,6 +879,26 @@ button {
   overflow-y: auto;
 }
 
+.site-shell-content > .admin-shell:has(.admin-attempt-page),
+.admin-shell:has(.admin-attempt-page) {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.site-shell-content > .admin-shell:has(.admin-attempt-page) .admin-sidebar,
+.admin-shell:has(.admin-attempt-page) .admin-sidebar {
+  max-height: none;
+}
+
+.admin-content:has(.admin-attempt-page) {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
 .admin-content > .page {
   width: min(1180px, calc(100% - 64px));
 }
@@ -1159,7 +1240,7 @@ button {
 }
 
 .test-layout-sql {
-  grid-template-columns: minmax(0, 1fr) 272px !important;
+  grid-template-columns: minmax(0, 1fr) 320px !important;
   gap: 20px;
 }
 
@@ -2694,42 +2775,44 @@ button {
 }
 
 .test-nav-card-sql {
-  border-radius: 24px;
+  border-radius: var(--radius-garden);
 }
 
 .test-page-sql .test-card-content {
-  padding: 0 20px 18px;
+  padding: 0 24px 20px;
 }
 
 .test-page-sql .test-nav-summary {
-  gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-garden);
 }
 
 .question-grid-sql {
-  grid-template-columns: repeat(5, minmax(44px, 1fr));
-  gap: 10px;
-}
-
-.question-dot-sql {
-  height: 58px;
-  border-radius: 14px;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.test-page-sql .question-nav-legend {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   gap: 8px;
 }
 
+.question-dot-sql {
+  min-width: 40px;
+  height: 40px;
+  border-radius: var(--radius-garden);
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.test-page-sql .question-nav-legend {
+  gap: 10px;
+}
+
 .test-page-sql .question-nav-legend span {
-  font-size: 15px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .test-page-sql .submit-info-bubble.compact {
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 @media (max-width: 1320px) {
@@ -3084,13 +3167,13 @@ button {
 
 .track-modal {
   width: min(500px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 32px));
+  max-height: min(760px, calc(100dvh - 32px));
   overflow: auto;
 }
 
 .admin-modal {
   width: min(560px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 32px));
+  max-height: min(760px, calc(100dvh - 32px));
   overflow: auto;
 }
 
@@ -4044,17 +4127,6 @@ button {
   color: var(--warning);
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: color-mix(in srgb, var(--background) 78%, transparent);
-  backdrop-filter: blur(10px);
-}
-
 .modal-header {
   display: flex;
   align-items: flex-start;
@@ -4090,19 +4162,19 @@ button {
 
 .question-modal {
   width: min(980px, calc(100vw - 48px));
-  max-height: min(860px, calc(100vh - 48px));
+  max-height: min(860px, calc(100dvh - 48px));
   overflow: auto;
 }
 
 .invitation-modal {
   width: min(520px, calc(100vw - 48px));
-  max-height: min(720px, calc(100vh - 48px));
+  max-height: min(720px, calc(100dvh - 48px));
   overflow: auto;
 }
 
 .candidate-modal {
   width: min(980px, calc(100vw - 48px));
-  max-height: min(860px, calc(100vh - 48px));
+  max-height: min(860px, calc(100dvh - 48px));
   overflow: auto;
 }
 
@@ -4385,7 +4457,7 @@ button {
 }
 
 .confirm-dialog {
-  width: min(460px, 100%);
+  width: min(460px, calc(100vw - 32px));
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-island);
   background: var(--card);
@@ -7001,7 +7073,7 @@ button {
 /* Wave manage modal */
 .wave-modal {
   width: min(480px, calc(100vw - 32px));
-  max-height: min(720px, calc(100vh - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
   overflow: auto;
 }
 

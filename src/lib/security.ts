@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { requireSecret } from "@/lib/env";
 
 export function generateInviteCode() {
   const raw = crypto.randomBytes(9).toString("base64url").toUpperCase();
@@ -30,11 +31,11 @@ export function maskInviteCode(inviteCode: string) {
 }
 
 function invitationTokenSecret() {
-  return (
-    process.env.INVITATION_TOKEN_ENCRYPTION_SECRET ||
-    process.env.INTERN_SESSION_SECRET ||
-    process.env.DEMO_ADMIN_SESSION_SECRET ||
-    "local-invitation-token-secret"
+  // Dev fallback matches the historical value so invite codes encrypted locally
+  // remain decryptable; production throws via requireSecret instead.
+  return requireSecret(
+    "INVITATION_TOKEN_ENCRYPTION_SECRET",
+    "local-invitation-token-secret",
   );
 }
 
