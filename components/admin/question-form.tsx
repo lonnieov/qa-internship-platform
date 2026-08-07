@@ -47,6 +47,8 @@ type EditableQuestion = {
   type: QuestionType;
   track: string;
   trackId: string | null;
+  gradeId: string | null;
+  versionId: string | null;
   trackRef: { id: string; slug: string; name: string } | null;
   text: string;
   textUz: string | null;
@@ -110,6 +112,8 @@ function getQuestionTypeLabel(t: ReturnType<typeof useTranslations>, type: Quest
 export function QuestionForm({
   initialType,
   initialTrackId,
+  initialGradeId,
+  initialVersionId,
   tracks,
   embedded = false,
   lockType = false,
@@ -118,6 +122,8 @@ export function QuestionForm({
 }: {
   initialType: QuestionType;
   initialTrackId?: string;
+  initialGradeId?: string;
+  initialVersionId?: string;
   tracks: TrackSummary[];
   embedded?: boolean;
   lockType?: boolean;
@@ -266,6 +272,16 @@ export function QuestionForm({
       <input type="hidden" name="questionType" value={questionType} />
       <input type="hidden" name="quizMode" value={quizMode} />
       <input type="hidden" name="trackId" value={draftTrackId} />
+      <input
+        type="hidden"
+        name="gradeId"
+        value={question?.gradeId ?? initialGradeId ?? ""}
+      />
+      <input
+        type="hidden"
+        name="versionId"
+        value={question?.versionId ?? initialVersionId ?? ""}
+      />
       <input type="hidden" name="locale" value={locale} />
       <input
         type="hidden"

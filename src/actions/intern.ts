@@ -226,6 +226,7 @@ export async function loginInternByTokenAction(
           data: {
             trackId: invitation.internProfile.trackId ?? invitation.trackId,
             waveId: invitation.internProfile.waveId ?? invitation.waveId,
+            gradeId: invitation.internProfile.gradeId ?? invitation.gradeId,
           },
         }),
       ]);
@@ -246,6 +247,7 @@ export async function loginInternByTokenAction(
             invitationId: invitation.id,
             trackId: invitation.trackId,
             waveId: invitation.waveId,
+            gradeId: invitation.gradeId,
           },
         },
       },
@@ -336,9 +338,11 @@ export async function startAttemptAction(formData: FormData) {
   const questions = await prisma.question.findMany({
     where: {
       isActive: true,
-      ...(profile.internProfile.trackId
-        ? { trackId: profile.internProfile.trackId }
-        : {}),
+      ...(profile.internProfile.gradeId
+        ? { gradeId: profile.internProfile.gradeId, version: { isActive: true } }
+        : profile.internProfile.trackId
+          ? { trackId: profile.internProfile.trackId }
+          : {}),
     },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: { options: true },
@@ -363,6 +367,7 @@ export async function startAttemptAction(formData: FormData) {
       internProfileId: profile.internProfile.id,
       trackId: profile.internProfile.trackId,
       waveId: profile.internProfile.waveId,
+      gradeId: profile.internProfile.gradeId,
       startedAt: now,
       deadlineAt,
       questionCount: questions.length,

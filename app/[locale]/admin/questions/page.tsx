@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { toggleQuestionAction } from "@/actions/admin";
+import { Plus } from "lucide-react";
+import {
+  activateQuestionVersionAction,
+  createQuestionVersionAction,
+  deleteQuestionVersionAction,
+  duplicateQuestionVersionAction,
+  toggleQuestionAction,
+} from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import {
@@ -20,6 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
+import { QuestionImportModal } from "@/components/admin/question-import-modal";
+import { CopyImportPromptButton } from "@/components/admin/copy-import-prompt-button";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 
@@ -34,17 +43,21 @@ type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
 async function getQuestions({
   selectedTrackId,
+  selectedVersionId,
   trackIds,
 }: {
   selectedTrackId?: string | null;
+  selectedVersionId?: string | null;
   trackIds?: string[] | null;
 }) {
   return prisma.question.findMany({
-    where: selectedTrackId
-      ? { trackId: selectedTrackId }
-      : trackIds
-        ? { trackId: { in: trackIds } }
-        : undefined,
+    where: selectedVersionId
+      ? { versionId: selectedVersionId }
+      : selectedTrackId
+        ? { trackId: selectedTrackId }
+        : trackIds
+          ? { trackId: { in: trackIds } }
+          : undefined,
     orderBy: [
       { isActive: "desc" },
       { trackRef: { order: "asc" } },
@@ -57,6 +70,8 @@ async function getQuestions({
       type: true,
       track: true,
       trackId: true,
+      gradeId: true,
+      versionId: true,
       text: true,
       textUz: true,
       explanation: true,
@@ -155,9 +170,16 @@ function apiSummary(question: AdminQuestion) {
   };
 }
 
-function filterUrl(locale: string, type: QuestionType, track: string | "all") {
+function filterUrl(
+  locale: string,
+  type: QuestionType,
+  track: string | "all",
+  extra?: { grade?: string; version?: string },
+) {
   const params = new URLSearchParams({ type });
   if (track !== "all") params.set("track", track);
+  if (extra?.grade) params.set("grade", extra.grade);
+  if (extra?.version) params.set("version", extra.version);
   return `/${locale}/admin/questions?${params.toString()}`;
 }
 
@@ -331,7 +353,13 @@ export default async function AdminQuestionsPage({
   searchParams,
 }: {
   params: Promise<{ locale: "ru" | "uz" }>;
-  searchParams: Promise<{ type?: string; track?: string; created?: string }>;
+  searchParams: Promise<{
+    type?: string;
+    track?: string;
+    grade?: string;
+    version?: string;
+    created?: string;
+  }>;
 }) {
   const { locale } = await params;
   const t = await getTranslations("AdminQuestions");
@@ -362,9 +390,36 @@ export default async function AdminQuestionsPage({
   }
 
   const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
+
+  const gradesForTrack = selectedTrackRecord
+    ? await prisma.grade.findMany({
+        where: { trackId: selectedTrackRecord.id },
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        include: {
+          versions: {
+            orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+            include: { _count: { select: { questions: true } } },
+          },
+        },
+      })
+    : [];
+  const requestedGradeSlug = resolvedSearchParams.grade;
+  const selectedGradeRecord =
+    gradesForTrack.find((grade) => grade.slug === requestedGradeSlug) ??
+    gradesForTrack[0] ??
+    null;
+  const versionsForGrade = selectedGradeRecord?.versions ?? [];
+  const requestedVersionId = resolvedSearchParams.version;
+  const selectedVersionRecord =
+    versionsForGrade.find((version) => version.id === requestedVersionId) ??
+    versionsForGrade.find((version) => version.isActive) ??
+    versionsForGrade[0] ??
+    null;
+
   const [questions, questionCountsByTrack] = await Promise.all([
     getQuestions({
       selectedTrackId: selectedTrackRecord?.id,
+      selectedVersionId: selectedVersionRecord?.id,
       trackIds: manageableTrackIds,
     }),
     prisma.question.groupBy({
@@ -454,6 +509,128 @@ export default async function AdminQuestionsPage({
         </div>
       </div>
 
+      {selectedTrackRecord ? (
+        <section className="surface stack" style={{ padding: 16, gap: 12 }}>
+          <div className="nav-row" style={{ flexWrap: "wrap", gap: 8 }}>
+            <span className="body-2 muted" style={{ minWidth: 56 }}>
+              Грейд
+            </span>
+            {gradesForTrack.map((grade) => (
+              <Button
+                key={grade.id}
+                asChild
+                size="sm"
+                variant={
+                  grade.id === selectedGradeRecord?.id ? "default" : "secondary"
+                }
+              >
+                <Link
+                  href={filterUrl(locale, activeSection.type, selectedTrackSlug, {
+                    grade: grade.slug,
+                  })}
+                >
+                  {grade.name}
+                </Link>
+              </Button>
+            ))}
+            {gradesForTrack.length === 0 ? (
+              <span className="body-2 muted">
+                Грейды не созданы — добавьте их на странице «Треки».
+              </span>
+            ) : null}
+          </div>
+
+          {selectedGradeRecord ? (
+            <div
+              className="nav-row"
+              style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}
+            >
+              <div className="nav-row" style={{ flexWrap: "wrap", gap: 8 }}>
+                <span className="body-2 muted" style={{ minWidth: 56 }}>
+                  Версия
+                </span>
+                {versionsForGrade.map((version) => (
+                  <Button
+                    key={version.id}
+                    asChild
+                    size="sm"
+                    variant={
+                      version.id === selectedVersionRecord?.id
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    <Link
+                      href={filterUrl(
+                        locale,
+                        activeSection.type,
+                        selectedTrackSlug,
+                        { grade: selectedGradeRecord.slug, version: version.id },
+                      )}
+                    >
+                      {version.name}
+                      <Badge variant={version.isActive ? "success" : "muted"}>
+                        {version.isActive ? "активна" : "черновик"}
+                      </Badge>
+                    </Link>
+                  </Button>
+                ))}
+                <form action={createQuestionVersionAction}>
+                  <input
+                    type="hidden"
+                    name="gradeId"
+                    value={selectedGradeRecord.id}
+                  />
+                  <Button type="submit" size="sm" variant="outline">
+                    <Plus size={14} />
+                    Версия
+                  </Button>
+                </form>
+              </div>
+
+              {selectedVersionRecord ? (
+                <div className="nav-row">
+                  <form action={duplicateQuestionVersionAction}>
+                    <input
+                      type="hidden"
+                      name="versionId"
+                      value={selectedVersionRecord.id}
+                    />
+                    <Button type="submit" size="sm" variant="secondary">
+                      Дублировать
+                    </Button>
+                  </form>
+                  {!selectedVersionRecord.isActive ? (
+                    <form action={activateQuestionVersionAction}>
+                      <input
+                        type="hidden"
+                        name="versionId"
+                        value={selectedVersionRecord.id}
+                      />
+                      <Button type="submit" size="sm">
+                        Активировать
+                      </Button>
+                    </form>
+                  ) : null}
+                  {!selectedVersionRecord.isActive ? (
+                    <form action={deleteQuestionVersionAction}>
+                      <input
+                        type="hidden"
+                        name="versionId"
+                        value={selectedVersionRecord.id}
+                      />
+                      <Button type="submit" size="sm" variant="destructive">
+                        Удалить
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="surface question-bank-layout">
         {profile.role === "ADMIN" ? (
           <aside className="question-filter-rail">
@@ -506,7 +683,12 @@ export default async function AdminQuestionsPage({
                   size="sm"
                   variant={active ? "default" : "outline"}
                 >
-                  <Link href={filterUrl(locale, type, selectedTrackSlug)}>
+                  <Link
+                    href={filterUrl(locale, type, selectedTrackSlug, {
+                      grade: selectedGradeRecord?.slug,
+                      version: selectedVersionRecord?.id,
+                    })}
+                  >
                     {meta.title} ({allTypeCount(type)})
                   </Link>
                 </Button>
@@ -521,9 +703,22 @@ export default async function AdminQuestionsPage({
             </div>
             <div className="nav-row">
               <Badge variant="muted">{activeSection.items.length}</Badge>
+              {activeSection.type === "QUIZ" ? <CopyImportPromptButton /> : null}
+              {activeSection.type === "QUIZ" &&
+              selectedTrackRecord &&
+              selectedGradeRecord &&
+              selectedVersionRecord ? (
+                <QuestionImportModal
+                  trackId={selectedTrackRecord.id}
+                  gradeId={selectedGradeRecord.id}
+                  versionId={selectedVersionRecord.id}
+                />
+              ) : null}
               <QuestionCreateModal
                 initialType={activeSection.type}
                 initialTrackId={selectedTrackRecord?.id}
+                initialGradeId={selectedGradeRecord?.id}
+                initialVersionId={selectedVersionRecord?.id}
                 tracks={tracksForForms}
               />
             </div>

@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPercent } from "@/lib/utils";
 import { TrackManageModal } from "@/components/admin/track-manage-modal";
 import { WaveManageModal } from "@/components/admin/wave-manage-modal";
+import { GradeManageModal } from "@/components/admin/grade-manage-modal";
 import { MasterAddModal } from "@/components/admin/master-add-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,17 @@ export default async function AdminTracksPage({
           order: true,
         },
       },
+      grades: {
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          isActive: true,
+          order: true,
+          _count: { select: { versions: true } },
+        },
+      },
       members: {
         where: { role: "TRACK_MASTER" },
         orderBy: { createdAt: "asc" },
@@ -144,6 +156,9 @@ export default async function AdminTracksPage({
   const waveIds = allTracks.flatMap((track) =>
     track.waves.map((wave) => wave.id),
   );
+  const gradeIds = allTracks.flatMap((track) =>
+    track.grades.map((grade) => grade.id),
+  );
   const [
     questionCounts,
     activeQuestionCounts,
@@ -154,6 +169,8 @@ export default async function AdminTracksPage({
     waveInternCounts,
     waveAttemptCounts,
     waveCompletedAttemptStats,
+    gradeInternCounts,
+    gradeQuestionCounts,
   ] = await Promise.all([
     prisma.question.groupBy({
       by: ["trackId"],
@@ -210,6 +227,16 @@ export default async function AdminTracksPage({
       _count: { _all: true },
       _avg: { scorePercent: true },
     }),
+    prisma.internProfile.groupBy({
+      by: ["gradeId"],
+      where: { gradeId: { in: gradeIds } },
+      _count: { _all: true },
+    }),
+    prisma.question.groupBy({
+      by: ["gradeId"],
+      where: { gradeId: { in: gradeIds } },
+      _count: { _all: true },
+    }),
   ]);
   const countByTrack = (items: typeof questionCounts) =>
     new Map(
@@ -253,6 +280,16 @@ export default async function AdminTracksPage({
         },
       ]),
   );
+  const gradeInternCountByGrade = new Map(
+    gradeInternCounts
+      .filter((item) => item.gradeId)
+      .map((item) => [item.gradeId as string, item._count._all]),
+  );
+  const gradeQuestionCountByGrade = new Map(
+    gradeQuestionCounts
+      .filter((item) => item.gradeId)
+      .map((item) => [item.gradeId as string, item._count._all]),
+  );
   const statsMap = new Map(
     allTracks.map((track) => [
       track.id,
@@ -273,6 +310,15 @@ export default async function AdminTracksPage({
               attempts: waveAttemptCountByWave.get(wave.id) ?? 0,
               avgScore:
                 waveCompletedStatsByWave.get(wave.id)?.avgScore ?? null,
+            },
+          ]),
+        ),
+        gradeStats: new Map(
+          track.grades.map((grade) => [
+            grade.id,
+            {
+              interns: gradeInternCountByGrade.get(grade.id) ?? 0,
+              questions: gradeQuestionCountByGrade.get(grade.id) ?? 0,
             },
           ]),
         ),
@@ -666,6 +712,102 @@ export default async function AdminTracksPage({
                                   name: wave.name,
                                   order: wave.order,
                                   isActive: wave.isActive,
+                                }}
+                                canDelete={canDelete}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Grades */}
+                <div className="track-grades-panel">
+                  <div className="track-panel-header">
+                    <div className="track-panel-title">
+                      Грейды
+                      <span className="track-count-badge">
+                        {track.grades.length}
+                      </span>
+                    </div>
+                    <GradeManageModal mode="create" trackId={track.id} />
+                  </div>
+
+                  {track.grades.length === 0 ? (
+                    <div className="track-panel-empty">
+                      <div className="track-panel-empty-icon">
+                        <Layers3 size={16} />
+                      </div>
+                      <strong className="body-1">Грейды ещё не созданы</strong>
+                      <span className="body-2 muted">
+                        Разделите банк вопросов трека по уровням
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="stack-xs" style={{ gap: 8 }}>
+                      {track.grades.map((grade) => {
+                        const gs = item?.gradeStats.get(grade.id);
+                        const canDelete =
+                          (gs?.interns ?? 0) === 0 &&
+                          (gs?.questions ?? 0) === 0;
+                        return (
+                          <div className="grade-row" key={grade.id}>
+                            {/* Name + slug */}
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {grade.name}
+                              </div>
+                              <div
+                                className="body-2 muted"
+                                style={{
+                                  fontFamily: "ui-monospace, monospace",
+                                  fontSize: 11,
+                                }}
+                              >
+                                /{grade.slug} · {grade._count.versions}{" "}
+                                {pluralRu(
+                                  grade._count.versions,
+                                  "версия",
+                                  "версии",
+                                  "версий",
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                              <Badge
+                                variant={grade.isActive ? "success" : "muted"}
+                              >
+                                {grade.isActive ? "active" : "hidden"}
+                              </Badge>
+                            </div>
+
+                            {/* Interns */}
+                            <div className="wave-stat-cell">
+                              <strong>{gs?.interns ?? 0}</strong>
+                              <span>стажёров</span>
+                            </div>
+
+                            {/* Edit */}
+                            <div className="nav-row" style={{ justifyContent: "flex-end", gap: 4 }}>
+                              <GradeManageModal
+                                mode="edit"
+                                grade={{
+                                  id: grade.id,
+                                  name: grade.name,
+                                  order: grade.order,
+                                  isActive: grade.isActive,
                                 }}
                                 canDelete={canDelete}
                               />

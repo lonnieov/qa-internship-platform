@@ -12,6 +12,7 @@ type InvitationCreateModalProps = {
     id: string;
     name: string;
     waves: { id: string; name: string }[];
+    grades: { id: string; name: string }[];
   }[];
 };
 

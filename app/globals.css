@@ -6942,7 +6942,7 @@ button {
 /* Track expanded body */
 .track-card-body {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr;
   gap: 0;
 }
 
@@ -6950,9 +6950,26 @@ button {
   padding: 20px;
 }
 
+.track-grades-panel {
+  padding: 20px;
+  border-left: 1px solid var(--surface-border);
+}
+
 .track-masters-panel {
   padding: 20px;
   border-left: 1px solid var(--surface-border);
+}
+
+/* Grade row */
+.grade-row {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 64px 40px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
 }
 
 .track-panel-header {
@@ -7129,6 +7146,19 @@ button {
   width: min(480px, calc(100vw - 32px));
   max-height: min(720px, calc(100dvh - 32px));
   overflow: auto;
+}
+
+.question-import-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 32px));
+  overflow: auto;
+}
+
+.question-import-spec {
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .wave-modal-header {

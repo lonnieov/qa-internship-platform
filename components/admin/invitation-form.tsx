@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { createInvitationAction, type InvitationState } from "@/actions/admin";
 import { CopyableToken } from "@/components/admin/copyable-token";
@@ -18,6 +18,7 @@ type InvitationScopeOption = {
   id: string;
   name: string;
   waves: { id: string; name: string }[];
+  grades: { id: string; name: string }[];
 };
 
 type InvitationFormProps = {
@@ -31,6 +32,25 @@ export function InvitationForm({ embedded = false, tracks = [] }: InvitationForm
     createInvitationAction,
     initialState,
   );
+  const flatWaves = useMemo(
+    () =>
+      tracks.flatMap((track) =>
+        track.waves.map((wave) => ({
+          id: wave.id,
+          name: wave.name,
+          trackId: track.id,
+          trackName: track.name,
+        })),
+      ),
+    [tracks],
+  );
+  const [selectedWaveId, setSelectedWaveId] = useState(flatWaves[0]?.id ?? "");
+  const selectedTrackId =
+    flatWaves.find((wave) => wave.id === selectedWaveId)?.trackId ??
+    tracks[0]?.id ??
+    "";
+  const gradesForSelectedTrack =
+    tracks.find((track) => track.id === selectedTrackId)?.grades ?? [];
 
   const content = (
     <>
@@ -43,17 +63,33 @@ export function InvitationForm({ embedded = false, tracks = [] }: InvitationForm
             placeholder={t("candidatePlaceholder")}
           />
         </div>
-        {tracks.some((track) => track.waves.length > 0) ? (
+        {flatWaves.length > 0 ? (
           <div className="form-grid">
             <Label htmlFor="waveId">Wave</Label>
-            <select className="input" id="waveId" name="waveId">
-              {tracks.flatMap((track) =>
-                track.waves.map((wave) => (
-                  <option key={wave.id} value={wave.id}>
-                    {track.name} / {wave.name}
-                  </option>
-                )),
-              )}
+            <select
+              className="input"
+              id="waveId"
+              name="waveId"
+              value={selectedWaveId}
+              onChange={(event) => setSelectedWaveId(event.target.value)}
+            >
+              {flatWaves.map((wave) => (
+                <option key={wave.id} value={wave.id}>
+                  {wave.trackName} / {wave.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        {gradesForSelectedTrack.length > 0 ? (
+          <div className="form-grid">
+            <Label htmlFor="gradeId">Грейд</Label>
+            <select className="input" id="gradeId" name="gradeId">
+              {gradesForSelectedTrack.map((grade) => (
+                <option key={grade.id} value={grade.id}>
+                  {grade.name}
+                </option>
+              ))}
             </select>
           </div>
         ) : null}

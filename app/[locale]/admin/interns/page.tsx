@@ -134,6 +134,11 @@ export default async function AdminInternsPage({
           orderBy: [{ order: "asc" }, { name: "asc" }],
           select: { id: true, name: true },
         },
+        grades: {
+          where: { isActive: true },
+          orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        },
       },
     }),
   ]);
@@ -345,6 +350,7 @@ export default async function AdminInternsPage({
             id: track.id,
             name: track.name,
             waves: track.waves.map((wave) => ({ id: wave.id, name: wave.name })),
+            grades: track.grades.map((grade) => ({ id: grade.id, name: grade.name })),
           }))}
         />
       </div>
