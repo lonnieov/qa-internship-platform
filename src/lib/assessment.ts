@@ -1,6 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 
+/**
+ * The set of questions an intern is actually assessed on. The welcome screen
+ * counts them and startAttempt loads them, so both must use this — counting by
+ * track alone used to advertise every grade's questions to a Junior intern.
+ */
+export function internQuestionFilter(internProfile: {
+  gradeId: string | null;
+  trackId: string | null;
+}) {
+  return {
+    isActive: true,
+    ...(internProfile.gradeId
+      ? { gradeId: internProfile.gradeId, version: { isActive: true } }
+      : internProfile.trackId
+        ? { trackId: internProfile.trackId }
+        : {}),
+  };
+}
+
 export async function getSettings(scope?: {
   trackId?: string | null;
   waveId?: string | null;

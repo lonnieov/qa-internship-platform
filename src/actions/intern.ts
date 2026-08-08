@@ -16,6 +16,7 @@ import {
   expireAttemptIfNeeded,
   finalizeAttempt,
   getSettings,
+  internQuestionFilter,
 } from "@/lib/assessment";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import {
@@ -336,14 +337,7 @@ export async function startAttemptAction(formData: FormData) {
   }
 
   const questions = await prisma.question.findMany({
-    where: {
-      isActive: true,
-      ...(profile.internProfile.gradeId
-        ? { gradeId: profile.internProfile.gradeId, version: { isActive: true } }
-        : profile.internProfile.trackId
-          ? { trackId: profile.internProfile.trackId }
-          : {}),
-    },
+    where: internQuestionFilter(profile.internProfile),
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: { options: true },
   });
