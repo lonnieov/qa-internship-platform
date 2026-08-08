@@ -1,18 +1,25 @@
 "use client";
 
 import type { WheelEvent as ReactWheelEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
   Layers3,
   ListChecks,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   UsersRound,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { logoutAdminAction } from "@/actions/admin-auth";
+import {
+  ADMIN_SIDEBAR_COLLAPSED_COOKIE,
+  ADMIN_SIDEBAR_COOKIE_MAX_AGE,
+} from "@/lib/admin-sidebar";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -23,6 +30,7 @@ type AdminShellProps = {
   adminName: string;
   adminEmail: string | null;
   role: "ADMIN" | "TRACK_MASTER" | "INTERN";
+  defaultCollapsed?: boolean;
 };
 
 const navItems = [
@@ -160,22 +168,48 @@ export function AdminShell({
   adminName,
   adminEmail,
   role,
+  defaultCollapsed = false,
 }: AdminShellProps) {
   const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations("AdminShell");
   const pathnameWithoutLocale = pathname.replace(/^\/(ru|uz)(?=\/|$)/, "") || "/";
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  function toggleSidebar() {
+    const next = !collapsed;
+    setCollapsed(next);
+    document.cookie = `${ADMIN_SIDEBAR_COLLAPSED_COOKIE}=${next ? "1" : "0"}; path=/; max-age=${ADMIN_SIDEBAR_COOKIE_MAX_AGE}; samesite=lax`;
+  }
+
+  const toggleLabel = collapsed ? t("sidebar.expand") : t("sidebar.collapse");
 
   return (
-    <div className="admin-shell">
+    <div className={`admin-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="admin-sidebar">
-        <Link className="admin-sidebar-brand" href={`/${locale}/admin`}>
-          <ServiceLogo />
-          <span>
-            <strong>{t("brand")}</strong>
-            <small>{t("tagline")}</small>
-          </span>
-        </Link>
+        <div className="admin-sidebar-head">
+          <Link className="admin-sidebar-brand" href={`/${locale}/admin`}>
+            <ServiceLogo />
+            <span className="admin-sidebar-brand-text">
+              <strong>{t("brand")}</strong>
+              <small>{t("tagline")}</small>
+            </span>
+          </Link>
+          <button
+            aria-expanded={!collapsed}
+            aria-label={toggleLabel}
+            className="admin-sidebar-toggle"
+            onClick={toggleSidebar}
+            title={toggleLabel}
+            type="button"
+          >
+            {collapsed ? (
+              <PanelLeftOpen size={16} />
+            ) : (
+              <PanelLeftClose size={16} />
+            )}
+          </button>
+        </div>
 
         <nav className="admin-sidebar-nav" aria-label={t("navLabel")}>
           {navItems
@@ -185,6 +219,7 @@ export function AdminShell({
             const active = item.exact
               ? pathnameWithoutLocale === item.href
               : pathnameWithoutLocale.startsWith(item.href);
+            const label = t(`nav.${item.labelKey}`);
 
             return (
               <Link
@@ -192,36 +227,41 @@ export function AdminShell({
                 className={`admin-nav-item ${active ? "active" : ""}`}
                 href={`/${locale}${item.href}`}
                 key={item.href}
+                title={collapsed ? label : undefined}
               >
                 <Icon size={18} />
-                <span>{t(`nav.${item.labelKey}`)}</span>
+                <span className="admin-nav-label">{label}</span>
               </Link>
             );
           })}
         </nav>
 
         <div className="admin-sidebar-footer">
-          <div className="admin-user-card">
+          <div
+            className="admin-user-card"
+            title={collapsed ? [adminName, adminEmail].filter(Boolean).join(" · ") : undefined}
+          >
             <div className="admin-user-avatar">
               {adminName.slice(0, 1).toUpperCase()}
             </div>
-            <div>
+            <div className="admin-user-card-info">
               <strong>{adminName}</strong>
               {adminEmail ? <small>{adminEmail}</small> : null}
               <small>{role === "TRACK_MASTER" ? "Track master" : "Admin"}</small>
             </div>
           </div>
           <LanguageSwitcher />
-          <ThemeToggle />
+          <ThemeToggle variant={collapsed ? "icon" : "segmented"} />
           <form action={logoutAdminAction}>
             <input name="locale" type="hidden" value={locale} />
             <Button
-              className="w-full justify-start"
+              className={collapsed ? "w-full justify-center" : "w-full justify-start"}
               variant="ghost"
               type="submit"
+              title={collapsed ? t("logout") : undefined}
             >
               <LogOut size={16} />
-              {t("logout")}
+              <span className="admin-logout-label">{t("logout")}</span>
             </Button>
           </form>
         </div>

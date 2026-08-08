@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
-import { FileJson, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import {
   importQuestionsAction,
   type ImportQuestionsState,
@@ -19,11 +19,15 @@ const initialState: ImportQuestionsState = {
 export function QuestionImportModal({
   trackId,
   gradeId,
+  gradeName,
   versionId,
+  versionName,
 }: {
   trackId: string;
   gradeId: string;
+  gradeName: string;
   versionId: string;
+  versionName: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
@@ -55,7 +59,8 @@ export function QuestionImportModal({
                 Импорт вопросов из JSON
               </h2>
               <p className="body-2 muted m-0">
-                Вопросы добавятся в конец текущей версии.
+                Вопросы добавятся в конец: <strong>{gradeName}</strong> ·{" "}
+                <strong>{versionName}</strong>
               </p>
             </div>
             <Button
@@ -70,52 +75,62 @@ export function QuestionImportModal({
           </div>
 
           <div className="wave-modal-body">
-            <button
-              type="button"
-              onClick={() => setShowSpec((value) => !value)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "none",
-                border: "none",
-                color: "var(--primary)",
-                cursor: "pointer",
-                padding: 0,
-                fontSize: 13,
-                justifySelf: "start",
-              }}
-            >
-              <FileJson size={14} />
-              {showSpec
-                ? "Скрыть формат и промпт для LLM"
-                : "Показать формат и промпт для LLM"}
-            </button>
-
-            {showSpec ? (
-              <div className="soft-panel stack">
-                <pre className="question-import-spec body-2 m-0 whitespace-pre-wrap">
-                  {QUESTION_IMPORT_PROMPT_TEMPLATE}
-                </pre>
-                <CopyImportPromptButton />
+            <div className="import-step">
+              <span aria-hidden="true" className="import-step-number">
+                1
+              </span>
+              <div className="import-step-body">
+                <strong className="body-1">
+                  Скопируйте промпт и отдайте его LLM
+                </strong>
+                <p className="body-2 muted m-0">
+                  Промпт приводит любой список вопросов к формату платформы.
+                </p>
+                <div className="nav-row">
+                  <CopyImportPromptButton />
+                  <button
+                    className="import-step-link"
+                    onClick={() => setShowSpec((value) => !value)}
+                    type="button"
+                  >
+                    {showSpec ? "Скрыть текст промпта" : "Показать текст промпта"}
+                  </button>
+                </div>
+                {showSpec ? (
+                  <pre className="question-import-spec body-2 m-0 whitespace-pre-wrap">
+                    {QUESTION_IMPORT_PROMPT_TEMPLATE}
+                  </pre>
+                ) : null}
               </div>
-            ) : null}
+            </div>
 
-            <form action={action} className="stack" style={{ gap: 14 }}>
-              <input type="hidden" name="trackId" value={trackId} />
-              <input type="hidden" name="gradeId" value={gradeId} />
-              <input type="hidden" name="versionId" value={versionId} />
-              <input
-                accept=".json,application/json"
-                className="input"
-                name="file"
-                required
-                type="file"
-              />
-              <Button disabled={isPending} type="submit">
-                {isPending ? "Импортирую…" : "Загрузить"}
-              </Button>
-            </form>
+            <div className="import-step">
+              <span aria-hidden="true" className="import-step-number">
+                2
+              </span>
+              <div className="import-step-body">
+                <strong className="body-1">Загрузите полученный JSON</strong>
+                <p className="body-2 muted m-0">
+                  Если хотя бы один вопрос не пройдёт проверку, не сохранится
+                  ни один — файл можно поправить и загрузить снова.
+                </p>
+                <form action={action} className="stack" style={{ gap: 14 }}>
+                  <input type="hidden" name="trackId" value={trackId} />
+                  <input type="hidden" name="gradeId" value={gradeId} />
+                  <input type="hidden" name="versionId" value={versionId} />
+                  <input
+                    accept=".json,application/json"
+                    className="input"
+                    name="file"
+                    required
+                    type="file"
+                  />
+                  <Button disabled={isPending} type="submit">
+                    {isPending ? "Импортирую…" : "Загрузить"}
+                  </Button>
+                </form>
+              </div>
+            </div>
 
             {state.message ? (
               <div

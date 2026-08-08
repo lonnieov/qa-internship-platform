@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import {
   activateQuestionVersionAction,
   createQuestionVersionAction,
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
 import { QuestionImportModal } from "@/components/admin/question-import-modal";
-import { CopyImportPromptButton } from "@/components/admin/copy-import-prompt-button";
+import { ScopeMenu } from "@/components/admin/scope-menu";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 
@@ -509,168 +509,202 @@ export default async function AdminQuestionsPage({
         </div>
       </div>
 
-      {selectedTrackRecord ? (
-        <section className="surface stack" style={{ padding: 16, gap: 12 }}>
-          <div className="nav-row" style={{ flexWrap: "wrap", gap: 8 }}>
-            <span className="body-2 muted" style={{ minWidth: 56 }}>
-              Грейд
-            </span>
-            {gradesForTrack.map((grade) => (
-              <Button
-                key={grade.id}
-                asChild
-                size="sm"
-                variant={
-                  grade.id === selectedGradeRecord?.id ? "default" : "secondary"
+      <section className="question-scope-bar surface">
+        <div className="question-scope-path">
+          <ScopeMenu
+            ariaLabel={`Трек: ${selectedTrackRecord?.name ?? t("tracks.all")}`}
+            label={selectedTrackRecord?.name ?? t("tracks.all")}
+          >
+            {profile.role === "ADMIN" ? (
+              <Link
+                className={`scope-menu-item ${selectedTrackSlug === "all" ? "active" : ""}`}
+                href={filterUrl(locale, activeSection.type, "all")}
+              >
+                <span>{t("tracks.all")}</span>
+                <span className="scope-menu-count">
+                  {totalAccessibleQuestionCount}
+                </span>
+              </Link>
+            ) : null}
+            {tracks.map((track) => {
+              const meta = getQuestionTrackMeta(track);
+              const active = selectedTrackRecord?.id === track.id;
+
+              return (
+                <Link
+                  className={`scope-menu-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
+                  href={filterUrl(locale, activeSection.type, track.slug)}
+                  key={track.id}
+                >
+                  <span className="nav-row">
+                    <span className={meta.dotClassName} />
+                    {meta.label}
+                  </span>
+                  <span className="scope-menu-count">
+                    {trackCounts[track.id] ?? 0}
+                  </span>
+                </Link>
+              );
+            })}
+          </ScopeMenu>
+
+          {selectedTrackRecord && gradesForTrack.length > 0 ? (
+            <>
+              <span aria-hidden="true" className="question-scope-separator">
+                ›
+              </span>
+              <ScopeMenu
+                ariaLabel={`Грейд: ${selectedGradeRecord?.name ?? "—"}`}
+                label={selectedGradeRecord?.name ?? "—"}
+              >
+                {gradesForTrack.map((grade) => (
+                  <Link
+                    className={`scope-menu-item ${grade.id === selectedGradeRecord?.id ? "active" : ""}`}
+                    href={filterUrl(
+                      locale,
+                      activeSection.type,
+                      selectedTrackSlug,
+                      { grade: grade.slug },
+                    )}
+                    key={grade.id}
+                  >
+                    <span>{grade.name}</span>
+                  </Link>
+                ))}
+              </ScopeMenu>
+            </>
+          ) : null}
+
+          {selectedGradeRecord && selectedVersionRecord ? (
+            <>
+              <span aria-hidden="true" className="question-scope-separator">
+                ›
+              </span>
+              <ScopeMenu
+                ariaLabel={`Версия: ${selectedVersionRecord.name}`}
+                label={
+                  <>
+                    {selectedVersionRecord.name}
+                    <Badge
+                      variant={
+                        selectedVersionRecord.isActive ? "success" : "muted"
+                      }
+                    >
+                      {selectedVersionRecord.isActive ? "активна" : "черновик"}
+                    </Badge>
+                  </>
                 }
               >
-                <Link
-                  href={filterUrl(locale, activeSection.type, selectedTrackSlug, {
-                    grade: grade.slug,
-                  })}
-                >
-                  {grade.name}
-                </Link>
-              </Button>
-            ))}
-            {gradesForTrack.length === 0 ? (
-              <span className="body-2 muted">
-                Грейды не созданы — добавьте их на странице «Треки».
-              </span>
-            ) : null}
-          </div>
-
-          {selectedGradeRecord ? (
-            <div
-              className="nav-row"
-              style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}
-            >
-              <div className="nav-row" style={{ flexWrap: "wrap", gap: 8 }}>
-                <span className="body-2 muted" style={{ minWidth: 56 }}>
-                  Версия
-                </span>
                 {versionsForGrade.map((version) => (
-                  <Button
+                  <Link
+                    className={`scope-menu-item ${version.id === selectedVersionRecord.id ? "active" : ""}`}
+                    href={filterUrl(
+                      locale,
+                      activeSection.type,
+                      selectedTrackSlug,
+                      { grade: selectedGradeRecord.slug, version: version.id },
+                    )}
                     key={version.id}
-                    asChild
-                    size="sm"
-                    variant={
-                      version.id === selectedVersionRecord?.id
-                        ? "default"
-                        : "secondary"
-                    }
                   >
-                    <Link
-                      href={filterUrl(
-                        locale,
-                        activeSection.type,
-                        selectedTrackSlug,
-                        { grade: selectedGradeRecord.slug, version: version.id },
-                      )}
-                    >
-                      {version.name}
-                      <Badge variant={version.isActive ? "success" : "muted"}>
-                        {version.isActive ? "активна" : "черновик"}
-                      </Badge>
-                    </Link>
-                  </Button>
+                    <span>{version.name}</span>
+                    <Badge variant={version.isActive ? "success" : "muted"}>
+                      {version.isActive ? "активна" : "черновик"}
+                    </Badge>
+                  </Link>
                 ))}
+                <div className="scope-menu-divider" />
                 <form action={createQuestionVersionAction}>
                   <input
                     type="hidden"
                     name="gradeId"
                     value={selectedGradeRecord.id}
                   />
-                  <Button type="submit" size="sm" variant="outline">
-                    <Plus size={14} />
-                    Версия
-                  </Button>
+                  <button className="scope-menu-item" type="submit">
+                    <span className="nav-row">
+                      <Plus size={14} />
+                      Новая версия
+                    </span>
+                  </button>
                 </form>
-              </div>
+              </ScopeMenu>
 
-              {selectedVersionRecord ? (
-                <div className="nav-row">
-                  <form action={duplicateQuestionVersionAction}>
+              <ScopeMenu ariaLabel="Действия над версией" icon={<MoreHorizontal size={16} />}>
+                {!selectedVersionRecord.isActive ? (
+                  <form action={activateQuestionVersionAction}>
                     <input
                       type="hidden"
                       name="versionId"
                       value={selectedVersionRecord.id}
                     />
-                    <Button type="submit" size="sm" variant="secondary">
-                      Дублировать
-                    </Button>
+                    <button className="scope-menu-item" type="submit">
+                      Активировать
+                    </button>
                   </form>
-                  {!selectedVersionRecord.isActive ? (
-                    <form action={activateQuestionVersionAction}>
-                      <input
-                        type="hidden"
-                        name="versionId"
-                        value={selectedVersionRecord.id}
-                      />
-                      <Button type="submit" size="sm">
-                        Активировать
-                      </Button>
-                    </form>
-                  ) : null}
-                  {!selectedVersionRecord.isActive ? (
+                ) : null}
+                <form action={duplicateQuestionVersionAction}>
+                  <input
+                    type="hidden"
+                    name="versionId"
+                    value={selectedVersionRecord.id}
+                  />
+                  <button className="scope-menu-item" type="submit">
+                    Дублировать
+                  </button>
+                </form>
+                {!selectedVersionRecord.isActive ? (
+                  <>
+                    <div className="scope-menu-divider" />
                     <form action={deleteQuestionVersionAction}>
                       <input
                         type="hidden"
                         name="versionId"
                         value={selectedVersionRecord.id}
                       />
-                      <Button type="submit" size="sm" variant="destructive">
-                        Удалить
-                      </Button>
+                      <button
+                        className="scope-menu-item destructive"
+                        type="submit"
+                      >
+                        Удалить версию
+                      </button>
                     </form>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
+                  </>
+                ) : null}
+              </ScopeMenu>
+            </>
           ) : null}
-        </section>
-      ) : null}
+
+          {selectedTrackRecord && gradesForTrack.length === 0 ? (
+            <span className="body-2 muted">
+              Грейды не созданы — добавьте их на странице «Треки».
+            </span>
+          ) : null}
+        </div>
+
+        <div className="nav-row">
+          {activeSection.type === "QUIZ" &&
+          selectedTrackRecord &&
+          selectedGradeRecord &&
+          selectedVersionRecord ? (
+            <QuestionImportModal
+              gradeId={selectedGradeRecord.id}
+              gradeName={selectedGradeRecord.name}
+              trackId={selectedTrackRecord.id}
+              versionId={selectedVersionRecord.id}
+              versionName={selectedVersionRecord.name}
+            />
+          ) : null}
+          <QuestionCreateModal
+            initialType={activeSection.type}
+            initialTrackId={selectedTrackRecord?.id}
+            initialGradeId={selectedGradeRecord?.id}
+            initialVersionId={selectedVersionRecord?.id}
+            tracks={tracksForForms}
+          />
+        </div>
+      </section>
 
       <section className="surface question-bank-layout">
-        {profile.role === "ADMIN" ? (
-          <aside className="question-filter-rail">
-            <div className="question-filter-title-row">
-              <div className="question-filter-title">{t("tracks.title")}</div>
-            </div>
-            <Link
-              className={`question-filter-item ${selectedTrackSlug === "all" ? "active" : ""}`}
-              href={filterUrl(locale, activeSection.type, "all")}
-            >
-              <span>{t("tracks.all")}</span>
-              <span>{totalAccessibleQuestionCount}</span>
-            </Link>
-            {tracks.map((track) => {
-              const meta = getQuestionTrackMeta(track);
-              const questionCount = trackCounts[track.id] ?? 0;
-              const active = selectedTrackRecord?.id === track.id;
-
-              return (
-                <div className="track-filter-row" key={track.id}>
-                  <Link
-                    className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
-                    href={filterUrl(locale, activeSection.type, track.slug)}
-                  >
-                    <span className="nav-row">
-                      <span className={meta.dotClassName} />
-                      {meta.label}
-                    </span>
-                    <span>{questionCount}</span>
-                  </Link>
-                </div>
-              );
-            })}
-          </aside>
-        ) : null}
-
-        <div
-          className="question-list-panel"
-          style={profile.role === "ADMIN" ? undefined : { gridColumn: "1 / -1" }}
-        >
+        <div className="question-list-panel">
           <div className="nav-row">
             {sections.map(({ type }) => {
               const meta = sectionMeta(type, t);
@@ -703,24 +737,6 @@ export default async function AdminQuestionsPage({
             </div>
             <div className="nav-row">
               <Badge variant="muted">{activeSection.items.length}</Badge>
-              {activeSection.type === "QUIZ" ? <CopyImportPromptButton /> : null}
-              {activeSection.type === "QUIZ" &&
-              selectedTrackRecord &&
-              selectedGradeRecord &&
-              selectedVersionRecord ? (
-                <QuestionImportModal
-                  trackId={selectedTrackRecord.id}
-                  gradeId={selectedGradeRecord.id}
-                  versionId={selectedVersionRecord.id}
-                />
-              ) : null}
-              <QuestionCreateModal
-                initialType={activeSection.type}
-                initialTrackId={selectedTrackRecord?.id}
-                initialGradeId={selectedGradeRecord?.id}
-                initialVersionId={selectedVersionRecord?.id}
-                tracks={tracksForForms}
-              />
             </div>
           </div>
 

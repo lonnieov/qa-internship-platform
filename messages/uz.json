@@ -3,6 +3,10 @@
     "brand": "Click Assessment",
     "tagline": "Never gonna give you up",
     "navLabel": "Admin navigatsiyasi",
+    "sidebar": {
+      "collapse": "Menyuni yig'ish",
+      "expand": "Menyuni ochish"
+    },
     "nav": {
       "overview": "Umumiy",
       "interns": "Stajyorlar",
@@ -287,7 +291,6 @@
       "description": "Yangi yozuv savollar bankida darhol ko‘rinadi."
     },
     "tracks": {
-      "title": "Treklar",
       "all": "Barcha treklar",
       "newTrackAria": "Yangi trek nomi",
       "newTrackPlaceholder": "Yangi trek",

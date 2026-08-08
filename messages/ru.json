@@ -3,6 +3,10 @@
     "brand": "Click Assessment",
     "tagline": "Never gonna give you up",
     "navLabel": "Админ навигация",
+    "sidebar": {
+      "collapse": "Свернуть меню",
+      "expand": "Развернуть меню"
+    },
     "nav": {
       "overview": "Обзор",
       "interns": "Стажёры",
@@ -287,7 +291,6 @@
       "description": "Новая запись уже доступна в банке вопросов."
     },
     "tracks": {
-      "title": "Треки",
       "all": "Все треки",
       "newTrackAria": "Название нового трека",
       "newTrackPlaceholder": "Новый трек",
