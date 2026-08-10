@@ -31,10 +31,14 @@ function typeLabel(
 export function QuestionCreateModal({
   initialType,
   initialTrackId,
+  initialGradeId,
+  initialVersionId,
   tracks,
 }: {
   initialType: QuestionType;
   initialTrackId?: string;
+  initialGradeId?: string;
+  initialVersionId?: string;
   tracks: TrackSummary[];
 }) {
   const t = useTranslations("AdminQuestions");
@@ -75,6 +79,8 @@ export function QuestionCreateModal({
               embedded
               initialType={initialType}
               initialTrackId={initialTrackId}
+              initialGradeId={initialGradeId}
+              initialVersionId={initialVersionId}
               lockType
               showTitle={false}
               tracks={tracks}

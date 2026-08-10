@@ -5,6 +5,8 @@ import {
   slugifyTrack,
 } from "@/lib/question-classification";
 import { ensureDefaultWave } from "@/lib/waves";
+import { ensureDefaultGrade } from "@/lib/grades";
+import { ensureDefaultVersion } from "@/lib/question-versions";
 
 export async function ensureTracks() {
   await Promise.all(
@@ -30,6 +32,12 @@ export async function ensureTracks() {
 
   for (const track of tracks) {
     await ensureDefaultWave(track.id);
+    const existingGrade = await prisma.grade.findFirst({
+      where: { trackId: track.id },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    });
+    const grade = existingGrade ?? (await ensureDefaultGrade(track.id));
+    const version = await ensureDefaultVersion(grade.id);
 
     await prisma.question.updateMany({
       where: {
@@ -38,11 +46,25 @@ export async function ensureTracks() {
       },
       data: { trackId: track.id },
     });
+
+    await prisma.question.updateMany({
+      where: {
+        trackId: track.id,
+        gradeId: null,
+      },
+      data: { gradeId: grade.id, versionId: version.id },
+    });
   }
 
   const qaTrack = tracks.find((track) => track.slug === "qa") ?? tracks[0];
   if (qaTrack) {
     const qaWave = await ensureDefaultWave(qaTrack.id);
+    const existingQaGrade = await prisma.grade.findFirst({
+      where: { trackId: qaTrack.id },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    });
+    const qaGrade = existingQaGrade ?? (await ensureDefaultGrade(qaTrack.id));
+    const qaVersion = await ensureDefaultVersion(qaGrade.id);
     const legacyQaTaskTrackIds = tracks
       .filter((track) => ["api", "grpc", "web"].includes(track.slug))
       .map((track) => track.id);
@@ -50,7 +72,12 @@ export async function ensureTracks() {
     if (legacyQaTaskTrackIds.length > 0) {
       await prisma.question.updateMany({
         where: { trackId: { in: legacyQaTaskTrackIds } },
-        data: { trackId: qaTrack.id, track: qaTrack.name },
+        data: {
+          trackId: qaTrack.id,
+          track: qaTrack.name,
+          gradeId: qaGrade.id,
+          versionId: qaVersion.id,
+        },
       });
       await prisma.track.updateMany({
         where: { id: { in: legacyQaTaskTrackIds } },
@@ -60,15 +87,15 @@ export async function ensureTracks() {
 
     await prisma.invitation.updateMany({
       where: { trackId: null },
-      data: { trackId: qaTrack.id, waveId: qaWave.id },
+      data: { trackId: qaTrack.id, waveId: qaWave.id, gradeId: qaGrade.id },
     });
     await prisma.internProfile.updateMany({
       where: { trackId: null },
-      data: { trackId: qaTrack.id, waveId: qaWave.id },
+      data: { trackId: qaTrack.id, waveId: qaWave.id, gradeId: qaGrade.id },
     });
     await prisma.assessmentAttempt.updateMany({
       where: { trackId: null },
-      data: { trackId: qaTrack.id, waveId: qaWave.id },
+      data: { trackId: qaTrack.id, waveId: qaWave.id, gradeId: qaGrade.id },
     });
   }
 

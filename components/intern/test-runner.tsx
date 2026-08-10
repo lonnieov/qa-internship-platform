@@ -1,7 +1,7 @@
 "use client";
 
 import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -591,6 +591,7 @@ export function TestRunner({
 }) {
   const t = useTranslations("InternTest");
   const locale = useLocale();
+  const fieldIdPrefix = useId();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState(
@@ -703,6 +704,8 @@ export function TestRunner({
     originY: number;
   } | null>(null);
   const currentQuestion = questions[currentIndex];
+  const currentFieldId = (name: string) =>
+    `${fieldIdPrefix}-${currentQuestion.id}-${name}`;
   const currentTrack = getQuestionTrackMeta(currentQuestion?.track);
   const answeredCount = questions.filter((question) => {
     if (
@@ -1545,12 +1548,13 @@ export function TestRunner({
                 {getOpenQuizConfig(currentQuestion.apiConfig) ? (
                   <div className="stack">
                     <div className="form-grid">
-                      <LabelLike>
+                      <LabelLike htmlFor={currentFieldId("open-answer")}>
                         {getOpenQuizConfig(currentQuestion.apiConfig)
                           ?.answerLabel || t("openQuizAnswerLabel")}
                       </LabelLike>
                       <Textarea
                         data-track="open-quiz-answer"
+                        id={currentFieldId("open-answer")}
                         onBlur={() => saveOpenAnswer()}
                         onChange={(event) =>
                           updateOpenAnswer(event.target.value)
@@ -1611,7 +1615,9 @@ export function TestRunner({
                     <div className="sql-panel-header">
                       <div className="stack sql-panel-heading">
                         <span className="sql-kicker">{currentSqlConfig.dialect}</span>
-                        <strong>{t("sql.queryTitle")}</strong>
+                        <strong id={currentFieldId("sql-query-label")}>
+                          {t("sql.queryTitle")}
+                        </strong>
                         <p className="body-2 muted m-0">{t("sql.queryHint")}</p>
                       </div>
                       {currentSqlDraft.submissionCount > 0 ? (
@@ -1628,8 +1634,10 @@ export function TestRunner({
                     </div>
 
                     <Textarea
+                      aria-labelledby={currentFieldId("sql-query-label")}
                       className="sql-editor"
                       data-track="sql-query"
+                      id={currentFieldId("sql-query")}
                       onChange={(event) =>
                         updateSqlDraft(currentQuestion.id, {
                           query: event.target.value,
@@ -1682,10 +1690,15 @@ export function TestRunner({
                       currentSqlDraft.response.columns.length > 0 ? (
                       <div className="sql-result-table table-wrap">
                         <table className="table">
+                          <caption className="visually-hidden">
+                            {t("sql.resultTitle")}
+                          </caption>
                           <thead>
                             <tr>
                               {currentSqlDraft.response.columns.map((column) => (
-                                <th key={column}>{column}</th>
+                                <th key={column} scope="col">
+                                  {column}
+                                </th>
                               ))}
                             </tr>
                           </thead>
@@ -1725,6 +1738,7 @@ export function TestRunner({
                         {currentSqlViewport ? (
                           <div className="sql-diagram-controls">
                             <Button
+                              aria-label="Уменьшить масштаб схемы"
                               type="button"
                               variant="secondary"
                               size="sm"
@@ -1736,6 +1750,7 @@ export function TestRunner({
                               {Math.round(currentSqlViewport.scale * 100)}%
                             </span>
                             <Button
+                              aria-label="Увеличить масштаб схемы"
                               type="button"
                               variant="secondary"
                               size="sm"
@@ -1849,10 +1864,16 @@ export function TestRunner({
                                     </div>
                                     <div className="sql-diagram-sample-table-wrap">
                                       <table className="sql-diagram-sample-table">
+                                        <caption className="visually-hidden">
+                                          {card.table.name} sample data
+                                        </caption>
                                         <thead>
                                           <tr>
                                             {card.table.columns.map((column) => (
-                                              <th key={`${card.table.name}-${column.name}`}>
+                                              <th
+                                                key={`${card.table.name}-${column.name}`}
+                                                scope="col"
+                                              >
                                                 {column.name}
                                               </th>
                                             ))}
@@ -1950,8 +1971,13 @@ export function TestRunner({
                           </div>
 
                           <div className="form-grid">
-                            <LabelLike>{t("manualQa.titleLabel")}</LabelLike>
+                            <LabelLike
+                              htmlFor={currentFieldId(`bug-${report.id}-title`)}
+                            >
+                              {t("manualQa.titleLabel")}
+                            </LabelLike>
                             <Input
+                              id={currentFieldId(`bug-${report.id}-title`)}
                               onChange={(event) =>
                                 updateManualQaReport(report.id, {
                                   title: event.target.value,
@@ -1964,8 +1990,17 @@ export function TestRunner({
 
                           <div className="grid-2">
                             <div className="form-grid">
-                              <LabelLike>Severity</LabelLike>
+                              <LabelLike
+                                htmlFor={currentFieldId(
+                                  `bug-${report.id}-severity`,
+                                )}
+                              >
+                                Severity
+                              </LabelLike>
                               <Select
+                                id={currentFieldId(
+                                  `bug-${report.id}-severity`,
+                                )}
                                 onChange={(event) =>
                                   updateManualQaReport(report.id, {
                                     severity: event.target
@@ -1982,8 +2017,17 @@ export function TestRunner({
                               </Select>
                             </div>
                             <div className="form-grid">
-                              <LabelLike>Category</LabelLike>
+                              <LabelLike
+                                htmlFor={currentFieldId(
+                                  `bug-${report.id}-category`,
+                                )}
+                              >
+                                Category
+                              </LabelLike>
                               <Select
+                                id={currentFieldId(
+                                  `bug-${report.id}-category`,
+                                )}
                                 onChange={(event) =>
                                   updateManualQaReport(report.id, {
                                     category: event.target.value,
@@ -2003,10 +2047,13 @@ export function TestRunner({
                           </div>
 
                           <div className="form-grid">
-                            <LabelLike>
+                            <LabelLike
+                              htmlFor={currentFieldId(`bug-${report.id}-steps`)}
+                            >
                               {t("manualQa.stepsLabel")}
                             </LabelLike>
                             <Textarea
+                              id={currentFieldId(`bug-${report.id}-steps`)}
                               onChange={(event) =>
                                 updateManualQaReport(report.id, {
                                   steps: event.target.value,
@@ -2019,8 +2066,15 @@ export function TestRunner({
 
                           <div className="grid-2">
                             <div className="form-grid">
-                              <LabelLike>Actual result</LabelLike>
+                              <LabelLike
+                                htmlFor={currentFieldId(
+                                  `bug-${report.id}-actual`,
+                                )}
+                              >
+                                Actual result
+                              </LabelLike>
                               <Textarea
+                                id={currentFieldId(`bug-${report.id}-actual`)}
                                 onChange={(event) =>
                                   updateManualQaReport(report.id, {
                                     actual: event.target.value,
@@ -2031,8 +2085,15 @@ export function TestRunner({
                               />
                             </div>
                             <div className="form-grid">
-                              <LabelLike>Expected result</LabelLike>
+                              <LabelLike
+                                htmlFor={currentFieldId(
+                                  `bug-${report.id}-expected`,
+                                )}
+                              >
+                                Expected result
+                              </LabelLike>
                               <Textarea
+                                id={currentFieldId(`bug-${report.id}-expected`)}
                                 onChange={(event) =>
                                   updateManualQaReport(report.id, {
                                     expected: event.target.value,
@@ -2045,8 +2106,13 @@ export function TestRunner({
                           </div>
 
                           <div className="form-grid">
-                            <LabelLike>Note</LabelLike>
+                            <LabelLike
+                              htmlFor={currentFieldId(`bug-${report.id}-note`)}
+                            >
+                              Note
+                            </LabelLike>
                             <Input
+                              id={currentFieldId(`bug-${report.id}-note`)}
                               onChange={(event) =>
                                 updateManualQaReport(report.id, {
                                   note: event.target.value,
@@ -2074,13 +2140,12 @@ export function TestRunner({
                     className="nav-row"
                     style={{ justifyContent: "space-between" }}
                   >
-                    <Badge variant="muted">
-                      {currentManualQaDraft.answerSaveStatus === "saving"
-                        ? t("commentSaving")
-                        : currentManualQaDraft.answerSaveStatus === "saved"
-                          ? t("answerSaved")
-                          : t("unsavedChanges")}
-                    </Badge>
+                    <SaveStatusBadge
+                      idleLabel={t("unsavedChanges")}
+                      savedLabel={t("answerSaved")}
+                      savingLabel={t("commentSaving")}
+                      status={currentManualQaDraft.answerSaveStatus}
+                    />
                     <Button
                       disabled={isPending}
                       onClick={() => saveManualQaAnswer()}
@@ -2121,7 +2186,9 @@ export function TestRunner({
                 <div className="autotest-editor-panel stack">
                   <div className="sql-panel-header">
                     <div className="stack sql-panel-heading">
-                      <strong>Псевдокод</strong>
+                      <strong id={currentFieldId("autotest-code-label")}>
+                        Псевдокод
+                      </strong>
                       <p className="body-2 muted m-0">
                         {currentAutotestConfig.mission}
                       </p>
@@ -2145,8 +2212,10 @@ export function TestRunner({
                   ) : null}
 
                   <Textarea
+                    aria-labelledby={currentFieldId("autotest-code-label")}
                     className="autotest-editor"
                     data-track="autotest-code"
+                    id={currentFieldId("autotest-code")}
                     onChange={(event) => updateAutotestCode(event.target.value)}
                     placeholder={`// Напишите псевдокод автотестов\n\ntest('Описание сценария', () => {\n  navigateTo('Экран')\n  tap('Элемент')\n  expect('Результат').toBeVisible()\n})`}
                     value={currentAutotestDraft.code}
@@ -2156,13 +2225,12 @@ export function TestRunner({
                     className="nav-row"
                     style={{ justifyContent: "space-between" }}
                   >
-                    <Badge variant="muted">
-                      {currentAutotestDraft.answerSaveStatus === "saving"
-                        ? "Сохраняется..."
-                        : currentAutotestDraft.answerSaveStatus === "saved"
-                          ? "Сохранено"
-                          : "Не сохранено"}
-                    </Badge>
+                    <SaveStatusBadge
+                      idleLabel="Не сохранено"
+                      savedLabel="Сохранено"
+                      savingLabel="Сохраняется..."
+                      status={currentAutotestDraft.answerSaveStatus}
+                    />
                     <Button
                       disabled={isPending || !currentAutotestDraft.code.trim()}
                       onClick={() => saveAutotestAnswer()}
@@ -2214,7 +2282,7 @@ export function TestRunner({
                 </div>
 
                 <div className="form-grid">
-                  <LabelLike>
+                  <LabelLike htmlFor={currentFieldId("devtools-answer")}>
                     {currentDevtoolsConfig.answerLabel ||
                       t("devtools.answerLabel", {
                         value:
@@ -2224,6 +2292,7 @@ export function TestRunner({
                   </LabelLike>
                   <Input
                     data-track="devtools-answer"
+                    id={currentFieldId("devtools-answer")}
                     onChange={(event) =>
                       updateDevtoolsAnswer(event.target.value)
                     }
@@ -2237,21 +2306,27 @@ export function TestRunner({
                   className="nav-row"
                   style={{ justifyContent: "space-between" }}
                 >
-                  <Badge variant="muted">
-                    {currentApiDraft.answerSaveStatus === "saving"
-                      ? t("devtools.savingAnswer")
-                      : currentApiDraft.submissionCount > 0
+                  <SaveStatusBadge
+                    idleLabel={
+                      currentApiDraft.submissionCount > 0
                         ? t("answerSaved")
-                        : t("devtools.autosave")}
-                  </Badge>
+                        : t("devtools.autosave")
+                    }
+                    savedLabel={t("answerSaved")}
+                    savingLabel={t("devtools.savingAnswer")}
+                    status={currentApiDraft.answerSaveStatus}
+                  />
                 </div>
               </div>
             ) : currentApiDraft ? (
               <div className="stack">
                 <div className="grid-2">
                   <div className="form-grid">
-                    <LabelLike>Method</LabelLike>
+                    <LabelLike htmlFor={currentFieldId("api-method")}>
+                      Method
+                    </LabelLike>
                     <Select
+                      id={currentFieldId("api-method")}
                       value={currentApiDraft.method}
                       onChange={(event) =>
                         updateApiDraft({ method: event.target.value })
@@ -2265,9 +2340,12 @@ export function TestRunner({
                     </Select>
                   </div>
                   <div className="form-grid">
-                    <LabelLike>Request URL</LabelLike>
+                    <LabelLike htmlFor={currentFieldId("api-url")}>
+                      Request URL
+                    </LabelLike>
                     <Input
                       data-track="api-url"
+                      id={currentFieldId("api-url")}
                       onChange={(event) =>
                         updateApiDraft({ url: event.target.value })
                       }
@@ -2278,9 +2356,12 @@ export function TestRunner({
                 </div>
 
                 <div className="form-grid">
-                  <LabelLike>Headers</LabelLike>
+                  <LabelLike htmlFor={currentFieldId("api-headers")}>
+                    Headers
+                  </LabelLike>
                   <Textarea
                     data-track="api-headers"
+                    id={currentFieldId("api-headers")}
                     onChange={(event) =>
                       updateApiDraft({ headersText: event.target.value })
                     }
@@ -2292,9 +2373,12 @@ export function TestRunner({
                 </div>
 
                 <div className="form-grid">
-                  <LabelLike>JSON Body</LabelLike>
+                  <LabelLike htmlFor={currentFieldId("api-body")}>
+                    JSON Body
+                  </LabelLike>
                   <Textarea
                     data-track="api-body"
+                    id={currentFieldId("api-body")}
                     onChange={(event) =>
                       updateApiDraft({ bodyText: event.target.value })
                     }
@@ -2468,6 +2552,11 @@ export function TestRunner({
                   );
                   return (
                     <button
+                      aria-current={active ? "step" : undefined}
+                      aria-label={`${t("questionProgress", {
+                        current: index + 1,
+                        total: questions.length,
+                      })}${done ? `, ${t("answerFilled")}` : ""}`}
                       className={`question-dot ${
                         currentQuestion.type === "SQL_SANDBOX"
                           ? "question-dot-sql"
@@ -2594,19 +2683,23 @@ export function TestRunner({
                     {t("commentTitle")}
                   </h2>
                 </div>
-                <Badge variant="muted">
-                  {currentCommentSaveStatus === "saving"
-                    ? t("commentSaving")
-                    : currentCommentSaveStatus === "saved"
-                      ? t("commentSaved")
-                      : t("commentDraft")}
-                </Badge>
+                <SaveStatusBadge
+                  idleLabel={t("commentDraft")}
+                  savedLabel={t("commentSaved")}
+                  savingLabel={t("commentSaving")}
+                  status={currentCommentSaveStatus}
+                />
               </div>
-              <p className="body-2 muted m-0">
+              <p className="body-2 muted m-0" id="question-comment-help">
                 {t("commentHelp")}
               </p>
+              <LabelLike htmlFor={currentFieldId("question-comment")}>
+                {t("commentTitle")}
+              </LabelLike>
               <Textarea
+                aria-describedby="question-comment-help"
                 autoFocus
+                id={currentFieldId("question-comment")}
                 maxLength={1000}
                 onChange={(event) => updateQuestionComment(event.target.value)}
                 placeholder={t("commentPlaceholder")}
@@ -2635,6 +2728,41 @@ export function TestRunner({
   );
 }
 
-function LabelLike({ children }: { children: ReactNode }) {
-  return <span className="body-2 muted">{children}</span>;
+function SaveStatusBadge({
+  idleLabel,
+  savedLabel,
+  savingLabel,
+  status,
+}: {
+  idleLabel: string;
+  savedLabel: string;
+  savingLabel: string;
+  status: CommentSaveStatus;
+}) {
+  const label =
+    status === "saving"
+      ? savingLabel
+      : status === "saved"
+        ? savedLabel
+        : idleLabel;
+
+  return <Badge variant="muted">{label}</Badge>;
+}
+
+function LabelLike({
+  children,
+  htmlFor,
+}: {
+  children: ReactNode;
+  htmlFor?: string;
+}) {
+  if (!htmlFor) {
+    return <span className="body-2 muted">{children}</span>;
+  }
+
+  return (
+    <label className="body-2 muted" htmlFor={htmlFor}>
+      {children}
+    </label>
+  );
 }

@@ -9,8 +9,10 @@
 ## Smoke Check
 
 - Open the test page.
-- Expected: `Завершить` is visible in the top-right header area near the timer.
-- Expected: before all questions are answered, the question card footer only contains `Назад` and `Далее`.
+- Expected: `Завершить` is visible in the navigation card near the timer.
+- Expected: the question card footer contains `Назад` and `Далее`.
+- Press `Tab` through question controls.
+- Expected: each focused button or field has a visible focus outline.
 
 ## Positive Case
 
@@ -23,12 +25,9 @@
 - Expected: the attempt is submitted and the result flow opens.
 - Expected: the result page shows a short colorful confetti burst across the screen.
 - Start another attempt.
-- Answer every question and navigate to the last question.
-- Expected: an additional `Завершить` button appears on the right side of the question card footer.
-- Click the footer `Завершить`.
-- Expected: the same confirmation dialog opens.
-- Submit the attempt.
-- Expected: the same confetti burst plays after redirecting to the result page.
+- Open an open-answer, API, SQL, Manual QA, or Autotest question if available.
+- Click the visible field label.
+- Expected: focus moves to the related input, textarea, or select.
 
 ## Negative Cases
 
@@ -43,5 +42,8 @@
 
 - Navigate between questions with `Назад`, `Далее`, and the navigation dots.
 - Expected: navigation still works and does not submit the attempt.
+- Use a keyboard to navigate the numbered question dots.
+- Expected: the active question is announced as the current step and Enter opens
+  the selected question.
 - Enable reduced motion in the browser or OS accessibility settings and open the result page.
 - Expected: the result content still renders, and the confetti animation is not shown.

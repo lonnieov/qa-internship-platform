@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { toggleQuestionAction } from "@/actions/admin";
+import { MoreHorizontal, Plus } from "lucide-react";
+import {
+  activateQuestionVersionAction,
+  createQuestionVersionAction,
+  deleteQuestionVersionAction,
+  duplicateQuestionVersionAction,
+  toggleQuestionAction,
+} from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
 import {
@@ -20,6 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
+import { QuestionImportModal } from "@/components/admin/question-import-modal";
+import { ScopeMenu } from "@/components/admin/scope-menu";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 
@@ -32,9 +41,23 @@ type QuestionType =
   | "AUTOTEST_SANDBOX";
 type AdminQuestion = Awaited<ReturnType<typeof getQuestions>>[number];
 
-async function getQuestions(trackIds?: string[] | null) {
+async function getQuestions({
+  selectedTrackId,
+  selectedVersionId,
+  trackIds,
+}: {
+  selectedTrackId?: string | null;
+  selectedVersionId?: string | null;
+  trackIds?: string[] | null;
+}) {
   return prisma.question.findMany({
-    where: trackIds ? { trackId: { in: trackIds } } : undefined,
+    where: selectedVersionId
+      ? { versionId: selectedVersionId }
+      : selectedTrackId
+        ? { trackId: selectedTrackId }
+        : trackIds
+          ? { trackId: { in: trackIds } }
+          : undefined,
     orderBy: [
       { isActive: "desc" },
       { trackRef: { order: "asc" } },
@@ -42,9 +65,32 @@ async function getQuestions(trackIds?: string[] | null) {
       { order: "asc" },
       { createdAt: "asc" },
     ],
-    include: {
-      trackRef: true,
-      options: { orderBy: { order: "asc" } },
+    select: {
+      id: true,
+      type: true,
+      track: true,
+      trackId: true,
+      gradeId: true,
+      versionId: true,
+      text: true,
+      textUz: true,
+      explanation: true,
+      isActive: true,
+      order: true,
+      apiConfig: true,
+      createdAt: true,
+      trackRef: { select: { id: true, slug: true, name: true } },
+      options: {
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          label: true,
+          text: true,
+          textUz: true,
+          isCorrect: true,
+          order: true,
+        },
+      },
     },
   });
 }
@@ -124,9 +170,16 @@ function apiSummary(question: AdminQuestion) {
   };
 }
 
-function filterUrl(locale: string, type: QuestionType, track: string | "all") {
+function filterUrl(
+  locale: string,
+  type: QuestionType,
+  track: string | "all",
+  extra?: { grade?: string; version?: string },
+) {
   const params = new URLSearchParams({ type });
   if (track !== "all") params.set("track", track);
+  if (extra?.grade) params.set("grade", extra.grade);
+  if (extra?.version) params.set("version", extra.version);
   return `/${locale}/admin/questions?${params.toString()}`;
 }
 
@@ -300,7 +353,13 @@ export default async function AdminQuestionsPage({
   searchParams,
 }: {
   params: Promise<{ locale: "ru" | "uz" }>;
-  searchParams: Promise<{ type?: string; track?: string; created?: string }>;
+  searchParams: Promise<{
+    type?: string;
+    track?: string;
+    grade?: string;
+    version?: string;
+    created?: string;
+  }>;
 }) {
   const { locale } = await params;
   const t = await getTranslations("AdminQuestions");
@@ -331,12 +390,44 @@ export default async function AdminQuestionsPage({
   }
 
   const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
-  const allAccessibleQuestions = await getQuestions(manageableTrackIds);
-  const questions = selectedTrackRecord
-    ? allAccessibleQuestions.filter(
-        (question) => question.trackId === selectedTrackRecord.id,
-      )
-    : allAccessibleQuestions;
+
+  const gradesForTrack = selectedTrackRecord
+    ? await prisma.grade.findMany({
+        where: { trackId: selectedTrackRecord.id },
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        include: {
+          versions: {
+            orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+            include: { _count: { select: { questions: true } } },
+          },
+        },
+      })
+    : [];
+  const requestedGradeSlug = resolvedSearchParams.grade;
+  const selectedGradeRecord =
+    gradesForTrack.find((grade) => grade.slug === requestedGradeSlug) ??
+    gradesForTrack[0] ??
+    null;
+  const versionsForGrade = selectedGradeRecord?.versions ?? [];
+  const requestedVersionId = resolvedSearchParams.version;
+  const selectedVersionRecord =
+    versionsForGrade.find((version) => version.id === requestedVersionId) ??
+    versionsForGrade.find((version) => version.isActive) ??
+    versionsForGrade[0] ??
+    null;
+
+  const [questions, questionCountsByTrack] = await Promise.all([
+    getQuestions({
+      selectedTrackId: selectedTrackRecord?.id,
+      selectedVersionId: selectedVersionRecord?.id,
+      trackIds: manageableTrackIds,
+    }),
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: manageableTrackIds ? { trackId: { in: manageableTrackIds } } : undefined,
+      _count: { _all: true },
+    }),
+  ]);
   const requestedType =
     resolvedSearchParams.type === "API_SANDBOX" ||
     resolvedSearchParams.type === "SQL_SANDBOX" ||
@@ -390,10 +481,14 @@ export default async function AdminQuestionsPage({
   const trackCounts = Object.fromEntries(
     tracks.map((track) => [
       track.id,
-      allAccessibleQuestions.filter((question) => question.trackId === track.id)
-        .length,
+      questionCountsByTrack.find((item) => item.trackId === track.id)?._count
+        ._all ?? 0,
     ]),
   ) as Record<string, number>;
+  const totalAccessibleQuestionCount = Object.values(trackCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const tracksForForms = tracks.map((track) => ({
     id: track.id,
     slug: track.slug,
@@ -414,46 +509,202 @@ export default async function AdminQuestionsPage({
         </div>
       </div>
 
-      <section className="surface question-bank-layout">
-        {profile.role === "ADMIN" ? (
-          <aside className="question-filter-rail">
-            <div className="question-filter-title-row">
-              <div className="question-filter-title">{t("tracks.title")}</div>
-            </div>
-            <Link
-              className={`question-filter-item ${selectedTrackSlug === "all" ? "active" : ""}`}
-              href={filterUrl(locale, activeSection.type, "all")}
-            >
-              <span>{t("tracks.all")}</span>
-              <span>{allAccessibleQuestions.length}</span>
-            </Link>
+      <section className="question-scope-bar surface">
+        <div className="question-scope-path">
+          <ScopeMenu
+            ariaLabel={`Трек: ${selectedTrackRecord?.name ?? t("tracks.all")}`}
+            label={selectedTrackRecord?.name ?? t("tracks.all")}
+          >
+            {profile.role === "ADMIN" ? (
+              <Link
+                className={`scope-menu-item ${selectedTrackSlug === "all" ? "active" : ""}`}
+                href={filterUrl(locale, activeSection.type, "all")}
+              >
+                <span>{t("tracks.all")}</span>
+                <span className="scope-menu-count">
+                  {totalAccessibleQuestionCount}
+                </span>
+              </Link>
+            ) : null}
             {tracks.map((track) => {
               const meta = getQuestionTrackMeta(track);
-              const questionCount = trackCounts[track.id] ?? 0;
               const active = selectedTrackRecord?.id === track.id;
 
               return (
-                <div className="track-filter-row" key={track.id}>
-                  <Link
-                    className={`question-filter-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
-                    href={filterUrl(locale, activeSection.type, track.slug)}
-                  >
-                    <span className="nav-row">
-                      <span className={meta.dotClassName} />
-                      {meta.label}
-                    </span>
-                    <span>{questionCount}</span>
-                  </Link>
-                </div>
+                <Link
+                  className={`scope-menu-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
+                  href={filterUrl(locale, activeSection.type, track.slug)}
+                  key={track.id}
+                >
+                  <span className="nav-row">
+                    <span className={meta.dotClassName} />
+                    {meta.label}
+                  </span>
+                  <span className="scope-menu-count">
+                    {trackCounts[track.id] ?? 0}
+                  </span>
+                </Link>
               );
             })}
-          </aside>
-        ) : null}
+          </ScopeMenu>
 
-        <div
-          className="question-list-panel"
-          style={profile.role === "ADMIN" ? undefined : { gridColumn: "1 / -1" }}
-        >
+          {selectedTrackRecord && gradesForTrack.length > 0 ? (
+            <>
+              <span aria-hidden="true" className="question-scope-separator">
+                ›
+              </span>
+              <ScopeMenu
+                ariaLabel={`Грейд: ${selectedGradeRecord?.name ?? "—"}`}
+                label={selectedGradeRecord?.name ?? "—"}
+              >
+                {gradesForTrack.map((grade) => (
+                  <Link
+                    className={`scope-menu-item ${grade.id === selectedGradeRecord?.id ? "active" : ""}`}
+                    href={filterUrl(
+                      locale,
+                      activeSection.type,
+                      selectedTrackSlug,
+                      { grade: grade.slug },
+                    )}
+                    key={grade.id}
+                  >
+                    <span>{grade.name}</span>
+                  </Link>
+                ))}
+              </ScopeMenu>
+            </>
+          ) : null}
+
+          {selectedGradeRecord && selectedVersionRecord ? (
+            <>
+              <span aria-hidden="true" className="question-scope-separator">
+                ›
+              </span>
+              <ScopeMenu
+                ariaLabel={`Версия: ${selectedVersionRecord.name}`}
+                label={
+                  <>
+                    {selectedVersionRecord.name}
+                    <Badge
+                      variant={
+                        selectedVersionRecord.isActive ? "success" : "muted"
+                      }
+                    >
+                      {selectedVersionRecord.isActive ? "активна" : "черновик"}
+                    </Badge>
+                  </>
+                }
+              >
+                {versionsForGrade.map((version) => (
+                  <Link
+                    className={`scope-menu-item ${version.id === selectedVersionRecord.id ? "active" : ""}`}
+                    href={filterUrl(
+                      locale,
+                      activeSection.type,
+                      selectedTrackSlug,
+                      { grade: selectedGradeRecord.slug, version: version.id },
+                    )}
+                    key={version.id}
+                  >
+                    <span>{version.name}</span>
+                    <Badge variant={version.isActive ? "success" : "muted"}>
+                      {version.isActive ? "активна" : "черновик"}
+                    </Badge>
+                  </Link>
+                ))}
+                <div className="scope-menu-divider" />
+                <form action={createQuestionVersionAction}>
+                  <input
+                    type="hidden"
+                    name="gradeId"
+                    value={selectedGradeRecord.id}
+                  />
+                  <button className="scope-menu-item" type="submit">
+                    <span className="nav-row">
+                      <Plus size={14} />
+                      Новая версия
+                    </span>
+                  </button>
+                </form>
+              </ScopeMenu>
+
+              <ScopeMenu ariaLabel="Действия над версией" icon={<MoreHorizontal size={16} />}>
+                {!selectedVersionRecord.isActive ? (
+                  <form action={activateQuestionVersionAction}>
+                    <input
+                      type="hidden"
+                      name="versionId"
+                      value={selectedVersionRecord.id}
+                    />
+                    <button className="scope-menu-item" type="submit">
+                      Активировать
+                    </button>
+                  </form>
+                ) : null}
+                <form action={duplicateQuestionVersionAction}>
+                  <input
+                    type="hidden"
+                    name="versionId"
+                    value={selectedVersionRecord.id}
+                  />
+                  <button className="scope-menu-item" type="submit">
+                    Дублировать
+                  </button>
+                </form>
+                {!selectedVersionRecord.isActive ? (
+                  <>
+                    <div className="scope-menu-divider" />
+                    <form action={deleteQuestionVersionAction}>
+                      <input
+                        type="hidden"
+                        name="versionId"
+                        value={selectedVersionRecord.id}
+                      />
+                      <button
+                        className="scope-menu-item destructive"
+                        type="submit"
+                      >
+                        Удалить версию
+                      </button>
+                    </form>
+                  </>
+                ) : null}
+              </ScopeMenu>
+            </>
+          ) : null}
+
+          {selectedTrackRecord && gradesForTrack.length === 0 ? (
+            <span className="body-2 muted">
+              Грейды не созданы — добавьте их на странице «Треки».
+            </span>
+          ) : null}
+        </div>
+
+        <div className="nav-row">
+          {activeSection.type === "QUIZ" &&
+          selectedTrackRecord &&
+          selectedGradeRecord &&
+          selectedVersionRecord ? (
+            <QuestionImportModal
+              gradeId={selectedGradeRecord.id}
+              gradeName={selectedGradeRecord.name}
+              trackId={selectedTrackRecord.id}
+              versionId={selectedVersionRecord.id}
+              versionName={selectedVersionRecord.name}
+            />
+          ) : null}
+          <QuestionCreateModal
+            initialType={activeSection.type}
+            initialTrackId={selectedTrackRecord?.id}
+            initialGradeId={selectedGradeRecord?.id}
+            initialVersionId={selectedVersionRecord?.id}
+            tracks={tracksForForms}
+          />
+        </div>
+      </section>
+
+      <section className="surface question-bank-layout">
+        <div className="question-list-panel">
           <div className="nav-row">
             {sections.map(({ type }) => {
               const meta = sectionMeta(type, t);
@@ -466,7 +717,12 @@ export default async function AdminQuestionsPage({
                   size="sm"
                   variant={active ? "default" : "outline"}
                 >
-                  <Link href={filterUrl(locale, type, selectedTrackSlug)}>
+                  <Link
+                    href={filterUrl(locale, type, selectedTrackSlug, {
+                      grade: selectedGradeRecord?.slug,
+                      version: selectedVersionRecord?.id,
+                    })}
+                  >
                     {meta.title} ({allTypeCount(type)})
                   </Link>
                 </Button>
@@ -481,11 +737,6 @@ export default async function AdminQuestionsPage({
             </div>
             <div className="nav-row">
               <Badge variant="muted">{activeSection.items.length}</Badge>
-              <QuestionCreateModal
-                initialType={activeSection.type}
-                initialTrackId={selectedTrackRecord?.id}
-                tracks={tracksForForms}
-              />
             </div>
           </div>
 

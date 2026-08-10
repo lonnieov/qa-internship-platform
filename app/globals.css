@@ -154,6 +154,31 @@ button {
   cursor: pointer;
 }
 
+:is(
+  a:any-link,
+  button,
+  input,
+  textarea,
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
 .site-shell {
   min-height: 100vh;
   display: flex;
@@ -583,6 +608,17 @@ button {
   align-items: stretch;
   background: var(--background);
   overflow: hidden;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.admin-shell.sidebar-collapsed {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell {
+    transition: none;
+  }
 }
 
 .admin-sidebar {
@@ -606,17 +642,48 @@ button {
   overflow-y: auto;
 }
 
+.admin-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .admin-sidebar-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 4px 8px;
+  min-width: 0;
 }
 
 .admin-sidebar-brand span {
   display: grid;
   gap: 2px;
   line-height: 1;
+}
+
+.admin-sidebar-toggle {
+  display: grid;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-sidebar-toggle:hover {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .admin-sidebar-brand strong {
@@ -659,6 +726,58 @@ button {
 .admin-nav-item.active {
   background: var(--coin-blue-08);
   color: var(--primary);
+}
+
+/* Collapsed sidebar: only icons stay visible, every label remains in the
+   accessibility tree so screen readers still announce the destination. */
+.sidebar-collapsed .admin-nav-label,
+.sidebar-collapsed .admin-sidebar-brand-text,
+.sidebar-collapsed .admin-user-card-info,
+.sidebar-collapsed .admin-logout-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sidebar-collapsed .admin-sidebar {
+  padding: 24px 12px;
+  gap: 20px;
+}
+
+.sidebar-collapsed .admin-sidebar-head {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-collapsed .admin-sidebar-brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-collapsed .admin-nav-item {
+  justify-content: center;
+  gap: 0;
+  padding: 10px 0;
+}
+
+.sidebar-collapsed .admin-user-card {
+  grid-template-columns: 36px;
+  justify-content: center;
+  padding: 6px 0;
+  background: transparent;
+}
+
+.sidebar-collapsed .admin-sidebar-footer .language-switcher {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sidebar-collapsed .theme-toggle-icon {
+  justify-self: center;
 }
 
 .admin-sidebar-footer {
@@ -1003,21 +1122,26 @@ button {
 }
 
 .auth-stats div {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 275px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: start;
 }
 
 .auth-stats strong {
-  min-width: 88px;
+  min-width: 0;
   color: #ffffff;
   font-size: 22px;
   font-weight: 600;
+  line-height: 1.28;
 }
 
 .auth-stats span {
+  min-width: 0;
   color: rgba(255, 255, 255, 0.72);
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .auth-form-panel {
@@ -2491,6 +2615,25 @@ button {
   border-radius: 22px;
 }
 
+@supports (content-visibility: auto) {
+  .sql-result-panel,
+  .sql-schema-panel,
+  .manual-qa-report-card,
+  .autotest-method-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
+  }
+}
+
+@supports not (content-visibility: auto) {
+  .sql-result-panel,
+  .sql-schema-panel,
+  .manual-qa-report-card,
+  .autotest-method-item {
+    contain: layout style paint;
+  }
+}
+
 .sql-editor-panel,
 .sql-result-panel {
   background: var(--sql-panel-bg);
@@ -3077,76 +3220,161 @@ button {
 
 .question-bank-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   overflow: hidden;
 }
 
-.question-filter-rail {
-  display: grid;
-  align-content: start;
-  gap: 4px;
-  padding: 20px;
-  border-right: 1px solid var(--surface-border);
-  background: var(--card);
-}
-
-.question-filter-title {
-  margin-bottom: 8px;
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 14px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.question-filter-title-row {
+/* Scope bar: track › grade › version reads as one path instead of three
+   separate filter blocks scattered around the screen. */
+.question-scope-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-}
-
-.track-create-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.question-filter-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 40px;
-  border-radius: var(--radius-garden);
+  flex-wrap: wrap;
+  gap: 12px;
   padding: 10px 12px;
+}
+
+.question-scope-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.question-scope-separator {
   color: var(--muted-foreground);
+  font-size: 15px;
+  user-select: none;
+}
+
+.scope-menu {
+  position: relative;
+}
+
+.scope-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-garden);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.scope-menu-trigger:hover,
+.scope-menu-trigger[aria-expanded="true"] {
+  border-color: var(--surface-border);
+  background: var(--muted);
+}
+
+.scope-menu-trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.scope-menu-trigger.icon-only {
+  padding: 0;
+  width: 34px;
+  justify-content: center;
+  color: var(--muted-foreground);
+}
+
+.scope-menu-trigger-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.scope-menu-trigger svg {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+
+.scope-menu-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  max-height: 60vh;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--card);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.scope-menu-popup.align-start {
+  left: 0;
+}
+
+.scope-menu-popup.align-end {
+  right: 0;
+}
+
+.scope-menu-popup form {
+  display: contents;
+}
+
+.scope-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--foreground);
   font-size: 14px;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
 }
 
-.track-filter-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px;
-  align-items: start;
+.scope-menu-item:hover {
+  background: var(--muted);
 }
 
-.question-filter-item.muted-track {
+.scope-menu-item.active {
+  background: var(--coin-blue-08);
+  color: var(--primary);
+}
+
+.scope-menu-item.muted-track {
   opacity: 0.62;
 }
 
-.question-filter-item:hover {
-  background: var(--muted);
-  color: var(--foreground);
+.scope-menu-item.destructive {
+  color: var(--destructive);
 }
 
-.question-filter-item.active {
-  background: var(--coin-blue-08);
-  color: var(--primary);
+.scope-menu-count {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scope-menu-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--surface-border);
 }
 
 .track-manage-trigger {
@@ -6601,6 +6829,54 @@ button {
     margin-top: 12px;
   }
 
+  /* The sidebar is a horizontal bar here, so collapsing it makes no sense:
+     drop the toggle and undo every collapsed-state rule. */
+  .admin-shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar-toggle {
+    display: none;
+  }
+
+  .sidebar-collapsed .admin-nav-label,
+  .sidebar-collapsed .admin-sidebar-brand-text,
+  .sidebar-collapsed .admin-user-card-info,
+  .sidebar-collapsed .admin-logout-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip-path: none;
+  }
+
+  .sidebar-collapsed .admin-sidebar {
+    padding: 24px 16px;
+    gap: 16px;
+  }
+
+  .sidebar-collapsed .admin-sidebar-head {
+    flex-direction: row;
+  }
+
+  .sidebar-collapsed .admin-sidebar-brand {
+    justify-content: flex-start;
+    padding: 4px 8px;
+  }
+
+  .sidebar-collapsed .admin-nav-item {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+  }
+
+  .sidebar-collapsed .admin-user-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+    justify-content: stretch;
+    padding: 8px;
+    background: var(--muted);
+  }
+
   .admin-content > .page {
     width: min(100% - 32px, 1180px);
   }
@@ -6625,14 +6901,22 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .question-filter-rail {
-    border-right: 0;
-    border-bottom: 1px solid var(--surface-border);
+  .question-scope-bar {
+    align-items: stretch;
+  }
+
+  .scope-menu-popup {
+    min-width: 180px;
   }
 
   .auth-brand-panel {
     min-height: 420px;
     padding: 32px;
+  }
+
+  .auth-stats div {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .auth-form-panel {
@@ -6888,7 +7172,7 @@ button {
 /* Track expanded body */
 .track-card-body {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr;
   gap: 0;
 }
 
@@ -6896,9 +7180,26 @@ button {
   padding: 20px;
 }
 
+.track-grades-panel {
+  padding: 20px;
+  border-left: 1px solid var(--surface-border);
+}
+
 .track-masters-panel {
   padding: 20px;
   border-left: 1px solid var(--surface-border);
+}
+
+/* Grade row */
+.grade-row {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 64px 40px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
 }
 
 .track-panel-header {
@@ -7075,6 +7376,58 @@ button {
   width: min(480px, calc(100vw - 32px));
   max-height: min(720px, calc(100dvh - 32px));
   overflow: auto;
+}
+
+.question-import-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 32px));
+  overflow: auto;
+}
+
+.question-import-spec {
+  max-height: 320px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-garden);
+  background: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Numbered steps: copy the prompt, then upload what the LLM produced. */
+.import-step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.import-step-number {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--coin-blue-08);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.import-step-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.import-step-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .wave-modal-header {

@@ -3,6 +3,10 @@
     "brand": "Click Assessment",
     "tagline": "Never gonna give you up",
     "navLabel": "Admin navigatsiyasi",
+    "sidebar": {
+      "collapse": "Menyuni yig'ish",
+      "expand": "Menyuni ochish"
+    },
     "nav": {
       "overview": "Umumiy",
       "interns": "Stajyorlar",
@@ -122,7 +126,7 @@
     "table": {
       "intern": "Stajyor",
       "access": "Ruxsat",
-      "testStatus": "Test holati",
+      "testStatus": "Sessiya holati",
       "wave": "Oqim",
       "track": "Trek",
       "latestAttempt": "Oxirgi urinish",
@@ -160,6 +164,10 @@
       "invitationDescription": "Profilsiz nomzod va ushbu qatordagi tokenlar o‘chiriladi.",
       "confirm": "Stajyor o‘chirilsinmi? Amalni ortga qaytarib bo‘lmaydi.",
       "action": "Stajyorni o‘chirish"
+    },
+    "toast": {
+      "title": "Stajyor o‘chirildi",
+      "description": "Profil va unga bog‘langan tokenlar muvaffaqiyatli o‘chirildi."
     }
   },
   "AdminOverview": {
@@ -283,7 +291,6 @@
       "description": "Yangi yozuv savollar bankida darhol ko‘rinadi."
     },
     "tracks": {
-      "title": "Treklar",
       "all": "Barcha treklar",
       "newTrackAria": "Yangi trek nomi",
       "newTrackPlaceholder": "Yangi trek",

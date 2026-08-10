@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPercent } from "@/lib/utils";
 import { TrackManageModal } from "@/components/admin/track-manage-modal";
 import { WaveManageModal } from "@/components/admin/wave-manage-modal";
+import { GradeManageModal } from "@/components/admin/grade-manage-modal";
 import { MasterAddModal } from "@/components/admin/master-add-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,12 +96,47 @@ export default async function AdminTracksPage({
   const allTracks = await prisma.track.findMany({
     where: manageableTrackIds ? { id: { in: manageableTrackIds } } : undefined,
     orderBy: [{ order: "asc" }, { name: "asc" }],
-    include: {
-      waves: { orderBy: [{ order: "asc" }, { name: "asc" }] },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      isActive: true,
+      order: true,
+      waves: {
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          isActive: true,
+          order: true,
+        },
+      },
+      grades: {
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          isActive: true,
+          order: true,
+          _count: { select: { versions: true } },
+        },
+      },
       members: {
         where: { role: "TRACK_MASTER" },
-        include: { profile: true },
         orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          profileId: true,
+          profile: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       },
     },
   });
@@ -116,84 +152,178 @@ export default async function AdminTracksPage({
     return matchesQuery && matchesStatus;
   });
 
+  const trackIds = allTracks.map((track) => track.id);
+  const waveIds = allTracks.flatMap((track) =>
+    track.waves.map((wave) => wave.id),
+  );
+  const gradeIds = allTracks.flatMap((track) =>
+    track.grades.map((grade) => grade.id),
+  );
+  const [
+    questionCounts,
+    activeQuestionCounts,
+    internCounts,
+    invitationCounts,
+    attemptCounts,
+    completedAttemptStats,
+    waveInternCounts,
+    waveAttemptCounts,
+    waveCompletedAttemptStats,
+    gradeInternCounts,
+    gradeQuestionCounts,
+  ] = await Promise.all([
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.question.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds }, isActive: true },
+      _count: { _all: true },
+    }),
+    prisma.internProfile.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.invitation.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["trackId"],
+      where: { trackId: { in: trackIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["trackId"],
+      where: {
+        trackId: { in: trackIds },
+        status: { not: "IN_PROGRESS" },
+        scorePercent: { not: null },
+      },
+      _count: { _all: true },
+      _avg: { scorePercent: true },
+    }),
+    prisma.internProfile.groupBy({
+      by: ["waveId"],
+      where: { waveId: { in: waveIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["waveId"],
+      where: { waveId: { in: waveIds } },
+      _count: { _all: true },
+    }),
+    prisma.assessmentAttempt.groupBy({
+      by: ["waveId"],
+      where: {
+        waveId: { in: waveIds },
+        status: { not: "IN_PROGRESS" },
+        scorePercent: { not: null },
+      },
+      _count: { _all: true },
+      _avg: { scorePercent: true },
+    }),
+    prisma.internProfile.groupBy({
+      by: ["gradeId"],
+      where: { gradeId: { in: gradeIds } },
+      _count: { _all: true },
+    }),
+    prisma.question.groupBy({
+      by: ["gradeId"],
+      where: { gradeId: { in: gradeIds } },
+      _count: { _all: true },
+    }),
+  ]);
+  const countByTrack = (items: typeof questionCounts) =>
+    new Map(
+      items
+        .filter((item) => item.trackId)
+        .map((item) => [item.trackId as string, item._count._all]),
+    );
+  const questionCountByTrack = countByTrack(questionCounts);
+  const activeQuestionCountByTrack = countByTrack(activeQuestionCounts);
+  const internCountByTrack = countByTrack(internCounts);
+  const invitationCountByTrack = countByTrack(invitationCounts);
+  const attemptCountByTrack = countByTrack(attemptCounts);
+  const completedStatsByTrack = new Map(
+    completedAttemptStats
+      .filter((item) => item.trackId)
+      .map((item) => [
+        item.trackId as string,
+        {
+          completedCount: item._count._all,
+          avgScore: item._avg.scorePercent,
+        },
+      ]),
+  );
+  const waveInternCountByWave = new Map(
+    waveInternCounts
+      .filter((item) => item.waveId)
+      .map((item) => [item.waveId as string, item._count._all]),
+  );
+  const waveAttemptCountByWave = new Map(
+    waveAttemptCounts
+      .filter((item) => item.waveId)
+      .map((item) => [item.waveId as string, item._count._all]),
+  );
+  const waveCompletedStatsByWave = new Map(
+    waveCompletedAttemptStats
+      .filter((item) => item.waveId)
+      .map((item) => [
+        item.waveId as string,
+        {
+          avgScore: item._avg.scorePercent,
+        },
+      ]),
+  );
+  const gradeInternCountByGrade = new Map(
+    gradeInternCounts
+      .filter((item) => item.gradeId)
+      .map((item) => [item.gradeId as string, item._count._all]),
+  );
+  const gradeQuestionCountByGrade = new Map(
+    gradeQuestionCounts
+      .filter((item) => item.gradeId)
+      .map((item) => [item.gradeId as string, item._count._all]),
+  );
   const statsMap = new Map(
-    await Promise.all(
-      allTracks.map(async (track) => {
-        const [
-          questionCount,
-          activeQuestionCount,
-          internCount,
-          invitationCount,
-          attemptCount,
-          completedAttempts,
-          waveStats,
-        ] = await Promise.all([
-          prisma.question.count({ where: { trackId: track.id } }),
-          prisma.question.count({ where: { trackId: track.id, isActive: true } }),
-          prisma.internProfile.count({ where: { trackId: track.id } }),
-          prisma.invitation.count({ where: { trackId: track.id } }),
-          prisma.assessmentAttempt.count({ where: { trackId: track.id } }),
-          prisma.assessmentAttempt.findMany({
-            where: {
-              trackId: track.id,
-              status: { not: "IN_PROGRESS" },
-              scorePercent: { not: null },
+    allTracks.map((track) => [
+      track.id,
+      {
+        questionCount: questionCountByTrack.get(track.id) ?? 0,
+        activeQuestionCount: activeQuestionCountByTrack.get(track.id) ?? 0,
+        internCount: internCountByTrack.get(track.id) ?? 0,
+        invitationCount: invitationCountByTrack.get(track.id) ?? 0,
+        attemptCount: attemptCountByTrack.get(track.id) ?? 0,
+        completedCount:
+          completedStatsByTrack.get(track.id)?.completedCount ?? 0,
+        avgScore: completedStatsByTrack.get(track.id)?.avgScore ?? null,
+        waveStats: new Map(
+          track.waves.map((wave) => [
+            wave.id,
+            {
+              interns: waveInternCountByWave.get(wave.id) ?? 0,
+              attempts: waveAttemptCountByWave.get(wave.id) ?? 0,
+              avgScore:
+                waveCompletedStatsByWave.get(wave.id)?.avgScore ?? null,
             },
-            select: { scorePercent: true },
-          }),
-          Promise.all(
-            track.waves.map(async (wave) => {
-              const [waveInterns, waveAttempts, waveCompleted] =
-                await Promise.all([
-                  prisma.internProfile.count({ where: { waveId: wave.id } }),
-                  prisma.assessmentAttempt.count({ where: { waveId: wave.id } }),
-                  prisma.assessmentAttempt.findMany({
-                    where: {
-                      waveId: wave.id,
-                      status: { not: "IN_PROGRESS" },
-                      scorePercent: { not: null },
-                    },
-                    select: { scorePercent: true },
-                  }),
-                ]);
-              const avgScore =
-                waveCompleted.length === 0
-                  ? null
-                  : waveCompleted.reduce(
-                      (sum, a) => sum + (a.scorePercent ?? 0),
-                      0,
-                    ) / waveCompleted.length;
-              return [
-                wave.id,
-                { interns: waveInterns, attempts: waveAttempts, avgScore },
-              ] as const;
-            }),
-          ),
-        ]);
-
-        const avgScore =
-          completedAttempts.length === 0
-            ? null
-            : completedAttempts.reduce(
-                (sum, a) => sum + (a.scorePercent ?? 0),
-                0,
-              ) / completedAttempts.length;
-
-        return [
-          track.id,
-          {
-            questionCount,
-            activeQuestionCount,
-            internCount,
-            invitationCount,
-            attemptCount,
-            completedCount: completedAttempts.length,
-            avgScore,
-            waveStats: new Map(waveStats),
-          },
-        ] as const;
-      }),
-    ),
+          ]),
+        ),
+        gradeStats: new Map(
+          track.grades.map((grade) => [
+            grade.id,
+            {
+              interns: gradeInternCountByGrade.get(grade.id) ?? 0,
+              questions: gradeQuestionCountByGrade.get(grade.id) ?? 0,
+            },
+          ]),
+        ),
+      },
+    ]),
   );
 
   const totals = Array.from(statsMap.values()).reduce(
@@ -582,6 +712,102 @@ export default async function AdminTracksPage({
                                   name: wave.name,
                                   order: wave.order,
                                   isActive: wave.isActive,
+                                }}
+                                canDelete={canDelete}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Grades */}
+                <div className="track-grades-panel">
+                  <div className="track-panel-header">
+                    <div className="track-panel-title">
+                      Грейды
+                      <span className="track-count-badge">
+                        {track.grades.length}
+                      </span>
+                    </div>
+                    <GradeManageModal mode="create" trackId={track.id} />
+                  </div>
+
+                  {track.grades.length === 0 ? (
+                    <div className="track-panel-empty">
+                      <div className="track-panel-empty-icon">
+                        <Layers3 size={16} />
+                      </div>
+                      <strong className="body-1">Грейды ещё не созданы</strong>
+                      <span className="body-2 muted">
+                        Разделите банк вопросов трека по уровням
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="stack-xs" style={{ gap: 8 }}>
+                      {track.grades.map((grade) => {
+                        const gs = item?.gradeStats.get(grade.id);
+                        const canDelete =
+                          (gs?.interns ?? 0) === 0 &&
+                          (gs?.questions ?? 0) === 0;
+                        return (
+                          <div className="grade-row" key={grade.id}>
+                            {/* Name + slug */}
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {grade.name}
+                              </div>
+                              <div
+                                className="body-2 muted"
+                                style={{
+                                  fontFamily: "ui-monospace, monospace",
+                                  fontSize: 11,
+                                }}
+                              >
+                                /{grade.slug} · {grade._count.versions}{" "}
+                                {pluralRu(
+                                  grade._count.versions,
+                                  "версия",
+                                  "версии",
+                                  "версий",
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                              <Badge
+                                variant={grade.isActive ? "success" : "muted"}
+                              >
+                                {grade.isActive ? "active" : "hidden"}
+                              </Badge>
+                            </div>
+
+                            {/* Interns */}
+                            <div className="wave-stat-cell">
+                              <strong>{gs?.interns ?? 0}</strong>
+                              <span>стажёров</span>
+                            </div>
+
+                            {/* Edit */}
+                            <div className="nav-row" style={{ justifyContent: "flex-end", gap: 4 }}>
+                              <GradeManageModal
+                                mode="edit"
+                                grade={{
+                                  id: grade.id,
+                                  name: grade.name,
+                                  order: grade.order,
+                                  isActive: grade.isActive,
                                 }}
                                 canDelete={canDelete}
                               />

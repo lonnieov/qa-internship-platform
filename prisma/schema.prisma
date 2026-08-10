@@ -66,12 +66,13 @@ model Profile {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  internProfile      InternProfile?
-  adminSessions      AdminSession[]
-  trackMemberships   TrackMember[]
-  createdInvitations Invitation[]   @relation("InvitationCreator")
-  acceptedInvitation Invitation?    @relation("InvitationAccepted")
-  createdQuestions   Question[]     @relation("QuestionCreator")
+  internProfile           InternProfile?
+  adminSessions           AdminSession[]
+  trackMemberships        TrackMember[]
+  createdInvitations      Invitation[]      @relation("InvitationCreator")
+  acceptedInvitation      Invitation?       @relation("InvitationAccepted")
+  createdQuestions        Question[]        @relation("QuestionCreator")
+  createdQuestionVersions QuestionVersion[] @relation("QuestionVersionCreator")
 }
 
 model AdminSession {
@@ -96,6 +97,7 @@ model InternProfile {
   invitationId String?  @unique
   trackId      String?
   waveId       String?
+  gradeId      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -103,10 +105,12 @@ model InternProfile {
   invitation Invitation?         @relation(fields: [invitationId], references: [id])
   track      Track?              @relation(fields: [trackId], references: [id], onDelete: SetNull)
   wave       Wave?               @relation(fields: [waveId], references: [id], onDelete: SetNull)
+  grade      Grade?              @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   attempts   AssessmentAttempt[]
 
   @@index([trackId])
   @@index([waveId])
+  @@index([gradeId])
 }
 
 model Invitation {
@@ -124,16 +128,19 @@ model Invitation {
   acceptedByProfileId String?          @unique
   trackId             String?
   waveId              String?
+  gradeId             String?
 
   createdBy         Profile        @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
   acceptedByProfile Profile?       @relation("InvitationAccepted", fields: [acceptedByProfileId], references: [id])
   track             Track?         @relation(fields: [trackId], references: [id], onDelete: SetNull)
   wave              Wave?          @relation(fields: [waveId], references: [id], onDelete: SetNull)
+  grade             Grade?         @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   internProfile     InternProfile?
 
   @@index([status])
   @@index([trackId])
   @@index([waveId])
+  @@index([gradeId])
 }
 
 model AssessmentSettings {
@@ -162,6 +169,7 @@ model Track {
 
   members     TrackMember[]
   waves       Wave[]
+  grades      Grade[]
   invitations Invitation[]
   interns     InternProfile[]
   settings    AssessmentSettings[]
@@ -208,11 +216,50 @@ model Wave {
   @@index([trackId, isActive, order])
 }
 
+model Grade {
+  id        String   @id @default(cuid())
+  trackId   String
+  slug      String
+  name      String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  track       Track               @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  versions    QuestionVersion[]
+  invitations Invitation[]
+  interns     InternProfile[]
+  attempts    AssessmentAttempt[]
+  questions   Question[]
+
+  @@unique([trackId, slug])
+  @@index([trackId, isActive, order])
+}
+
+model QuestionVersion {
+  id          String   @id @default(cuid())
+  gradeId     String
+  name        String
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+
+  grade     Grade      @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  createdBy Profile?   @relation("QuestionVersionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  questions Question[]
+
+  @@index([gradeId, isActive])
+}
+
 model Question {
   id          String       @id @default(cuid())
   type        QuestionType @default(QUIZ)
   track       String       @default("QA")
   trackId     String?
+  gradeId     String?
+  versionId   String?
   text        String
   textUz      String?
   explanation String?
@@ -225,6 +272,8 @@ model Question {
 
   createdBy Profile?           @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
   trackRef  Track?             @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  grade     Grade?             @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  version   QuestionVersion?   @relation(fields: [versionId], references: [id], onDelete: SetNull)
   options   QuestionOption[]
   answers   AssessmentAnswer[]
   events    TrackingEvent[]
@@ -232,6 +281,8 @@ model Question {
   @@index([isActive, order])
   @@index([track])
   @@index([trackId])
+  @@index([gradeId])
+  @@index([versionId])
 }
 
 model QuestionOption {
@@ -256,6 +307,7 @@ model AssessmentAttempt {
   internProfileId  String
   trackId          String?
   waveId           String?
+  gradeId          String?
   status           AttemptStatus @default(IN_PROGRESS)
   startedAt        DateTime      @default(now())
   submittedAt      DateTime?
@@ -270,12 +322,14 @@ model AssessmentAttempt {
   internProfile InternProfile      @relation(fields: [internProfileId], references: [id], onDelete: Cascade)
   track         Track?             @relation(fields: [trackId], references: [id], onDelete: SetNull)
   wave          Wave?              @relation(fields: [waveId], references: [id], onDelete: SetNull)
+  grade         Grade?             @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   answers       AssessmentAnswer[]
   events        TrackingEvent[]
 
   @@index([internProfileId, status])
   @@index([trackId])
   @@index([waveId])
+  @@index([gradeId])
   @@index([startedAt])
 }
 
@@ -294,25 +348,25 @@ model AssessmentAnswer {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question       Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  selectedOption QuestionOption?   @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
-  submissions   AssessmentAnswerSubmission[]
+  attempt        AssessmentAttempt            @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question                     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption?              @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+  submissions    AssessmentAnswerSubmission[]
 
   @@unique([attemptId, questionId])
   @@index([questionId])
 }
 
 model AssessmentAnswerSubmission {
-  id            String   @id @default(cuid())
-  answerId      String
+  id              String   @id @default(cuid())
+  answerId        String
   submissionIndex Int
-  kind          String
-  requestPayload Json?
+  kind            String
+  requestPayload  Json?
   responsePayload Json?
-  isCorrect     Boolean?
-  timeSpentMs   Int      @default(0)
-  submittedAt   DateTime @default(now())
+  isCorrect       Boolean?
+  timeSpentMs     Int      @default(0)
+  submittedAt     DateTime @default(now())
 
   answer AssessmentAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
 

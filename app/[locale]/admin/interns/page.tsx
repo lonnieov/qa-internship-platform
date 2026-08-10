@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/intern-candidate-table";
 import { InternSearchForm } from "@/components/admin/intern-search-form";
 import { InvitationCreateModal } from "@/components/admin/invitation-create-modal";
+import { InternDeletedToast } from "@/components/admin/intern-deleted-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ensureTracks } from "@/lib/tracks";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
@@ -50,7 +51,7 @@ export default async function AdminInternsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; deleted?: string }>;
 }) {
   const { locale: localeParam } = await params;
   const locale = isLocale(localeParam) ? localeParam : routing.defaultLocale;
@@ -58,7 +59,7 @@ export default async function AdminInternsPage({
   const profile = await requireAdminAccess({ locale });
   const manageableTrackIds = await getManageableTrackIds(profile);
   const trackWhere = manageableTrackIds ? { trackId: { in: manageableTrackIds } } : {};
-  const { q } = await searchParams;
+  const { q, deleted } = await searchParams;
   const internSearch = String(q ?? "").trim();
 
   await ensureTracks();
@@ -68,7 +69,18 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true, wave: true },
+      select: {
+        id: true,
+        candidateName: true,
+        inviteCodeMask: true,
+        inviteCodeEncrypted: true,
+        status: true,
+        expiresAt: true,
+        acceptedAt: true,
+        createdAt: true,
+        acceptedByProfileId: true,
+        wave: { select: { name: true } },
+      },
     }),
     prisma.internProfile.findMany({
       where: {
@@ -83,13 +95,24 @@ export default async function AdminInternsPage({
           : {}),
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        profile: true,
-        wave: true,
+      select: {
+        id: true,
+        profileId: true,
+        fullName: true,
+        invitationId: true,
+        trackId: true,
+        createdAt: true,
+        wave: { select: { name: true } },
         attempts: {
           orderBy: { startedAt: "desc" },
           take: 10,
-          include: {
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            submittedAt: true,
+            deadlineAt: true,
+            scorePercent: true,
             track: {
               select: { name: true },
             },
@@ -103,10 +126,18 @@ export default async function AdminInternsPage({
         ...(manageableTrackIds ? { id: { in: manageableTrackIds } } : {}),
       },
       orderBy: [{ order: "asc" }, { name: "asc" }],
-      include: {
+      select: {
+        id: true,
+        name: true,
         waves: {
           where: { isActive: true },
           orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        },
+        grades: {
+          where: { isActive: true },
+          orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
         },
       },
     }),
@@ -143,7 +174,18 @@ export default async function AdminInternsPage({
       where: trackWhere,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { acceptedByProfile: true, wave: true },
+      select: {
+        id: true,
+        candidateName: true,
+        inviteCodeMask: true,
+        inviteCodeEncrypted: true,
+        status: true,
+        expiresAt: true,
+        acceptedAt: true,
+        createdAt: true,
+        acceptedByProfileId: true,
+        wave: { select: { name: true } },
+      },
     });
   }
 
@@ -200,7 +242,7 @@ export default async function AdminInternsPage({
       badgeVariant: activeAttempt
         ? "warning"
         : latest?.status === "EXPIRED"
-          ? "danger"
+          ? "warning"
           : latest
             ? "success"
             : "default",
@@ -295,6 +337,7 @@ export default async function AdminInternsPage({
 
   return (
     <main className="page stack-lg admin-interns-page">
+      {deleted === "1" ? <InternDeletedToast /> : null}
       <div className="page-header">
         <div>
           <h1 className="head-1">{t("pageTitle")}</h1>
@@ -307,6 +350,7 @@ export default async function AdminInternsPage({
             id: track.id,
             name: track.name,
             waves: track.waves.map((wave) => ({ id: wave.id, name: wave.name })),
+            grades: track.grades.map((grade) => ({ id: grade.id, name: grade.name })),
           }))}
         />
       </div>

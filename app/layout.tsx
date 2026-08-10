@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HashRouteBridge } from "@/components/hash-route-bridge";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <HashRouteBridge />
         {children}
       </body>
     </html>

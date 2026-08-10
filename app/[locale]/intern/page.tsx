@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Clock3, HelpCircle } from "lucide-react";
-import { getSettings } from "@/lib/assessment";
+import { getSettings, internQuestionFilter } from "@/lib/assessment";
 import { requireIntern } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { InternStartPanel } from "@/components/intern/intern-start-panel";
@@ -19,19 +19,22 @@ export default async function InternHomePage({
   const t = await getTranslations("InternHome");
   const { locale } = await params;
   const profile = await requireIntern({ locale });
-  const [settings, activeQuestionCount, latestAttempt, inProgress, invitation] =
-    await Promise.all([
+  const [
+    settings,
+    activeQuestionCount,
+    latestAttempt,
+    inProgress,
+    invitation,
+    grade,
+    track,
+  ] = await Promise.all([
       getSettings({
         trackId: profile.internProfile.trackId,
         waveId: profile.internProfile.waveId,
       }),
+      // Same filter startAttempt uses, so the advertised count matches the test.
       prisma.question.count({
-        where: {
-          isActive: true,
-          ...(profile.internProfile.trackId
-            ? { trackId: profile.internProfile.trackId }
-            : {}),
-        },
+        where: internQuestionFilter(profile.internProfile),
       }),
       prisma.assessmentAttempt.findFirst({
         where: { internProfileId: profile.internProfile.id },
@@ -50,6 +53,18 @@ export default async function InternHomePage({
             select: { status: true },
           })
         : null,
+      profile.internProfile.gradeId
+        ? prisma.grade.findUnique({
+            where: { id: profile.internProfile.gradeId },
+            select: { name: true },
+          })
+        : null,
+      profile.internProfile.trackId
+        ? prisma.track.findUnique({
+            where: { id: profile.internProfile.trackId },
+            select: { name: true },
+          })
+        : null,
     ]);
   const currentInvitationStatus = invitation?.status;
 
@@ -60,6 +75,11 @@ export default async function InternHomePage({
   ) {
     redirect(`/${locale}/intern/finish?attempt=${latestAttempt.id}`);
   }
+
+  // Falls back to the generic role label when the intern predates tracks/grades.
+  const candidateScope =
+    [track?.name, grade?.name].filter(Boolean).join(" · ") ||
+    t("candidateRole");
 
   const initials = profile.internProfile.fullName
     .split(/\s+/)
@@ -94,7 +114,7 @@ export default async function InternHomePage({
           <div className="intern-avatar">{initials || "QA"}</div>
           <div>
             <InternName name={profile.internProfile.fullName} />
-            <span>{t("candidateRole")}</span>
+            <span>{candidateScope}</span>
           </div>
         </div>
       </section>

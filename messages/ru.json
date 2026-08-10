@@ -3,6 +3,10 @@
     "brand": "Click Assessment",
     "tagline": "Never gonna give you up",
     "navLabel": "Админ навигация",
+    "sidebar": {
+      "collapse": "Свернуть меню",
+      "expand": "Развернуть меню"
+    },
     "nav": {
       "overview": "Обзор",
       "interns": "Стажёры",
@@ -122,7 +126,7 @@
     "table": {
       "intern": "Стажёр",
       "access": "Доступ",
-      "testStatus": "Статус теста",
+      "testStatus": "Статус сессии",
       "wave": "Волна",
       "track": "Трек",
       "latestAttempt": "Последняя попытка",
@@ -160,6 +164,10 @@
       "invitationDescription": "Кандидат без профиля и токены этой строки будут удалены.",
       "confirm": "Удалить стажёра? Действие нельзя отменить.",
       "action": "Удалить стажёра"
+    },
+    "toast": {
+      "title": "Стажёр удалён",
+      "description": "Профиль и связанные токены были успешно удалены."
     }
   },
   "AdminOverview": {
@@ -283,7 +291,6 @@
       "description": "Новая запись уже доступна в банке вопросов."
     },
     "tracks": {
-      "title": "Треки",
       "all": "Все треки",
       "newTrackAria": "Название нового трека",
       "newTrackPlaceholder": "Новый трек",
