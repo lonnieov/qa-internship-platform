@@ -250,8 +250,6 @@ export function AdminShell({
               <small>{role === "TRACK_MASTER" ? "Track master" : "Admin"}</small>
             </div>
           </div>
-          <LanguageSwitcher />
-          <ThemeToggle variant={collapsed ? "icon" : "segmented"} />
           <form action={logoutAdminAction}>
             <input name="locale" type="hidden" value={locale} />
             <Button
@@ -267,6 +265,12 @@ export function AdminShell({
         </div>
       </aside>
       <div className="admin-content" onWheel={handleAdminContentWheel}>
+        <header className="topbar admin-topbar">
+          <div className="hero-actions">
+            <LanguageSwitcher />
+            <ThemeToggle variant="icon" />
+          </div>
+        </header>
         {children}
       </div>
     </div>

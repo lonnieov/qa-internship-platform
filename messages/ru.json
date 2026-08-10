@@ -17,19 +17,6 @@
     "fallbackAdmin": "Администратор",
     "logout": "Выйти"
   },
-  "SiteFooter": {
-    "brand": "QA Guild",
-    "description": "AI-студия, которая проектирует цифровые продукты на заказ: от прототипа до спокойного релиза.",
-    "contactsLabel": "Контакты правообладателей",
-    "ownerTitle": "Правообладатели",
-    "ownerName": "QA Guild",
-    "terms": "Использование платформы регулируется внутренними правилами QA Guild.",
-    "contactButton": "Связаться для сотрудничества",
-    "contactDialogTitle": "Контакты правообладателей",
-    "contactDialogDescription": "Напишите одному из создателей в Telegram.",
-    "closeContactDialog": "Закрыть контакты",
-    "copyright": "© {year} QA Guild. Все права защищены"
-  },
   "CompanyPage": {
     "eyebrow": "AI-студия цифровых продуктов",
     "title": "LAP inc.",
