@@ -16,3 +16,11 @@ debug: false
 remote-management:
   allow-remote: false
   secret-key: ""
+
+# Non-Claude-Code clients (i.e. this app) get cloaked as Claude Code CLI by
+# default ("auto"), which currently breaks claude-sonnet-4-5/haiku-4-5 with
+# "clear_thinking_20251015 strategy requires thinking to be enabled or
+# adaptive" on plain (non-thinking) chat completions. Disabling cloaking
+# trades away that disguise for working requests; revisit if upstream fixes
+# the cloak path for these models.
+disable-claude-cloak-mode: true

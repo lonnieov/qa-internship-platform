@@ -19,6 +19,7 @@ import { ensureTracks } from "@/lib/tracks";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
 import { getSqlSandboxConfig } from "@/lib/sql-sandbox-config";
+import { AiQuestionGenerator } from "@/components/admin/ai-question-generator";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
@@ -739,6 +740,13 @@ export default async function AdminQuestionsPage({
               <Badge variant="muted">{activeSection.items.length}</Badge>
             </div>
           </div>
+
+          {activeSection.type === "QUIZ" ? (
+            <details className="edit-question-panel">
+              <summary>{t("ai.title")}</summary>
+              <AiQuestionGenerator />
+            </details>
+          ) : null}
 
           {activeSection.items.length === 0 ? (
             <Card>
