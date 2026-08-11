@@ -37,11 +37,11 @@ services:
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET must be set to a long random value}
       INTERN_SESSION_SECRET: ${INTERN_SESSION_SECRET:?INTERN_SESSION_SECRET must be set to a long random value}
       INVITATION_TOKEN_ENCRYPTION_SECRET: ${INVITATION_TOKEN_ENCRYPTION_SECRET:?INVITATION_TOKEN_ENCRYPTION_SECRET must be set to a long random value}
-      # Optional: no AI feature reads these yet, so they're allowed to stay
-      # unset. When a feature needs the proxy, point it at the cli-proxy-api
-      # service below (started separately via the "ai" profile).
+      # Optional AI generation: the app uses only the CLIProxyAPI sidecar.
+      # Keep CLI_PROXY_API_KEY unset to disable AI features.
       CLI_PROXY_API_URL: ${CLI_PROXY_API_URL:-http://cli-proxy-api:8317/v1}
       CLI_PROXY_API_KEY: ${CLI_PROXY_API_KEY:-}
+      CLI_PROXY_MODEL: ${CLI_PROXY_MODEL:-gpt-5}
     ports:
       - "${APP_PORT:-3000}:3000"
 

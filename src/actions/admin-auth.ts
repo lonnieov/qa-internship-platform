@@ -44,11 +44,13 @@ export async function loginAdminAction(
   const profile = await prisma.profile.findFirst({
     where: {
       email,
-      role: { in: ["ADMIN", "TRACK_MASTER"] },
     },
   });
 
-  if (!profile || !verifyPassword(password, profile.passwordHash)) {
+  const canAdminSignIn =
+    profile?.role === "ADMIN" || profile?.role === "TRACK_MASTER";
+
+  if (!profile || !canAdminSignIn || !verifyPassword(password, profile.passwordHash)) {
     return { ok: false, message: "Неверный email или пароль." };
   }
 

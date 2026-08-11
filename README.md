@@ -9,7 +9,7 @@ Next.js App Router проект для ассессмента кандидато
 - Prisma 7 style client + `@prisma/adapter-pg`
 - PostgreSQL через `DATABASE_URL`
 - shadcn/ui-style компоненты и Coin design tokens
-- OpenAI Responses API для опциональных подсказок вопросов
+- CLIProxyAPI для опциональной AI-генерации вопросов
 
 ## Локальный запуск
 
@@ -81,14 +81,11 @@ npm run build:deploy
 
 ## AI-прокси (CLIProxyAPI)
 
-Опциональный сайдкар [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
-отдаёт OpenAI-совместимый API, backend которого может быть как обычный
-провайдерский API-ключ, так и OAuth-логин в существующую подписку
-(Claude Code / Codex CLI) — без отдельного платного API-ключа. Сейчас в
-проекте нет фич, которые его используют — инфраструктура подготовлена
-заранее через [`src/lib/ai-client.ts`](src/lib/ai-client.ts:1), который
-предпочитает прокси и молча падает обратно на прямой `OPENAI_API_KEY`, если
-прокси не настроен.
+Опциональная AI-генерация вопросов работает только через сайдкар
+[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI). Он отдаёт
+OpenAI-compatible API, а backend может быть OAuth-логином в существующую
+подписку Claude Code / Codex CLI / Antigravity. Прямой provider API key path в
+приложении не используется.
 
 Сервис не стартует при обычном `docker compose up` — только явно:
 
@@ -97,10 +94,10 @@ docker compose --profile ai up -d
 ```
 
 Перед первым запуском задайте в `.env` длинный случайный `CLI_PROXY_API_KEY`
-(один и тот же для сайдкара и для приложения — им приложение будет
-аутентифицироваться перед прокси). Затем один раз выполните OAuth-логин в
-нужную подписку — токен сохранится в volume `cli-proxy-auth` и переживёт
-рестарты контейнера:
+(один и тот же для сайдкара и для приложения), `CLI_PROXY_API_URL` и при
+необходимости `CLI_PROXY_MODEL`. Затем один раз выполните OAuth-логин в нужную
+подписку — токен сохранится в volume `cli-proxy-auth` и переживёт рестарты
+контейнера:
 
 ```bash
 docker compose --profile ai exec cli-proxy-api ./CLIProxyAPI --claude-login --no-browser

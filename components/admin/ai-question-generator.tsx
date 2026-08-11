@@ -25,7 +25,7 @@ export function AiQuestionGenerator() {
     setLoading(true);
     setMessage("");
 
-    const response = await fetch("/api/openai/questions", {
+    const response = await fetch("/api/ai/questions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic }),

@@ -95,7 +95,7 @@ const NODES: Node[] = [
 
   // EXTERNAL
   { id: "ext_pg", label: "PostgreSQL", sub: "Prisma ORM", col: 5, row: 4.2, cat: "external" },
-  { id: "ext_openai", label: "OpenAI API", sub: "опционально", col: 5, row: 2, cat: "external" },
+  { id: "ext_ai_proxy", label: "CLIProxyAPI", sub: "AI sidecar", col: 5, row: 2, cat: "external" },
 ];
 
 // ─── Edges ───────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ const EDGES: Edge[] = [
   { id: "e09", from: "p_interns", to: "auth_req_adm", step: 2 },
   { id: "e10", from: "auth_req_adm", to: "act_create_inv", step: 3 },
   { id: "e11", from: "act_create_inv", to: "db_inv", step: 4 },
-  { id: "e11b", from: "ext_openai", to: "act_create_inv" },
+  { id: "e11b", from: "ext_ai_proxy", to: "act_create_inv" },
 
   // Settings
   { id: "e12", from: "a_admin", to: "p_settings", step: 1 },
