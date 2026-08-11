@@ -1,0 +1,18 @@
+# Base config for the CLIProxyAPI sidecar. The entrypoint script appends the
+# `api-keys` section at container start, filled in from CLI_PROXY_API_KEY.
+# See https://github.com/router-for-me/CLIProxyAPI for the full config schema.
+
+host: ""
+port: 8317
+
+# OAuth token files (Claude/Codex/Antigravity logins) live here. Backed by the
+# cli-proxy-auth named volume so a one-time login survives container restarts.
+auth-dir: "/root/.cli-proxy-api"
+
+debug: false
+
+# Local-only by default. Set MANAGEMENT_PASSWORD to enable the management
+# panel/API (the server reads that env var directly, no template edit needed).
+remote-management:
+  allow-remote: false
+  secret-key: ""

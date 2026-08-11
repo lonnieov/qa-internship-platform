@@ -37,8 +37,43 @@ services:
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET must be set to a long random value}
       INTERN_SESSION_SECRET: ${INTERN_SESSION_SECRET:?INTERN_SESSION_SECRET must be set to a long random value}
       INVITATION_TOKEN_ENCRYPTION_SECRET: ${INVITATION_TOKEN_ENCRYPTION_SECRET:?INVITATION_TOKEN_ENCRYPTION_SECRET must be set to a long random value}
+      # Optional: no AI feature reads these yet, so they're allowed to stay
+      # unset. When a feature needs the proxy, point it at the cli-proxy-api
+      # service below (started separately via the "ai" profile).
+      CLI_PROXY_API_URL: ${CLI_PROXY_API_URL:-http://cli-proxy-api:8317/v1}
+      CLI_PROXY_API_KEY: ${CLI_PROXY_API_KEY:-}
     ports:
       - "${APP_PORT:-3000}:3000"
 
+  # AI proxy sidecar (https://github.com/router-for-me/CLIProxyAPI). Exposes an
+  # OpenAI/Claude/Gemini-compatible API backed by whatever provider credentials
+  # it's configured with, including OAuth logins into an existing Claude
+  # Code / Codex CLI subscription instead of a paid API key. Opt-in — it does
+  # not start with a plain `docker compose up`:
+  #   docker compose --profile ai up -d
+  # After the first start, do the one-time OAuth login (see README):
+  #   docker compose --profile ai exec cli-proxy-api ./CLIProxyAPI --claude-login --no-browser
+  cli-proxy-api:
+    image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:latest}
+    container_name: cli-proxy-api
+    restart: unless-stopped
+    profiles: ["ai"]
+    entrypoint: ["/entrypoint.sh"]
+    environment:
+      # No default on purpose: this key gates every request sent through the
+      # proxy, so the sidecar refuses to start without a real secret.
+      CLI_PROXY_API_KEY: ${CLI_PROXY_API_KEY:?CLI_PROXY_API_KEY must be set to a long random value}
+      # Optional: set to enable the bundled web management panel.
+      MANAGEMENT_PASSWORD: ${CLI_PROXY_MANAGEMENT_PASSWORD:-}
+    volumes:
+      - ./docker/cli-proxy-api/config.base.yaml:/CLIProxyAPI/config.base.yaml:ro
+      - ./docker/cli-proxy-api/entrypoint.sh:/entrypoint.sh:ro
+      - cli-proxy-auth:/root/.cli-proxy-api
+    ports:
+      # Loopback-only: the app reaches it over the compose network; local
+      # access is for the one-time OAuth login and the management panel.
+      - "127.0.0.1:${CLI_PROXY_PORT:-8317}:8317"
+
 volumes:
   postgres-data:
+  cli-proxy-auth:
