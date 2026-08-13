@@ -19,7 +19,6 @@ import { ensureTracks } from "@/lib/tracks";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
 import { getSqlSandboxConfig } from "@/lib/sql-sandbox-config";
-import { AiQuestionGenerator } from "@/components/admin/ai-question-generator";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
@@ -53,11 +52,11 @@ async function getQuestions({
 }) {
   return prisma.question.findMany({
     where: selectedVersionId
-      ? { versionId: selectedVersionId }
+      ? { OR: [{ versionId: selectedVersionId }, { isGlobal: true }] }
       : selectedTrackId
-        ? { trackId: selectedTrackId }
+        ? { OR: [{ trackId: selectedTrackId }, { isGlobal: true }] }
         : trackIds
-          ? { trackId: { in: trackIds } }
+          ? { OR: [{ trackId: { in: trackIds } }, { isGlobal: true }] }
           : undefined,
     orderBy: [
       { isActive: "desc" },
@@ -71,6 +70,7 @@ async function getQuestions({
       type: true,
       track: true,
       trackId: true,
+      isGlobal: true,
       gradeId: true,
       versionId: true,
       text: true,
@@ -189,6 +189,7 @@ function renderQuestionCard(
   indexLabel: string,
   tracks: TrackSummary[],
   t: Awaited<ReturnType<typeof getTranslations>>,
+  allowGlobalTrack: boolean,
 ) {
   const summary = apiSummary(question);
   const manualQaConfig = getManualQaSandboxConfig(question.apiConfig);
@@ -200,6 +201,9 @@ function renderQuestionCard(
       <div className="stack">
         <div className="nav-row">
           <span className="type-chip">{typeLabel(question.type, t)}</span>
+          {question.isGlobal ? (
+            <Badge variant="muted">{t("tracks.all")}</Badge>
+          ) : null}
           <Badge variant={question.isActive ? "success" : "muted"}>
             {question.isActive ? t("status.active") : t("status.hidden")}
           </Badge>
@@ -318,6 +322,7 @@ function renderQuestionCard(
             initialType={question.type}
             question={question}
             tracks={tracks}
+            allowGlobalTrack={allowGlobalTrack}
           />
         </details>
       </div>
@@ -425,7 +430,9 @@ export default async function AdminQuestionsPage({
     }),
     prisma.question.groupBy({
       by: ["trackId"],
-      where: manageableTrackIds ? { trackId: { in: manageableTrackIds } } : undefined,
+      where: manageableTrackIds
+        ? { OR: [{ trackId: { in: manageableTrackIds } }, { isGlobal: true }] }
+        : undefined,
       _count: { _all: true },
     }),
   ]);
@@ -479,15 +486,18 @@ export default async function AdminQuestionsPage({
   const activeMeta = sectionMeta(activeSection.type, t);
   const allTypeCount = (type: QuestionType) =>
     filteredByTrack.filter((question) => question.type === type).length;
+  const globalQuestionCount =
+    questionCountsByTrack.find((item) => item.trackId === null)?._count
+      ._all ?? 0;
   const trackCounts = Object.fromEntries(
     tracks.map((track) => [
       track.id,
-      questionCountsByTrack.find((item) => item.trackId === track.id)?._count
-        ._all ?? 0,
+      (questionCountsByTrack.find((item) => item.trackId === track.id)
+        ?._count._all ?? 0) + globalQuestionCount,
     ]),
   ) as Record<string, number>;
-  const totalAccessibleQuestionCount = Object.values(trackCounts).reduce(
-    (sum, count) => sum + count,
+  const totalAccessibleQuestionCount = questionCountsByTrack.reduce(
+    (sum, item) => sum + item._count._all,
     0,
   );
   const tracksForForms = tracks.map((track) => ({
@@ -700,6 +710,7 @@ export default async function AdminQuestionsPage({
             initialGradeId={selectedGradeRecord?.id}
             initialVersionId={selectedVersionRecord?.id}
             tracks={tracksForForms}
+            allowGlobalTrack={profile.role === "ADMIN"}
           />
         </div>
       </section>
@@ -741,13 +752,6 @@ export default async function AdminQuestionsPage({
             </div>
           </div>
 
-          {activeSection.type === "QUIZ" ? (
-            <details className="edit-question-panel">
-              <summary>{t("ai.title")}</summary>
-              <AiQuestionGenerator />
-            </details>
-          ) : null}
-
           {activeSection.items.length === 0 ? (
             <Card>
               <CardContent className="p-6 muted">
@@ -765,6 +769,7 @@ export default async function AdminQuestionsPage({
                   `${index + 1}`,
                   tracksForForms,
                   t,
+                  profile.role === "ADMIN",
                 ),
               )}
             </SortableQuestionList>

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const topic = String(body.topic ?? "QA теория для стажёров").slice(0, 200);
+  const topic = String(body.topic ?? "QA теория для стажёров").slice(0, 500);
 
   const response = await client.chat.completions.create({
     model: getAIModel(),
@@ -45,10 +45,18 @@ export async function POST(request: Request) {
       },
       {
         role: "user",
-        content: `Сгенерируй 3 простых однозначных вопроса закрытого типа для ассессмента QA стажёров по теме: ${topic}.
+        content: `Сгенерируй вопросы для ассессмента QA стажёров по следующей инструкции: ${topic}.
+Строго соблюдай запрошенное количество вопросов и соотношение открытых/закрытых, если оно указано. Если инструкция не задаёт количество или тип, сгенерируй 3 простых однозначных вопроса закрытого типа.
+
 Верни только JSON без markdown:
-{"questions":[{"text":"...","options":["...","...","...","..."],"correctIndex":0}]}
-У каждого вопроса должно быть ровно 4 варианта и один правильный индекс 0-3.`,
+{"questions":[
+  {"type":"closed","text":"...","options":["...","...","...","..."],"correctIndex":0},
+  {"type":"open","text":"...","answer":"..."}
+]}
+Правила:
+- "type" — "closed" (вопрос с вариантами ответа) или "open" (вопрос со свободным ответом).
+- Для "closed": ровно 4 варианта в "options" и один правильный индекс 0-3 в "correctIndex".
+- Для "open": не добавляй "options" и "correctIndex" — вместо них короткий эталонный ответ в поле "answer".`,
       },
     ],
   });

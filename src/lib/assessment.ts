@@ -10,13 +10,15 @@ export function internQuestionFilter(internProfile: {
   gradeId: string | null;
   trackId: string | null;
 }) {
+  const scopeFilter = internProfile.gradeId
+    ? { gradeId: internProfile.gradeId, version: { isActive: true } }
+    : internProfile.trackId
+      ? { trackId: internProfile.trackId }
+      : {};
+
   return {
     isActive: true,
-    ...(internProfile.gradeId
-      ? { gradeId: internProfile.gradeId, version: { isActive: true } }
-      : internProfile.trackId
-        ? { trackId: internProfile.trackId }
-        : {}),
+    OR: [scopeFilter, { isGlobal: true }],
   };
 }
 

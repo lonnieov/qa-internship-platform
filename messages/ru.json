@@ -312,7 +312,9 @@
       "generate": "Сгенерировать варианты",
       "defaultTopic": "QA теория для стажёров",
       "error": "Не удалось получить предложения.",
-      "correctSuffix": "— верный"
+      "correctSuffix": "— верный",
+      "openAnswerLabel": "Эталонный ответ",
+      "useSuggestion": "Добавить в форму"
     }
   },
   "AdminAttemptReport": {
@@ -374,6 +376,7 @@
     },
     "questionType": "Тип вопроса",
     "classification": "Классификация",
+    "allTracks": "Все треки",
     "createTrackFirst": "Создайте активный трек перед добавлением вопроса.",
     "languages": {
       "label": "Язык вопроса",

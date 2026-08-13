@@ -3,6 +3,7 @@
 import { type FormEvent, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createQuestionAction, updateQuestionAction } from "@/actions/admin";
+import type { AiQuestionSuggestion } from "@/components/admin/ai-question-generator";
 import { JsonEditor } from "@/components/admin/json-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  ALL_TRACKS_VALUE,
   getQuestionTrackMeta,
   getTrackDisplayName,
   type TrackSummary,
@@ -47,6 +49,7 @@ type EditableQuestion = {
   type: QuestionType;
   track: string;
   trackId: string | null;
+  isGlobal: boolean;
   gradeId: string | null;
   versionId: string | null;
   trackRef: { id: string; slug: string; name: string } | null;
@@ -119,6 +122,9 @@ export function QuestionForm({
   lockType = false,
   showTitle = true,
   question,
+  allowGlobalTrack = false,
+  aiSuggestion = null,
+  aiSuggestionKey = 0,
 }: {
   initialType: QuestionType;
   initialTrackId?: string;
@@ -129,6 +135,9 @@ export function QuestionForm({
   lockType?: boolean;
   showTitle?: boolean;
   question?: EditableQuestion;
+  allowGlobalTrack?: boolean;
+  aiSuggestion?: AiQuestionSuggestion | null;
+  aiSuggestionKey?: number;
 }) {
   const t = useTranslations("AdminQuestionForm");
   const locale = useLocale();
@@ -136,7 +145,13 @@ export function QuestionForm({
     question?.type ?? initialType,
   );
   const [draftQuizMode, setDraftQuizMode] = useState<"CHOICE" | "OPEN_TEXT">(
-    getOpenQuizConfig(question?.apiConfig) ? "OPEN_TEXT" : "CHOICE",
+    aiSuggestion
+      ? aiSuggestion.type === "open"
+        ? "OPEN_TEXT"
+        : "CHOICE"
+      : getOpenQuizConfig(question?.apiConfig)
+        ? "OPEN_TEXT"
+        : "CHOICE",
   );
   const [activeLanguage, setActiveLanguage] =
     useState<QuestionLanguage>("ru");
@@ -150,10 +165,28 @@ export function QuestionForm({
     : activeTracks;
   const fallbackTrack = selectableTracks[0] ?? tracks[0];
   const [draftTrackId, setDraftTrackId] = useState(
-    question?.trackRef?.id ?? initialTrackId ?? fallbackTrack?.id ?? "",
+    question?.isGlobal
+      ? ALL_TRACKS_VALUE
+      : (question?.trackRef?.id ??
+          initialTrackId ??
+          (allowGlobalTrack ? ALL_TRACKS_VALUE : (fallbackTrack?.id ?? ""))),
   );
+  const isGlobalDraft = draftTrackId === ALL_TRACKS_VALUE;
   const draftTrack =
     tracks.find((track) => track.id === draftTrackId) ?? fallbackTrack;
+
+  // A newly picked AI suggestion should immediately populate the QUIZ fields
+  // below, even though this form otherwise treats them as one-time initial
+  // state. Adjust during render (React's documented pattern for reacting to a
+  // prop change) instead of an effect, so it lands before the browser paints.
+  const [syncedAiSuggestionKey, setSyncedAiSuggestionKey] =
+    useState(aiSuggestionKey);
+  if (aiSuggestion && aiSuggestionKey !== syncedAiSuggestionKey) {
+    setSyncedAiSuggestionKey(aiSuggestionKey);
+    setDraftType("QUIZ");
+    setDraftQuizMode(aiSuggestion.type === "open" ? "OPEN_TEXT" : "CHOICE");
+    setActiveLanguage("ru");
+  }
   const questionType = question?.type ?? draftType;
   const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
   const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
@@ -206,13 +239,15 @@ export function QuestionForm({
             ? t("fields.autotestMission")
             : t("fields.apiMission");
   const defaultQuestionTextRu =
-    questionType === "MANUAL_QA_SANDBOX" &&
-    draftManualQaPresetId !== initialManualQaConfig.appPreset
-      ? manualQaConfig.mission
-      : questionType === "AUTOTEST_SANDBOX" &&
-          draftAutotestPresetId !== initialAutotestConfig.appPreset
-        ? autotestConfig.mission
-        : (question?.text ??
+    questionType === "QUIZ" && aiSuggestion
+      ? aiSuggestion.text
+      : questionType === "MANUAL_QA_SANDBOX" &&
+          draftManualQaPresetId !== initialManualQaConfig.appPreset
+        ? manualQaConfig.mission
+        : questionType === "AUTOTEST_SANDBOX" &&
+            draftAutotestPresetId !== initialAutotestConfig.appPreset
+          ? autotestConfig.mission
+          : (question?.text ??
           (questionType === "QUIZ"
             ? t("defaults.quizPrompt")
             : questionType === "API_SANDBOX"
@@ -287,7 +322,10 @@ export function QuestionForm({
         type="hidden"
         name="track"
         value={
-          draftTrack?.name ?? (question ? getTrackDisplayName(question) : "QA")
+          isGlobalDraft
+            ? t("allTracks")
+            : (draftTrack?.name ??
+              (question ? getTrackDisplayName(question) : "QA"))
         }
       />
 
@@ -325,6 +363,17 @@ export function QuestionForm({
       <div className="form-grid">
         <Label>{t("classification")}</Label>
         <div className="question-form-choice-grid">
+          {allowGlobalTrack ? (
+            <label className="question-form-choice">
+              <input
+                checked={isGlobalDraft}
+                name="trackChoice"
+                onChange={() => setDraftTrackId(ALL_TRACKS_VALUE)}
+                type="radio"
+              />
+              {t("allTracks")}
+            </label>
+          ) : null}
           {selectableTracks.map((track) => {
             const meta = getQuestionTrackMeta(track);
             return (
@@ -345,7 +394,7 @@ export function QuestionForm({
             );
           })}
         </div>
-        {selectableTracks.length === 0 ? (
+        {selectableTracks.length === 0 && !allowGlobalTrack ? (
           <p className="body-2 muted m-0">
             {t("createTrackFirst")}
           </p>
@@ -387,7 +436,7 @@ export function QuestionForm({
         >
           <Textarea
             id="text"
-            key={`${questionType}-${manualQaConfig.appPreset}-ru`}
+            key={`${questionType}-${manualQaConfig.appPreset}-ru-${aiSuggestionKey}`}
             name="text"
             defaultValue={defaultQuestionTextRu}
             required={activeLanguage === "ru"}
@@ -469,8 +518,9 @@ export function QuestionForm({
                 <Label htmlFor="openExpectedAnswer">{t("open.answerKey")}</Label>
                 <Textarea
                   id="openExpectedAnswer"
+                  key={`open-answer-${aiSuggestionKey}`}
                   name="openExpectedAnswer"
-                  defaultValue={openQuizConfig?.expectedAnswer ?? ""}
+                  defaultValue={aiSuggestion?.answer ?? openQuizConfig?.expectedAnswer ?? ""}
                   placeholder={t("open.answerKeyPlaceholder")}
                 />
               </div>
@@ -501,7 +551,10 @@ export function QuestionForm({
                 const option = sortedOptions[index];
 
                 return (
-                  <div className="form-grid" key={option?.id ?? index}>
+                  <div
+                    className="form-grid"
+                    key={`${option?.id ?? index}-${aiSuggestionKey}`}
+                  >
                     {option ? (
                       <input
                         type="hidden"
@@ -520,6 +573,7 @@ export function QuestionForm({
                           name={`option-${index}`}
                           defaultValue={
                             option?.text ??
+                            aiSuggestion?.options?.[index] ??
                             [
                               t("defaults.choiceA"),
                               t("defaults.choiceB"),
@@ -547,7 +601,13 @@ export function QuestionForm({
                           name="correctOption"
                           type="radio"
                           value={index}
-                          defaultChecked={option?.isCorrect ?? index === 0}
+                          defaultChecked={
+                            option
+                              ? option.isCorrect
+                              : aiSuggestion
+                                ? index === aiSuggestion.correctIndex
+                                : index === 0
+                          }
                         />
                         {t("choice.correct")}
                       </label>

@@ -8,16 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Suggestion = {
+export type AiQuestionSuggestion = {
+  type?: "closed" | "open";
   text: string;
-  options: string[];
-  correctIndex: number;
+  options?: string[];
+  correctIndex?: number;
+  answer?: string;
 };
 
-export function AiQuestionGenerator() {
+export function AiQuestionGenerator({
+  onPick,
+}: {
+  onPick?: (suggestion: AiQuestionSuggestion) => void;
+}) {
   const t = useTranslations("AdminQuestions");
   const [topic, setTopic] = useState(t("ai.defaultTopic"));
-  const [items, setItems] = useState<Suggestion[]>([]);
+  const [items, setItems] = useState<AiQuestionSuggestion[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,21 +68,43 @@ export function AiQuestionGenerator() {
         </Button>
         {message ? <p className="body-2 muted m-0">{message}</p> : null}
         <div className="stack">
-          {items.map((item, index) => (
-            <div className="soft-panel stack" key={`${item.text}-${index}`}>
-              <strong>{item.text}</strong>
-              <ol className="m-0 pl-5 body-2">
-                {item.options.map((option, optionIndex) => (
-                  <li key={option}>
-                    {option}
-                    {optionIndex === item.correctIndex
-                      ? ` ${t("ai.correctSuffix")}`
-                      : ""}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
+          {items.map((item, index) => {
+            const isOpen = item.type === "open" || !item.options?.length;
+
+            return (
+              <div className="soft-panel stack" key={`${item.text}-${index}`}>
+                <strong>{item.text}</strong>
+                {isOpen ? (
+                  item.answer ? (
+                    <p className="body-2 muted m-0">
+                      {t("ai.openAnswerLabel")}: {item.answer}
+                    </p>
+                  ) : null
+                ) : (
+                  <ol className="m-0 pl-5 body-2">
+                    {item.options!.map((option, optionIndex) => (
+                      <li key={option}>
+                        {option}
+                        {optionIndex === item.correctIndex
+                          ? ` ${t("ai.correctSuffix")}`
+                          : ""}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {onPick ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onPick(item)}
+                  >
+                    {t("ai.useSuggestion")}
+                  </Button>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

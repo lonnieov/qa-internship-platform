@@ -258,6 +258,11 @@ model Question {
   type        QuestionType @default(QUIZ)
   track       String       @default("QA")
   trackId     String?
+  // True means the question is intentionally scoped to every track (chosen via
+  // "Все треки" at creation), not merely a legacy row waiting to be backfilled
+  // by ensureTracks() — trackId stays null in both cases so this flag is what
+  // tells them apart.
+  isGlobal    Boolean      @default(false)
   gradeId     String?
   versionId   String?
   text        String
@@ -283,6 +288,7 @@ model Question {
   @@index([trackId])
   @@index([gradeId])
   @@index([versionId])
+  @@index([isGlobal])
 }
 
 model QuestionOption {

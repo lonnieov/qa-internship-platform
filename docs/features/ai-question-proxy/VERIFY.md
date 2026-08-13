@@ -22,6 +22,13 @@
 3. Generate questions as admin.
 4. Expected: `/api/ai/questions` returns JSON with `questions`.
 
+## Custom Count/Type Case
+
+1. Enter a topic that spells out the count and mix, e.g. `QA теория, 5 вопросов, 4 закрытых и 1 открытый`.
+2. Click generate.
+3. Expected: the response returns 5 questions matching that split — closed items carry `options`/`correctIndex`, open items carry `answer` instead.
+4. Expected: leaving the topic generic (no count/type) still yields 3 closed questions (the model's default).
+
 ## Negative Cases
 
 1. Unset `CLI_PROXY_API_KEY`.

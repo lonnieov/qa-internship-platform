@@ -312,7 +312,9 @@
       "generate": "Variantlarni generatsiya qilish",
       "defaultTopic": "Stajyorlar uchun QA nazariyasi",
       "error": "Takliflarni olib bo‘lmadi.",
-      "correctSuffix": "— to‘g‘ri"
+      "correctSuffix": "— to‘g‘ri",
+      "openAnswerLabel": "Namunaviy javob",
+      "useSuggestion": "Formaga qo‘shish"
     }
   },
   "AdminAttemptReport": {
@@ -374,6 +376,7 @@
     },
     "questionType": "Savol turi",
     "classification": "Tasnif",
+    "allTracks": "Barcha treklar",
     "createTrackFirst": "Savol qo‘shishdan oldin faol trek yarating.",
     "languages": {
       "label": "Savol tili",
