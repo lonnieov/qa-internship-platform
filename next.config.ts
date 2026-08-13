@@ -77,7 +77,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "@prisma/adapter-pg",
+    "pg",
+    "pdf-parse",
+    "mammoth",
+  ],
   poweredByHeader: false,
   turbopack: {
     root: process.cwd(),

@@ -309,6 +309,9 @@
     "ai": {
       "title": "AI-savol tavsiyalari",
       "topic": "Mavzu",
+      "vacancy": "Vakansiya tavsifi (ixtiyoriy)",
+      "vacancyPlaceholder": "Talablarni hisobga olish uchun vakansiya matnini joylashtiring",
+      "cv": "Nomzod rezyumesi, PDF yoki DOCX (ixtiyoriy)",
       "generate": "Variantlarni generatsiya qilish",
       "generating": "Savollar ustida o‘ylayapman",
       "defaultTopic": "Stajyorlar uchun QA nazariyasi",

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Paperclip, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export type AiQuestionSuggestion = {
   type?: "closed" | "open";
@@ -27,10 +28,18 @@ export function AiQuestionGenerator({
 }) {
   const t = useTranslations("AdminQuestions");
   const [topic, setTopic] = useState(t("ai.defaultTopic"));
+  const [vacancy, setVacancy] = useState("");
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<AiQuestionSuggestion[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [addAllLoading, setAddAllLoading] = useState(false);
+
+  function clearCvFile() {
+    setCvFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
   async function addAll() {
     if (!onAddAll || items.length === 0) return;
@@ -47,10 +56,14 @@ export function AiQuestionGenerator({
     setLoading(true);
     setMessage("");
 
+    const requestBody = new FormData();
+    requestBody.set("topic", topic);
+    if (vacancy.trim()) requestBody.set("vacancy", vacancy.trim());
+    if (cvFile) requestBody.set("cv", cvFile);
+
     const response = await fetch("/api/ai/questions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic }),
+      body: requestBody,
     });
 
     const data = await response.json();
@@ -77,6 +90,38 @@ export function AiQuestionGenerator({
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
           />
+        </div>
+        <div className="form-grid">
+          <Label htmlFor="vacancy">{t("ai.vacancy")}</Label>
+          <Textarea
+            id="vacancy"
+            value={vacancy}
+            onChange={(event) => setVacancy(event.target.value)}
+            placeholder={t("ai.vacancyPlaceholder")}
+          />
+        </div>
+        <div className="form-grid">
+          <Label htmlFor="cv">{t("ai.cv")}</Label>
+          <div className="nav-row">
+            <input
+              ref={fileInputRef}
+              id="cv"
+              className="input"
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
+            />
+            {cvFile ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearCvFile}>
+                <X size={16} />
+              </Button>
+            ) : null}
+          </div>
+          {cvFile ? (
+            <p className="body-2 muted m-0">
+              <Paperclip size={14} /> {cvFile.name}
+            </p>
+          ) : null}
         </div>
         <div className="nav-row">
           <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
