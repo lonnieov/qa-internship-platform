@@ -1,8 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
+import { createAiQuestionsAction } from "@/actions/admin";
 import {
   AiQuestionGenerator,
   type AiQuestionSuggestion,
@@ -10,7 +12,7 @@ import {
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
 import { NativeDialog } from "@/components/ui/native-dialog";
-import type { TrackSummary } from "@/lib/question-classification";
+import { ALL_TRACKS_VALUE, type TrackSummary } from "@/lib/question-classification";
 
 type QuestionType =
   | "QUIZ"
@@ -48,12 +50,25 @@ export function QuestionCreateModal({
   allowGlobalTrack?: boolean;
 }) {
   const t = useTranslations("AdminQuestions");
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AiQuestionSuggestion | null>(
     null,
   );
   const [aiSuggestionKey, setAiSuggestionKey] = useState(0);
   const titleId = useId();
+
+  async function handleAddAll(suggestions: AiQuestionSuggestion[]) {
+    const result = await createAiQuestionsAction(suggestions, {
+      trackId: initialTrackId ?? (allowGlobalTrack ? ALL_TRACKS_VALUE : ""),
+      gradeId: initialGradeId,
+      versionId: initialVersionId,
+    });
+
+    if (result.ok) router.refresh();
+
+    return result;
+  }
 
   return (
     <>
@@ -99,6 +114,7 @@ export function QuestionCreateModal({
                     setAiSuggestion(suggestion);
                     setAiSuggestionKey((key) => key + 1);
                   }}
+                  onAddAll={handleAddAll}
                 />
               </details>
             ) : null}

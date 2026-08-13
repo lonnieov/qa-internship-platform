@@ -18,14 +18,30 @@ export type AiQuestionSuggestion = {
 
 export function AiQuestionGenerator({
   onPick,
+  onAddAll,
 }: {
   onPick?: (suggestion: AiQuestionSuggestion) => void;
+  onAddAll?: (
+    suggestions: AiQuestionSuggestion[],
+  ) => Promise<{ ok: boolean; message: string }>;
 }) {
   const t = useTranslations("AdminQuestions");
   const [topic, setTopic] = useState(t("ai.defaultTopic"));
   const [items, setItems] = useState<AiQuestionSuggestion[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [addAllLoading, setAddAllLoading] = useState(false);
+
+  async function addAll() {
+    if (!onAddAll || items.length === 0) return;
+    setAddAllLoading(true);
+    setMessage("");
+
+    const result = await onAddAll(items);
+    setAddAllLoading(false);
+    setMessage(result.message);
+    if (result.ok) setItems([]);
+  }
 
   async function generate() {
     setLoading(true);
@@ -62,14 +78,29 @@ export function AiQuestionGenerator({
             onChange={(event) => setTopic(event.target.value)}
           />
         </div>
-        <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
-          {loading ? (
-            <Loader2 size={18} className="ai-thinking-icon" />
-          ) : (
-            <Sparkles size={18} />
-          )}
-          {t("ai.generate")}
-        </Button>
+        <div className="nav-row">
+          <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
+            {loading ? (
+              <Loader2 size={18} className="ai-thinking-icon" />
+            ) : (
+              <Sparkles size={18} />
+            )}
+            {t("ai.generate")}
+          </Button>
+          {onAddAll && items.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={addAll}
+              disabled={addAllLoading || loading}
+            >
+              {addAllLoading ? (
+                <Loader2 size={18} className="ai-thinking-icon" />
+              ) : null}
+              {t("ai.addAll")}
+            </Button>
+          ) : null}
+        </div>
         {loading ? (
           <div className="ai-thinking body-2">
             <Loader2 size={16} className="ai-thinking-icon" />

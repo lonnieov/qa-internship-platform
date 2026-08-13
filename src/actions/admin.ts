@@ -576,6 +576,163 @@ export async function updateSettingsAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export type CreateAiQuestionsResult = {
+  ok: boolean;
+  message: string;
+  createdCount?: number;
+  skippedCount?: number;
+};
+
+type AiQuestionSuggestionInput = {
+  type?: "closed" | "open";
+  text?: string;
+  options?: string[];
+  correctIndex?: number;
+  answer?: string;
+};
+
+// Bulk-creates every AI suggestion the admin didn't bother reviewing one by
+// one (the "Добавить всё" fast path). Reuses the same track/grade/version
+// resolution and permission checks as the manual single-question form so an
+// "all tracks" scope or a restricted TRACK_MASTER track behaves identically.
+export async function createAiQuestionsAction(
+  suggestions: AiQuestionSuggestionInput[],
+  scope: { trackId: string; gradeId?: string; versionId?: string },
+  locale?: string,
+): Promise<CreateAiQuestionsResult> {
+  const admin = await requireAdminAccess({ locale });
+
+  const trackFormData = new FormData();
+  trackFormData.set("trackId", scope.trackId ?? "");
+  const track = await resolveQuestionTrack(trackFormData);
+  await ensureCanManageTrack(admin, track.trackId, locale, track.isGlobal);
+
+  if (!isQuestionTypeAllowedForTrack("QUIZ", track.trackSlug)) {
+    return {
+      ok: false,
+      message: "Добавление Quiz-вопросов недоступно для этого трека.",
+    };
+  }
+
+  const gradeFormData = new FormData();
+  gradeFormData.set("gradeId", scope.gradeId ?? "");
+  gradeFormData.set("versionId", scope.versionId ?? "");
+  const gradeVersion = await resolveTrackGradeVersion(
+    gradeFormData,
+    track.trackId,
+  );
+
+  const prepared = (suggestions ?? [])
+    .map((suggestion) => {
+      const text = clampText(suggestion.text ?? "", MAX_TEXT_LENGTH);
+      if (!text) return null;
+
+      const isOpen =
+        suggestion.type === "open" ||
+        !Array.isArray(suggestion.options) ||
+        suggestion.options.filter((option) => option?.trim()).length < 2;
+
+      if (isOpen) {
+        const answer = String(suggestion.answer ?? "").trim();
+        return {
+          kind: "open" as const,
+          text,
+          apiConfig: {
+            mode: "OPEN_TEXT" as const,
+            ...(answer ? { expectedAnswer: answer.slice(0, MAX_TEXT_LENGTH) } : {}),
+          },
+        };
+      }
+
+      const options = suggestion
+        .options!.map((option) => String(option ?? "").trim())
+        .filter(Boolean)
+        .slice(0, 8);
+      const correctIndex = Number(suggestion.correctIndex);
+
+      if (
+        options.length < 2 ||
+        !Number.isInteger(correctIndex) ||
+        correctIndex < 0 ||
+        correctIndex >= options.length
+      ) {
+        return null;
+      }
+
+      return { kind: "closed" as const, text, options, correctIndex };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  if (prepared.length === 0) {
+    return { ok: false, message: "Нет валидных вопросов для добавления." };
+  }
+
+  const lastQuestion = await prisma.question.findFirst({
+    orderBy: { order: "desc" },
+  });
+  let nextOrder = lastQuestion?.order ?? 0;
+
+  await prisma.$transaction(
+    prepared.map((item) => {
+      nextOrder += 1;
+      const order = nextOrder;
+
+      if (item.kind === "closed") {
+        return prisma.question.create({
+          data: {
+            type: "QUIZ",
+            text: item.text,
+            track: track.trackName,
+            trackId: track.trackId,
+            isGlobal: track.isGlobal,
+            gradeId: gradeVersion.gradeId,
+            versionId: gradeVersion.versionId,
+            order,
+            createdById: admin.id,
+            options: {
+              create: item.options.map((optionText, index) => ({
+                label: String.fromCharCode(65 + index),
+                text: optionText,
+                order: index,
+                isCorrect: index === item.correctIndex,
+              })),
+            },
+          },
+        });
+      }
+
+      return prisma.question.create({
+        data: {
+          type: "QUIZ",
+          text: item.text,
+          track: track.trackName,
+          trackId: track.trackId,
+          isGlobal: track.isGlobal,
+          gradeId: gradeVersion.gradeId,
+          versionId: gradeVersion.versionId,
+          order,
+          createdById: admin.id,
+          apiConfig: item.apiConfig,
+        },
+      });
+    }),
+  );
+
+  revalidatePath("/admin/questions");
+  revalidatePath("/admin");
+
+  const skippedCount = (suggestions?.length ?? 0) - prepared.length;
+
+  return {
+    ok: true,
+    message: skippedCount
+      ? `Добавлено вопросов: ${prepared.length}, пропущено (нет текста или вариантов): ${skippedCount}.`
+      : `Добавлено вопросов: ${prepared.length}.`,
+    createdCount: prepared.length,
+    skippedCount,
+  };
+}
+
 export async function createQuestionAction(formData: FormData) {
   const locale = await getRequestLocale(formData.get("locale"));
   const admin = await requireAdminAccess({ locale });

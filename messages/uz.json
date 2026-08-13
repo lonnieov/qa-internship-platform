@@ -315,7 +315,8 @@
       "error": "Takliflarni olib bo‘lmadi.",
       "correctSuffix": "— to‘g‘ri",
       "openAnswerLabel": "Namunaviy javob",
-      "useSuggestion": "Formaga qo‘shish"
+      "useSuggestion": "Formaga qo‘shish",
+      "addAll": "Hammasini qo‘shish"
     }
   },
   "AdminAttemptReport": {

@@ -315,7 +315,8 @@
       "error": "Не удалось получить предложения.",
       "correctSuffix": "— верный",
       "openAnswerLabel": "Эталонный ответ",
-      "useSuggestion": "Добавить в форму"
+      "useSuggestion": "Добавить в форму",
+      "addAll": "Добавить всё"
     }
   },
   "AdminAttemptReport": {
