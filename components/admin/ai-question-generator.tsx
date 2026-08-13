@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -63,9 +63,24 @@ export function AiQuestionGenerator({
           />
         </div>
         <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
-          <Sparkles size={18} />
+          {loading ? (
+            <Loader2 size={18} className="ai-thinking-icon" />
+          ) : (
+            <Sparkles size={18} />
+          )}
           {t("ai.generate")}
         </Button>
+        {loading ? (
+          <div className="ai-thinking body-2">
+            <Loader2 size={16} className="ai-thinking-icon" />
+            <span>{t("ai.generating")}</span>
+            <span className="ai-thinking-dots">
+              <span className="ai-thinking-dot" />
+              <span className="ai-thinking-dot" />
+              <span className="ai-thinking-dot" />
+            </span>
+          </div>
+        ) : null}
         {message ? <p className="body-2 muted m-0">{message}</p> : null}
         <div className="stack">
           {items.map((item, index) => {

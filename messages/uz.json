@@ -310,6 +310,7 @@
       "title": "AI-savol tavsiyalari",
       "topic": "Mavzu",
       "generate": "Variantlarni generatsiya qilish",
+      "generating": "Savollar ustida o‘ylayapman",
       "defaultTopic": "Stajyorlar uchun QA nazariyasi",
       "error": "Takliflarni olib bo‘lmadi.",
       "correctSuffix": "— to‘g‘ri",
