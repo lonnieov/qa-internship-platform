@@ -100,29 +100,6 @@ export function AiQuestionGenerator({
             placeholder={t("ai.vacancyPlaceholder")}
           />
         </div>
-        <div className="form-grid">
-          <Label htmlFor="cv">{t("ai.cv")}</Label>
-          <div className="nav-row">
-            <input
-              ref={fileInputRef}
-              id="cv"
-              className="input"
-              type="file"
-              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
-            />
-            {cvFile ? (
-              <Button type="button" variant="ghost" size="sm" onClick={clearCvFile}>
-                <X size={16} />
-              </Button>
-            ) : null}
-          </div>
-          {cvFile ? (
-            <p className="body-2 muted m-0">
-              <Paperclip size={14} /> {cvFile.name}
-            </p>
-          ) : null}
-        </div>
         <div className="nav-row">
           <Button type="button" variant="secondary" onClick={generate} disabled={loading}>
             {loading ? (
@@ -145,6 +122,32 @@ export function AiQuestionGenerator({
               {t("ai.addAll")}
             </Button>
           ) : null}
+        </div>
+        <div className="form-grid">
+          <input
+            ref={fileInputRef}
+            id="cv"
+            className="sr-only"
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
+          />
+          <div className="nav-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={18} />
+              {cvFile ? cvFile.name : t("ai.cvButton")}
+            </Button>
+            {cvFile ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearCvFile}>
+                <X size={16} />
+              </Button>
+            ) : null}
+          </div>
+          <p className="body-2 muted m-0">{t("ai.cvHint")}</p>
         </div>
         {loading ? (
           <div className="ai-thinking body-2">
