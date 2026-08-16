@@ -67,7 +67,10 @@ export function NativeDialog({
       dialog.removeEventListener("close", handleClose);
       dialog.removeEventListener("cancel", handleClose);
     };
-  }, [onOpenChange]);
+    // `open` is a dependency because the <dialog> is only rendered while open:
+    // on the first run the ref is still null, and onOpenChange never changes,
+    // so without it the listeners would never be attached at all.
+  }, [onOpenChange, open]);
 
   function handleLightDismiss(event: MouseEvent<HTMLDialogElement>) {
     if (event.target !== event.currentTarget) return;
