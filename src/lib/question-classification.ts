@@ -16,10 +16,6 @@ export const defaultTracks = [
 
 export const fallbackTrack = defaultTracks[0];
 
-// Sentinel posted as the `trackId` form field to mean "available for every
-// track" (a genuinely global question), as opposed to a real Track id.
-export const ALL_TRACKS_VALUE = "__all_tracks__";
-
 const legacyTrackByName = new Map<string, (typeof defaultTracks)[number]>(
   defaultTracks.map((track) => [track.name.toLowerCase(), track]),
 );

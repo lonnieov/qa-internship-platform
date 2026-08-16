@@ -1,18 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
-import { createAiQuestionsAction } from "@/actions/admin";
-import {
-  AiQuestionGenerator,
-  type AiQuestionSuggestion,
-} from "@/components/admin/ai-question-generator";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
 import { NativeDialog } from "@/components/ui/native-dialog";
-import { ALL_TRACKS_VALUE, type TrackSummary } from "@/lib/question-classification";
+import { type TrackSummary } from "@/lib/question-classification";
 
 type QuestionType =
   | "QUIZ"
@@ -40,46 +34,21 @@ export function QuestionCreateModal({
   initialGradeId,
   initialVersionId,
   tracks,
-  allowGlobalTrack = false,
 }: {
   initialType: QuestionType;
   initialTrackId?: string;
   initialGradeId?: string;
   initialVersionId?: string;
   tracks: TrackSummary[];
-  allowGlobalTrack?: boolean;
 }) {
   const t = useTranslations("AdminQuestions");
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<AiQuestionSuggestion | null>(
-    null,
-  );
-  const [aiSuggestionKey, setAiSuggestionKey] = useState(0);
   const titleId = useId();
-
-  async function handleAddAll(suggestions: AiQuestionSuggestion[]) {
-    const result = await createAiQuestionsAction(suggestions, {
-      trackId: initialTrackId ?? (allowGlobalTrack ? ALL_TRACKS_VALUE : ""),
-      gradeId: initialGradeId,
-      versionId: initialVersionId,
-    });
-
-    if (result.ok) router.refresh();
-
-    return result;
-  }
 
   return (
     <>
-      <Button
-        type="button"
-        onClick={() => {
-          setAiSuggestion(null);
-          setIsOpen(true);
-        }}
-      >
-        <Plus size={18} />
+      <Button type="button" size="sm" onClick={() => setIsOpen(true)}>
+        <Plus size={16} />
         {t("add")}
       </Button>
 
@@ -106,19 +75,6 @@ export function QuestionCreateModal({
               </Button>
             </div>
 
-            {initialType === "QUIZ" ? (
-              <details className="edit-question-panel">
-                <summary>{t("ai.title")}</summary>
-                <AiQuestionGenerator
-                  onPick={(suggestion) => {
-                    setAiSuggestion(suggestion);
-                    setAiSuggestionKey((key) => key + 1);
-                  }}
-                  onAddAll={handleAddAll}
-                />
-              </details>
-            ) : null}
-
             <QuestionForm
               embedded
               initialType={initialType}
@@ -128,9 +84,6 @@ export function QuestionCreateModal({
               lockType
               showTitle={false}
               tracks={tracks}
-              allowGlobalTrack={allowGlobalTrack}
-              aiSuggestion={aiSuggestion}
-              aiSuggestionKey={aiSuggestionKey}
             />
           </div>
       </NativeDialog>

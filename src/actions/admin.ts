@@ -10,7 +10,7 @@ import { parseHeaderLines, parseQueryString } from "@/lib/api-sandbox";
 import { getManageableTrackIds, requireAdmin, requireAdminAccess } from "@/lib/auth";
 import { getRequestLocale, localizedPath } from "@/lib/locale";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
-import { ALL_TRACKS_VALUE, normalizeLegacyTrack } from "@/lib/question-classification";
+import { normalizeLegacyTrack } from "@/lib/question-classification";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 import {
   encryptInviteCode,
@@ -240,13 +240,8 @@ function formatInvitationDateTime(value: Date | null | undefined) {
 async function canManageTrack(
   profile: { id: string; role: string },
   trackId: string | null | undefined,
-  isGlobal = false,
 ) {
   const manageableTrackIds = await getManageableTrackIds(profile);
-  // A global ("Все треки") question is only manageable by an unrestricted
-  // ADMIN — getManageableTrackIds returns null for them, an array of ids for
-  // a TRACK_MASTER — never treat trackId: null here as "no permission".
-  if (isGlobal) return manageableTrackIds === null;
   if (!trackId) return false;
   return !manageableTrackIds || manageableTrackIds.includes(trackId);
 }
@@ -255,9 +250,8 @@ async function ensureCanManageTrack(
   profile: { id: string; role: string },
   trackId: string | null | undefined,
   locale?: string,
-  isGlobal = false,
 ) {
-  if (!(await canManageTrack(profile, trackId, isGlobal))) {
+  if (!(await canManageTrack(profile, trackId))) {
     redirect(localizedPath("/admin", await getRequestLocale(locale)));
   }
 }
@@ -296,16 +290,6 @@ async function resolveInvitationScope(formData?: FormData) {
 
 async function resolveQuestionTrack(formData: FormData) {
   const trackId = String(formData.get("trackId") ?? "");
-
-  if (trackId === ALL_TRACKS_VALUE) {
-    return {
-      trackId: null,
-      trackSlug: "all",
-      trackName: "Все треки",
-      isGlobal: true,
-    };
-  }
-
   const selectedTrack = trackId
     ? await prisma.track.findUnique({ where: { id: trackId } })
     : null;
@@ -315,7 +299,6 @@ async function resolveQuestionTrack(formData: FormData) {
       trackId: selectedTrack.id,
       trackSlug: selectedTrack.slug,
       trackName: selectedTrack.name,
-      isGlobal: false,
     };
   }
 
@@ -328,7 +311,6 @@ async function resolveQuestionTrack(formData: FormData) {
     trackSlug: fallbackTrack?.slug ?? "qa",
     trackName:
       fallbackTrack?.name ?? normalizeLegacyTrack(String(formData.get("track") ?? "")),
-    isGlobal: false,
   };
 }
 
@@ -605,7 +587,7 @@ export async function createAiQuestionsAction(
   const trackFormData = new FormData();
   trackFormData.set("trackId", scope.trackId ?? "");
   const track = await resolveQuestionTrack(trackFormData);
-  await ensureCanManageTrack(admin, track.trackId, locale, track.isGlobal);
+  await ensureCanManageTrack(admin, track.trackId, locale);
 
   if (!isQuestionTypeAllowedForTrack("QUIZ", track.trackSlug)) {
     return {
@@ -684,8 +666,7 @@ export async function createAiQuestionsAction(
             text: item.text,
             track: track.trackName,
             trackId: track.trackId,
-            isGlobal: track.isGlobal,
-            gradeId: gradeVersion.gradeId,
+                gradeId: gradeVersion.gradeId,
             versionId: gradeVersion.versionId,
             order,
             createdById: admin.id,
@@ -707,8 +688,7 @@ export async function createAiQuestionsAction(
           text: item.text,
           track: track.trackName,
           trackId: track.trackId,
-          isGlobal: track.isGlobal,
-          gradeId: gradeVersion.gradeId,
+            gradeId: gradeVersion.gradeId,
           versionId: gradeVersion.versionId,
           order,
           createdById: admin.id,
@@ -739,7 +719,7 @@ export async function createQuestionAction(formData: FormData) {
   const questionType = String(formData.get("questionType") ?? "QUIZ");
   const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
-  await ensureCanManageTrack(admin, track.trackId, locale, track.isGlobal);
+  await ensureCanManageTrack(admin, track.trackId, locale);
   if (!isQuestionTypeAllowedForTrack(questionType, track.trackSlug)) {
     redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
@@ -778,7 +758,6 @@ export async function createQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -809,7 +788,6 @@ export async function createQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -840,7 +818,6 @@ export async function createQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -925,7 +902,6 @@ export async function createQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -953,8 +929,7 @@ export async function createQuestionAction(formData: FormData) {
           textUz,
           track: track.trackName,
           trackId: track.trackId,
-          isGlobal: track.isGlobal,
-          gradeId: gradeVersion.gradeId,
+            gradeId: gradeVersion.gradeId,
           versionId: gradeVersion.versionId,
           explanation: explanation || null,
           order: (lastQuestion?.order ?? 0) + 1,
@@ -998,7 +973,6 @@ export async function createQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -1029,7 +1003,7 @@ export async function updateQuestionAction(formData: FormData) {
   const questionType = String(formData.get("questionType") ?? "QUIZ");
   const quizMode = String(formData.get("quizMode") ?? "CHOICE");
   const track = await resolveQuestionTrack(formData);
-  await ensureCanManageTrack(profile, track.trackId, locale, track.isGlobal);
+  await ensureCanManageTrack(profile, track.trackId, locale);
   if (!isQuestionTypeAllowedForTrack(questionType, track.trackSlug)) {
     redirect(questionRedirectUrl("QUIZ", track.trackSlug, false, locale));
   }
@@ -1054,7 +1028,7 @@ export async function updateQuestionAction(formData: FormData) {
   // Verify the caller may manage the question's CURRENT track before allowing
   // any edit or track transfer. Without this a track master could move another
   // track's question into their own by supplying a foreign questionId (IDOR).
-  await ensureCanManageTrack(profile, question.trackId, locale, question.isGlobal);
+  await ensureCanManageTrack(profile, question.trackId, locale);
   const gradeVersion = await resolveTrackGradeVersion(
     formData,
     track.trackId,
@@ -1078,7 +1052,6 @@ export async function updateQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -1103,7 +1076,6 @@ export async function updateQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -1128,7 +1100,6 @@ export async function updateQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -1211,7 +1182,6 @@ export async function updateQuestionAction(formData: FormData) {
         textUz,
         track: track.trackName,
         trackId: track.trackId,
-        isGlobal: track.isGlobal,
         gradeId: gradeVersion.gradeId,
         versionId: gradeVersion.versionId,
         explanation: explanation || null,
@@ -1233,8 +1203,7 @@ export async function updateQuestionAction(formData: FormData) {
           textUz,
           track: track.trackName,
           trackId: track.trackId,
-          isGlobal: track.isGlobal,
-          gradeId: gradeVersion.gradeId,
+            gradeId: gradeVersion.gradeId,
           versionId: gradeVersion.versionId,
           explanation: explanation || null,
           apiConfig: {
@@ -1278,8 +1247,7 @@ export async function updateQuestionAction(formData: FormData) {
           textUz,
           track: track.trackName,
           trackId: track.trackId,
-          isGlobal: track.isGlobal,
-          gradeId: gradeVersion.gradeId,
+            gradeId: gradeVersion.gradeId,
           versionId: gradeVersion.versionId,
           explanation: explanation || null,
           apiConfig: Prisma.JsonNull,
@@ -1378,11 +1346,11 @@ export async function toggleQuestionAction(formData: FormData) {
 
   const question = await prisma.question.findUnique({
     where: { id: questionId },
-    select: { track: true, trackId: true, type: true, isGlobal: true },
+    select: { track: true, trackId: true, type: true },
   });
   if (!question) return;
 
-  await ensureCanManageTrack(profile, question?.trackId, undefined, question.isGlobal);
+  await ensureCanManageTrack(profile, question?.trackId);
 
   const data: Prisma.QuestionUpdateInput = { isActive: !isActive };
   if (isActive) {
@@ -1450,9 +1418,9 @@ export async function deleteQuestionAction(formData: FormData) {
 
   const question = await prisma.question.findUnique({
     where: { id: questionId },
-    select: { trackId: true, isGlobal: true },
+    select: { trackId: true },
   });
-  await ensureCanManageTrack(profile, question?.trackId, undefined, question?.isGlobal);
+  await ensureCanManageTrack(profile, question?.trackId);
 
   await prisma.question.delete({
     where: { id: questionId },
@@ -1525,8 +1493,7 @@ export async function importQuestionsAction(
             textUz: question.textUz,
             track: track.trackName,
             trackId: track.trackId,
-            isGlobal: track.isGlobal,
-            gradeId: gradeVersion.gradeId,
+                gradeId: gradeVersion.gradeId,
             versionId: gradeVersion.versionId,
             explanation: question.explanation || null,
             order,
@@ -1551,8 +1518,7 @@ export async function importQuestionsAction(
           textUz: question.textUz,
           track: track.trackName,
           trackId: track.trackId,
-          isGlobal: track.isGlobal,
-          gradeId: gradeVersion.gradeId,
+            gradeId: gradeVersion.gradeId,
           versionId: gradeVersion.versionId,
           explanation: question.explanation || null,
           order,

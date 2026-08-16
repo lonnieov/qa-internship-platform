@@ -42,7 +42,6 @@ export async function ensureTracks() {
     await prisma.question.updateMany({
       where: {
         trackId: null,
-        isGlobal: false,
         track: normalizeLegacyTrack(track.name),
       },
       data: { trackId: track.id },
