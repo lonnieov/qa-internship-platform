@@ -275,10 +275,11 @@
     },
     "toast": {
       "title": "Savol qo‘shildi",
-      "description": "Yangi yozuv savollar bankida darhol ko‘rinadi."
+      "description": "Yangi yozuv savollar bankida darhol ko‘rinadi.",
+      "addedTitle": "{count, plural, other {# ta savol}} qo‘shildi",
+      "addedDescription": "Ular joriy versiya ro‘yxatining oxirida."
     },
     "tracks": {
-      "all": "Barcha treklar",
       "newTrackAria": "Yangi trek nomi",
       "newTrackPlaceholder": "Yangi trek",
       "manageAria": "Trekni boshqarish: {name}",
@@ -307,7 +308,9 @@
       "status": "status {status}"
     },
     "ai": {
-      "title": "AI-savol tavsiyalari",
+      "title": "Savollar generatsiyasi",
+      "generateAction": "Generatsiya",
+      "target": "Qayerga qo‘shiladi",
       "topic": "Mavzu",
       "vacancy": "Vakansiya tavsifi (ixtiyoriy)",
       "vacancyPlaceholder": "Talablarni hisobga olish uchun vakansiya matnini joylashtiring",
@@ -319,8 +322,15 @@
       "error": "Takliflarni olib bo‘lmadi.",
       "correctSuffix": "— to‘g‘ri",
       "openAnswerLabel": "Namunaviy javob",
-      "useSuggestion": "Formaga qo‘shish",
-      "addAll": "Hammasini qo‘shish"
+      "regenerate": "Qayta generatsiya qilish",
+      "reviewSummary": "Yaratildi: {total} · tanlandi: {selected}",
+      "selectAll": "Barchasini tanlash",
+      "clearAll": "Tanlovni bekor qilish",
+      "selectQuestion": "{index}-savolni tanlash",
+      "questionText": "Savol matni",
+      "edit": "O‘zgartirish",
+      "editDone": "Tayyor",
+      "addSelected": "Tanlanganlarni qo‘shish ({count})"
     }
   },
   "AdminAttemptReport": {
@@ -382,7 +392,6 @@
     },
     "questionType": "Savol turi",
     "classification": "Tasnif",
-    "allTracks": "Barcha treklar",
     "createTrackFirst": "Savol qo‘shishdan oldin faol trek yarating.",
     "languages": {
       "label": "Savol tili",

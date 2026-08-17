@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
 import { QuestionImportModal } from "@/components/admin/question-import-modal";
+import { QuestionGenerateModal } from "@/components/admin/question-generate-modal";
 import { ScopeMenu } from "@/components/admin/scope-menu";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
@@ -52,11 +53,11 @@ async function getQuestions({
 }) {
   return prisma.question.findMany({
     where: selectedVersionId
-      ? { OR: [{ versionId: selectedVersionId }, { isGlobal: true }] }
+      ? { versionId: selectedVersionId }
       : selectedTrackId
-        ? { OR: [{ trackId: selectedTrackId }, { isGlobal: true }] }
+        ? { trackId: selectedTrackId }
         : trackIds
-          ? { OR: [{ trackId: { in: trackIds } }, { isGlobal: true }] }
+          ? { trackId: { in: trackIds } }
           : undefined,
     orderBy: [
       { isActive: "desc" },
@@ -70,7 +71,6 @@ async function getQuestions({
       type: true,
       track: true,
       trackId: true,
-      isGlobal: true,
       gradeId: true,
       versionId: true,
       text: true,
@@ -174,11 +174,10 @@ function apiSummary(question: AdminQuestion) {
 function filterUrl(
   locale: string,
   type: QuestionType,
-  track: string | "all",
+  track: string,
   extra?: { grade?: string; version?: string },
 ) {
-  const params = new URLSearchParams({ type });
-  if (track !== "all") params.set("track", track);
+  const params = new URLSearchParams({ type, track });
   if (extra?.grade) params.set("grade", extra.grade);
   if (extra?.version) params.set("version", extra.version);
   return `/${locale}/admin/questions?${params.toString()}`;
@@ -189,7 +188,6 @@ function renderQuestionCard(
   indexLabel: string,
   tracks: TrackSummary[],
   t: Awaited<ReturnType<typeof getTranslations>>,
-  allowGlobalTrack: boolean,
 ) {
   const summary = apiSummary(question);
   const manualQaConfig = getManualQaSandboxConfig(question.apiConfig);
@@ -201,9 +199,6 @@ function renderQuestionCard(
       <div className="stack">
         <div className="nav-row">
           <span className="type-chip">{typeLabel(question.type, t)}</span>
-          {question.isGlobal ? (
-            <Badge variant="muted">{t("tracks.all")}</Badge>
-          ) : null}
           <Badge variant={question.isActive ? "success" : "muted"}>
             {question.isActive ? t("status.active") : t("status.hidden")}
           </Badge>
@@ -322,7 +317,6 @@ function renderQuestionCard(
             initialType={question.type}
             question={question}
             tracks={tracks}
-            allowGlobalTrack={allowGlobalTrack}
           />
         </details>
       </div>
@@ -365,6 +359,7 @@ export default async function AdminQuestionsPage({
     grade?: string;
     version?: string;
     created?: string;
+    added?: string;
   }>;
 }) {
   const { locale } = await params;
@@ -380,35 +375,31 @@ export default async function AdminQuestionsPage({
     redirect(`/${locale}/admin/tracks`);
   }
 
+  // A track is always selected. Without one there is no grade and no version
+  // to scope by, which left import, generation and the whole path bar with
+  // nothing to point at — and "add" silently guessing a target.
   const requestedTrack = resolvedSearchParams.track;
   const requestedTrackRecord = tracks.find(
     (track) => track.slug === requestedTrack,
   );
-  const selectedTrackRecord = manageableTrackIds
-    ? (requestedTrackRecord ?? tracks[0])
-    : (requestedTrackRecord ?? null);
+  const selectedTrackRecord = requestedTrackRecord ?? tracks[0];
 
-  if (
-    manageableTrackIds &&
-    (!requestedTrack || requestedTrack !== selectedTrackRecord?.slug)
-  ) {
-    redirect(`/${locale}/admin/questions?track=${selectedTrackRecord?.slug}`);
+  if (!requestedTrack || requestedTrack !== selectedTrackRecord.slug) {
+    redirect(`/${locale}/admin/questions?track=${selectedTrackRecord.slug}`);
   }
 
-  const selectedTrackSlug = selectedTrackRecord?.slug ?? "all";
+  const selectedTrackSlug = selectedTrackRecord.slug;
 
-  const gradesForTrack = selectedTrackRecord
-    ? await prisma.grade.findMany({
-        where: { trackId: selectedTrackRecord.id },
-        orderBy: [{ order: "asc" }, { name: "asc" }],
-        include: {
-          versions: {
-            orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
-            include: { _count: { select: { questions: true } } },
-          },
-        },
-      })
-    : [];
+  const gradesForTrack = await prisma.grade.findMany({
+    where: { trackId: selectedTrackRecord.id },
+    orderBy: [{ order: "asc" }, { name: "asc" }],
+    include: {
+      versions: {
+        orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+        include: { _count: { select: { questions: true } } },
+      },
+    },
+  });
   const requestedGradeSlug = resolvedSearchParams.grade;
   const selectedGradeRecord =
     gradesForTrack.find((grade) => grade.slug === requestedGradeSlug) ??
@@ -424,14 +415,14 @@ export default async function AdminQuestionsPage({
 
   const [questions, questionCountsByTrack] = await Promise.all([
     getQuestions({
-      selectedTrackId: selectedTrackRecord?.id,
+      selectedTrackId: selectedTrackRecord.id,
       selectedVersionId: selectedVersionRecord?.id,
       trackIds: manageableTrackIds,
     }),
     prisma.question.groupBy({
       by: ["trackId"],
       where: manageableTrackIds
-        ? { OR: [{ trackId: { in: manageableTrackIds } }, { isGlobal: true }] }
+        ? { trackId: { in: manageableTrackIds } }
         : undefined,
       _count: { _all: true },
     }),
@@ -445,11 +436,12 @@ export default async function AdminQuestionsPage({
     resolvedSearchParams.type === "QUIZ"
       ? resolvedSearchParams.type
       : "QUIZ";
-  const selectedType =
-    selectedTrackRecord &&
-    !isQuestionTypeAllowedForTrack(requestedType, selectedTrackRecord.slug)
-      ? "QUIZ"
-      : requestedType;
+  const selectedType = isQuestionTypeAllowedForTrack(
+    requestedType,
+    selectedTrackRecord.slug,
+  )
+    ? requestedType
+    : "QUIZ";
   const filteredByTrack = questions;
   const quizQuestions = filteredByTrack.filter(
     (question) => question.type === "QUIZ",
@@ -478,7 +470,6 @@ export default async function AdminQuestionsPage({
     { type: "AUTOTEST_SANDBOX" as const, items: autotestSandboxQuestions },
   ].filter(
     (section) =>
-      !selectedTrackRecord ||
       isQuestionTypeAllowedForTrack(section.type, selectedTrackRecord.slug),
   );
   const activeSection =
@@ -486,20 +477,17 @@ export default async function AdminQuestionsPage({
   const activeMeta = sectionMeta(activeSection.type, t);
   const allTypeCount = (type: QuestionType) =>
     filteredByTrack.filter((question) => question.type === type).length;
-  const globalQuestionCount =
-    questionCountsByTrack.find((item) => item.trackId === null)?._count
-      ._all ?? 0;
   const trackCounts = Object.fromEntries(
     tracks.map((track) => [
       track.id,
-      (questionCountsByTrack.find((item) => item.trackId === track.id)
-        ?._count._all ?? 0) + globalQuestionCount,
+      questionCountsByTrack.find((item) => item.trackId === track.id)?._count
+        ._all ?? 0,
     ]),
   ) as Record<string, number>;
-  const totalAccessibleQuestionCount = questionCountsByTrack.reduce(
-    (sum, item) => sum + item._count._all,
-    0,
-  );
+  const parsedAddedCount = Number(resolvedSearchParams.added);
+  const addedQuestionCount = Number.isFinite(parsedAddedCount)
+    ? Math.max(0, Math.trunc(parsedAddedCount))
+    : 0;
   const tracksForForms = tracks.map((track) => ({
     id: track.id,
     slug: track.slug,
@@ -511,35 +499,28 @@ export default async function AdminQuestionsPage({
   return (
     <main className="page stack-lg">
       {resolvedSearchParams.created === "1" ? <QuestionCreatedToast /> : null}
+      {addedQuestionCount > 0 ? (
+        <QuestionCreatedToast count={addedQuestionCount} />
+      ) : null}
       <div className="page-header">
         <div>
           <h1 className="head-1">{t("title")}</h1>
           <p className="body-1 muted m-0">
-            {selectedTrackRecord?.name ?? t("tracks.all")} · {t("description")}
+            {selectedTrackRecord.name} · {t("description")}
           </p>
         </div>
       </div>
 
-      <section className="question-scope-bar surface">
-        <div className="question-scope-path">
+      <section className="surface question-bank-layout">
+        <div className="question-scope-bar">
+          <div className="question-scope-path">
           <ScopeMenu
-            ariaLabel={`Трек: ${selectedTrackRecord?.name ?? t("tracks.all")}`}
-            label={selectedTrackRecord?.name ?? t("tracks.all")}
+            ariaLabel={`Трек: ${selectedTrackRecord.name}`}
+            label={selectedTrackRecord.name}
           >
-            {profile.role === "ADMIN" ? (
-              <Link
-                className={`scope-menu-item ${selectedTrackSlug === "all" ? "active" : ""}`}
-                href={filterUrl(locale, activeSection.type, "all")}
-              >
-                <span>{t("tracks.all")}</span>
-                <span className="scope-menu-count">
-                  {totalAccessibleQuestionCount}
-                </span>
-              </Link>
-            ) : null}
             {tracks.map((track) => {
               const meta = getQuestionTrackMeta(track);
-              const active = selectedTrackRecord?.id === track.id;
+              const active = selectedTrackRecord.id === track.id;
 
               return (
                 <Link
@@ -559,7 +540,7 @@ export default async function AdminQuestionsPage({
             })}
           </ScopeMenu>
 
-          {selectedTrackRecord && gradesForTrack.length > 0 ? (
+          {gradesForTrack.length > 0 ? (
             <>
               <span aria-hidden="true" className="question-scope-separator">
                 ›
@@ -684,38 +665,14 @@ export default async function AdminQuestionsPage({
             </>
           ) : null}
 
-          {selectedTrackRecord && gradesForTrack.length === 0 ? (
-            <span className="body-2 muted">
-              Грейды не созданы — добавьте их на странице «Треки».
-            </span>
-          ) : null}
+            {gradesForTrack.length === 0 ? (
+              <span className="body-2 muted">
+                Грейды не созданы — добавьте их на странице «Треки».
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        <div className="nav-row">
-          {activeSection.type === "QUIZ" &&
-          selectedTrackRecord &&
-          selectedGradeRecord &&
-          selectedVersionRecord ? (
-            <QuestionImportModal
-              gradeId={selectedGradeRecord.id}
-              gradeName={selectedGradeRecord.name}
-              trackId={selectedTrackRecord.id}
-              versionId={selectedVersionRecord.id}
-              versionName={selectedVersionRecord.name}
-            />
-          ) : null}
-          <QuestionCreateModal
-            initialType={activeSection.type}
-            initialTrackId={selectedTrackRecord?.id}
-            initialGradeId={selectedGradeRecord?.id}
-            initialVersionId={selectedVersionRecord?.id}
-            tracks={tracksForForms}
-            allowGlobalTrack={profile.role === "ADMIN"}
-          />
-        </div>
-      </section>
-
-      <section className="surface question-bank-layout">
         <div className="question-list-panel">
           <div className="nav-row">
             {sections.map(({ type }) => {
@@ -747,8 +704,37 @@ export default async function AdminQuestionsPage({
               <h2 className="head-2">{activeMeta.title}</h2>
               <p className="body-2 muted m-0">{activeMeta.description}</p>
             </div>
+            {/* Import and generation only produce Quiz questions, so they live
+                next to the type they apply to instead of the scope bar. */}
+            {/* No count badge here: the type tab right above already shows it. */}
             <div className="nav-row">
-              <Badge variant="muted">{activeSection.items.length}</Badge>
+              {activeSection.type === "QUIZ" &&
+              selectedGradeRecord &&
+              selectedVersionRecord ? (
+                <>
+                  <QuestionImportModal
+                    gradeId={selectedGradeRecord.id}
+                    gradeName={selectedGradeRecord.name}
+                    trackId={selectedTrackRecord.id}
+                    versionId={selectedVersionRecord.id}
+                    versionName={selectedVersionRecord.name}
+                  />
+                  <QuestionGenerateModal
+                    gradeId={selectedGradeRecord.id}
+                    gradeName={selectedGradeRecord.name}
+                    trackId={selectedTrackRecord.id}
+                    versionId={selectedVersionRecord.id}
+                    versionName={selectedVersionRecord.name}
+                  />
+                </>
+              ) : null}
+              <QuestionCreateModal
+                initialType={activeSection.type}
+                initialTrackId={selectedTrackRecord.id}
+                initialGradeId={selectedGradeRecord?.id}
+                initialVersionId={selectedVersionRecord?.id}
+                tracks={tracksForForms}
+              />
             </div>
           </div>
 
@@ -769,7 +755,6 @@ export default async function AdminQuestionsPage({
                   `${index + 1}`,
                   tracksForForms,
                   t,
-                  profile.role === "ADMIN",
                 ),
               )}
             </SortableQuestionList>

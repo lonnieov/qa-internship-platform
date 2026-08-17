@@ -3008,13 +3008,15 @@ button {
 
 /* Scope bar: track › grade › version reads as one path instead of three
    separate filter blocks scattered around the screen. */
+/* Shares the card with the type tabs and the list: as its own surface it was a
+   mostly-empty strip, since the path never fills the full width. */
 .question-scope-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 12px;
   padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--card);
 }
 
 .question-scope-path {
@@ -7141,6 +7143,63 @@ button {
   width: min(640px, calc(100vw - 32px));
   max-height: min(820px, calc(100dvh - 32px));
   overflow: auto;
+}
+
+.question-generate-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(860px, calc(100dvh - 32px));
+  overflow: auto;
+}
+
+/* Review step: pick which generated questions to keep and fix them in place. */
+.ai-review {
+  padding-top: 4px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.ai-review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-review-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.ai-review-item.selected {
+  opacity: 1;
+}
+
+.ai-review-check {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.ai-review-body {
+  min-width: 0;
+  gap: 8px;
+}
+
+.ai-review-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-review-option input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .question-import-spec {

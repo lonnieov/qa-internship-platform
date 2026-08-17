@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ALL_TRACKS_VALUE,
   getQuestionTrackMeta,
   getTrackDisplayName,
   type TrackSummary,
 } from "@/lib/question-classification";
+import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import {
   clickSuperAppClickAvtoPresetConfig,
@@ -49,7 +49,6 @@ type EditableQuestion = {
   type: QuestionType;
   track: string;
   trackId: string | null;
-  isGlobal: boolean;
   gradeId: string | null;
   versionId: string | null;
   trackRef: { id: string; slug: string; name: string } | null;
@@ -122,7 +121,6 @@ export function QuestionForm({
   lockType = false,
   showTitle = true,
   question,
-  allowGlobalTrack = false,
   aiSuggestion = null,
   aiSuggestionKey = 0,
 }: {
@@ -135,7 +133,6 @@ export function QuestionForm({
   lockType?: boolean;
   showTitle?: boolean;
   question?: EditableQuestion;
-  allowGlobalTrack?: boolean;
   aiSuggestion?: AiQuestionSuggestion | null;
   aiSuggestionKey?: number;
 }) {
@@ -165,13 +162,8 @@ export function QuestionForm({
     : activeTracks;
   const fallbackTrack = selectableTracks[0] ?? tracks[0];
   const [draftTrackId, setDraftTrackId] = useState(
-    question?.isGlobal
-      ? ALL_TRACKS_VALUE
-      : (question?.trackRef?.id ??
-          initialTrackId ??
-          (allowGlobalTrack ? ALL_TRACKS_VALUE : (fallbackTrack?.id ?? ""))),
+    question?.trackRef?.id ?? initialTrackId ?? fallbackTrack?.id ?? "",
   );
-  const isGlobalDraft = draftTrackId === ALL_TRACKS_VALUE;
   const draftTrack =
     tracks.find((track) => track.id === draftTrackId) ?? fallbackTrack;
 
@@ -188,6 +180,12 @@ export function QuestionForm({
     setActiveLanguage("ru");
   }
   const questionType = question?.type ?? draftType;
+  // Sandbox types exist only on the QA track, and the server action silently
+  // redirects when they are submitted elsewhere. Don't offer those tracks at
+  // all rather than letting the choice fail after the fact.
+  const trackChoices = selectableTracks.filter((track) =>
+    isQuestionTypeAllowedForTrack(questionType, track.slug),
+  );
   const openQuizConfig = getOpenQuizConfig(question?.apiConfig);
   const quizMode = questionType === "QUIZ" ? draftQuizMode : "CHOICE";
   const config = getConfig(question);
@@ -322,10 +320,7 @@ export function QuestionForm({
         type="hidden"
         name="track"
         value={
-          isGlobalDraft
-            ? t("allTracks")
-            : (draftTrack?.name ??
-              (question ? getTrackDisplayName(question) : "QA"))
+          draftTrack?.name ?? (question ? getTrackDisplayName(question) : "QA")
         }
       />
 
@@ -345,7 +340,24 @@ export function QuestionForm({
                 <input
                   checked={questionType === value}
                   name="questionTypeChoice"
-                  onChange={() => setDraftType(value as QuestionType)}
+                  onChange={() => {
+                    const nextType = value as QuestionType;
+                    setDraftType(nextType);
+                    // Switching to a QA-only type can invalidate the picked
+                    // track, so move to one that accepts the new type.
+                    const stillAllowed = selectableTracks.some(
+                      (track) =>
+                        track.id === draftTrackId &&
+                        isQuestionTypeAllowedForTrack(nextType, track.slug),
+                    );
+
+                    if (!stillAllowed) {
+                      const fallback = selectableTracks.find((track) =>
+                        isQuestionTypeAllowedForTrack(nextType, track.slug),
+                      );
+                      setDraftTrackId(fallback?.id ?? "");
+                    }
+                  }}
                   type="radio"
                 />
                 {label}
@@ -353,7 +365,9 @@ export function QuestionForm({
             ))}
           </div>
         </div>
-      ) : (
+      ) : lockType ? null : (
+        // With lockType the surrounding dialog already states the type in its
+        // header, so repeating it here is just noise.
         <div className="form-grid">
           <Label>{t("questionType")}</Label>
           <span className="type-chip">{getQuestionTypeLabel(t, questionType)}</span>
@@ -363,18 +377,7 @@ export function QuestionForm({
       <div className="form-grid">
         <Label>{t("classification")}</Label>
         <div className="question-form-choice-grid">
-          {allowGlobalTrack ? (
-            <label className="question-form-choice">
-              <input
-                checked={isGlobalDraft}
-                name="trackChoice"
-                onChange={() => setDraftTrackId(ALL_TRACKS_VALUE)}
-                type="radio"
-              />
-              {t("allTracks")}
-            </label>
-          ) : null}
-          {selectableTracks.map((track) => {
+          {trackChoices.map((track) => {
             const meta = getQuestionTrackMeta(track);
             return (
               <label
@@ -394,7 +397,7 @@ export function QuestionForm({
             );
           })}
         </div>
-        {selectableTracks.length === 0 && !allowGlobalTrack ? (
+        {trackChoices.length === 0 ? (
           <p className="body-2 muted m-0">
             {t("createTrackFirst")}
           </p>

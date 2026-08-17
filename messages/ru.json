@@ -275,10 +275,11 @@
     },
     "toast": {
       "title": "Вопрос добавлен",
-      "description": "Новая запись уже доступна в банке вопросов."
+      "description": "Новая запись уже доступна в банке вопросов.",
+      "addedTitle": "Добавлено {count, plural, one {# вопрос} few {# вопроса} many {# вопросов} other {# вопроса}}",
+      "addedDescription": "Они в конце списка текущей версии."
     },
     "tracks": {
-      "all": "Все треки",
       "newTrackAria": "Название нового трека",
       "newTrackPlaceholder": "Новый трек",
       "manageAria": "Управлять треком {name}",
@@ -307,7 +308,9 @@
       "status": "status {status}"
     },
     "ai": {
-      "title": "AI-подсказки вопросов",
+      "title": "Генерация вопросов",
+      "generateAction": "Сгенерировать",
+      "target": "Добавятся в",
       "topic": "Тема",
       "vacancy": "Описание вакансии (необязательно)",
       "vacancyPlaceholder": "Вставьте текст вакансии, чтобы вопросы учитывали её требования",
@@ -319,8 +322,15 @@
       "error": "Не удалось получить предложения.",
       "correctSuffix": "— верный",
       "openAnswerLabel": "Эталонный ответ",
-      "useSuggestion": "Добавить в форму",
-      "addAll": "Добавить всё"
+      "regenerate": "Сгенерировать заново",
+      "reviewSummary": "Сгенерировано: {total} · выбрано: {selected}",
+      "selectAll": "Выбрать все",
+      "clearAll": "Снять все",
+      "selectQuestion": "Выбрать вопрос {index}",
+      "questionText": "Текст вопроса",
+      "edit": "Изменить",
+      "editDone": "Готово",
+      "addSelected": "Добавить выбранные ({count})"
     }
   },
   "AdminAttemptReport": {
@@ -382,7 +392,6 @@
     },
     "questionType": "Тип вопроса",
     "classification": "Классификация",
-    "allTracks": "Все треки",
     "createTrackFirst": "Создайте активный трек перед добавлением вопроса.",
     "languages": {
       "label": "Язык вопроса",
