@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useState } from "react";
 import { Upload, X } from "lucide-react";
 import {
   importQuestionsAction,
@@ -8,7 +8,14 @@ import {
 } from "@/actions/admin";
 import { CopyImportPromptButton } from "@/components/admin/copy-import-prompt-button";
 import { Button } from "@/components/ui/button";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { QUESTION_IMPORT_PROMPT_TEMPLATE } from "@/lib/question-import-prompt";
 
 const initialState: ImportQuestionsState = {
@@ -35,43 +42,37 @@ export function QuestionImportModal({
     importQuestionsAction,
     initialState,
   );
-  const titleId = useId();
-
-  const close = () => setIsOpen(false);
-
   return (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        onClick={() => setIsOpen(true)}
-      >
-        <Upload size={14} />
-        Импорт
-      </Button>
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm" variant="secondary">
+          <Upload size={14} />
+          Импорт
+        </Button>
+      </DialogTrigger>
 
-      <NativeDialog labelledBy={titleId} onOpenChange={setIsOpen} open={isOpen}>
+      <DialogContent variant="bare">
         <div className="wave-modal question-import-modal surface">
           <div className="wave-modal-header">
             <div>
-              <h2 className="head-3 m-0" id={titleId}>
+              <DialogTitle className="head-3 m-0">
                 Импорт вопросов из JSON
-              </h2>
-              <p className="body-2 muted m-0">
+              </DialogTitle>
+              <DialogDescription className="body-2 muted m-0">
                 Вопросы добавятся в конец: <strong>{gradeName}</strong> ·{" "}
                 <strong>{versionName}</strong>
-              </p>
+              </DialogDescription>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Закрыть"
-              onClick={close}
-            >
-              <X size={16} />
-            </Button>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Закрыть"
+              >
+                <X size={16} />
+              </Button>
+            </DialogClose>
           </div>
 
           <div className="wave-modal-body">
@@ -164,7 +165,7 @@ export function QuestionImportModal({
             ) : null}
           </div>
         </div>
-      </NativeDialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -5,11 +5,11 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
+  ChevronsLeft,
+  ChevronsRight,
   Layers3,
   ListChecks,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
   Settings,
   UsersRound,
 } from "lucide-react";
@@ -204,9 +204,9 @@ export function AdminShell({
             type="button"
           >
             {collapsed ? (
-              <PanelLeftOpen size={16} />
+              <ChevronsRight size={16} />
             ) : (
-              <PanelLeftClose size={16} />
+              <ChevronsLeft size={16} />
             )}
           </button>
         </div>
@@ -237,6 +237,10 @@ export function AdminShell({
         </nav>
 
         <div className="admin-sidebar-footer">
+          <div className="admin-sidebar-controls">
+            <LanguageSwitcher />
+            <ThemeToggle variant="icon" />
+          </div>
           <div
             className="admin-user-card"
             title={collapsed ? [adminName, adminEmail].filter(Boolean).join(" · ") : undefined}
@@ -265,12 +269,6 @@ export function AdminShell({
         </div>
       </aside>
       <div className="admin-content" onWheel={handleAdminContentWheel}>
-        <header className="topbar admin-topbar">
-          <div className="hero-actions">
-            <LanguageSwitcher />
-            <ThemeToggle variant="icon" />
-          </div>
-        </header>
         {children}
       </div>
     </div>

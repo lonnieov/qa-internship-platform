@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Inbox, MoreHorizontal, Plus } from "lucide-react";
 import {
   activateQuestionVersionAction,
   createQuestionVersionAction,
   deleteQuestionVersionAction,
   duplicateQuestionVersionAction,
-  toggleQuestionAction,
 } from "@/actions/admin";
 import { stringifyPrettyJson } from "@/lib/api-sandbox";
 import { prisma } from "@/lib/prisma";
@@ -20,16 +19,17 @@ import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getManualQaSandboxConfig } from "@/lib/manual-qa-sandbox";
 import { getSqlSandboxConfig } from "@/lib/sql-sandbox-config";
 import { QuestionDeleteForm } from "@/components/admin/question-delete-form";
+import { QuestionToggleButton } from "@/components/admin/question-toggle-button";
 import { QuestionCreatedToast } from "@/components/admin/question-created-toast";
 import { QuestionForm } from "@/components/admin/question-form";
 import { SortableQuestionList } from "@/components/admin/sortable-question-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { QuestionCreateModal } from "@/components/admin/question-create-modal";
 import { QuestionImportModal } from "@/components/admin/question-import-modal";
 import { QuestionGenerateModal } from "@/components/admin/question-generate-modal";
-import { ScopeMenu } from "@/components/admin/scope-menu";
+import { ScopeMenu, ScopeMenuItem } from "@/components/admin/scope-menu";
 import { getManageableTrackIds, requireAdminAccess } from "@/lib/auth";
 import { isQuestionTypeAllowedForTrack } from "@/lib/question-type-policy";
 
@@ -329,18 +329,15 @@ function renderQuestionCard(
           style={{ alignItems: "flex-end", justifyContent: "space-between" }}
         >
           <div className="nav-row">
-            <form action={toggleQuestionAction}>
-              <input type="hidden" name="questionId" value={question.id} />
-              <input
-                type="hidden"
-                name="isActive"
-                value={String(question.isActive)}
-              />
-              <Button type="submit" variant="secondary" size="sm">
-                {question.isActive ? t("hide") : t("activate")}
-              </Button>
-            </form>
-            <QuestionDeleteForm questionId={question.id} />
+            <QuestionToggleButton
+              questionId={question.id}
+              questionText={question.text}
+              isActive={question.isActive}
+            />
+            <QuestionDeleteForm
+              questionId={question.id}
+              questionText={question.text}
+            />
           </div>
         </div>
       </div>
@@ -523,19 +520,20 @@ export default async function AdminQuestionsPage({
               const active = selectedTrackRecord.id === track.id;
 
               return (
-                <Link
-                  className={`scope-menu-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
-                  href={filterUrl(locale, activeSection.type, track.slug)}
-                  key={track.id}
-                >
-                  <span className="nav-row">
-                    <span className={meta.dotClassName} />
-                    {meta.label}
-                  </span>
-                  <span className="scope-menu-count">
-                    {trackCounts[track.id] ?? 0}
-                  </span>
-                </Link>
+                <ScopeMenuItem key={track.id}>
+                  <Link
+                    className={`scope-menu-item ${active ? "active" : ""} ${track.isActive ? "" : "muted-track"}`}
+                    href={filterUrl(locale, activeSection.type, track.slug)}
+                  >
+                    <span className="nav-row">
+                      <span className={meta.dotClassName} />
+                      {meta.label}
+                    </span>
+                    <span className="scope-menu-count">
+                      {trackCounts[track.id] ?? 0}
+                    </span>
+                  </Link>
+                </ScopeMenuItem>
               );
             })}
           </ScopeMenu>
@@ -550,18 +548,19 @@ export default async function AdminQuestionsPage({
                 label={selectedGradeRecord?.name ?? "—"}
               >
                 {gradesForTrack.map((grade) => (
-                  <Link
-                    className={`scope-menu-item ${grade.id === selectedGradeRecord?.id ? "active" : ""}`}
-                    href={filterUrl(
-                      locale,
-                      activeSection.type,
-                      selectedTrackSlug,
-                      { grade: grade.slug },
-                    )}
-                    key={grade.id}
-                  >
-                    <span>{grade.name}</span>
-                  </Link>
+                  <ScopeMenuItem key={grade.id}>
+                    <Link
+                      className={`scope-menu-item ${grade.id === selectedGradeRecord?.id ? "active" : ""}`}
+                      href={filterUrl(
+                        locale,
+                        activeSection.type,
+                        selectedTrackSlug,
+                        { grade: grade.slug },
+                      )}
+                    >
+                      <span>{grade.name}</span>
+                    </Link>
+                  </ScopeMenuItem>
                 ))}
               </ScopeMenu>
             </>
@@ -588,21 +587,22 @@ export default async function AdminQuestionsPage({
                 }
               >
                 {versionsForGrade.map((version) => (
-                  <Link
-                    className={`scope-menu-item ${version.id === selectedVersionRecord.id ? "active" : ""}`}
-                    href={filterUrl(
-                      locale,
-                      activeSection.type,
-                      selectedTrackSlug,
-                      { grade: selectedGradeRecord.slug, version: version.id },
-                    )}
-                    key={version.id}
-                  >
-                    <span>{version.name}</span>
-                    <Badge variant={version.isActive ? "success" : "muted"}>
-                      {version.isActive ? "активна" : "черновик"}
-                    </Badge>
-                  </Link>
+                  <ScopeMenuItem key={version.id}>
+                    <Link
+                      className={`scope-menu-item ${version.id === selectedVersionRecord.id ? "active" : ""}`}
+                      href={filterUrl(
+                        locale,
+                        activeSection.type,
+                        selectedTrackSlug,
+                        { grade: selectedGradeRecord.slug, version: version.id },
+                      )}
+                    >
+                      <span>{version.name}</span>
+                      <Badge variant={version.isActive ? "success" : "muted"}>
+                        {version.isActive ? "активна" : "черновик"}
+                      </Badge>
+                    </Link>
+                  </ScopeMenuItem>
                 ))}
                 <div className="scope-menu-divider" />
                 <form action={createQuestionVersionAction}>
@@ -611,12 +611,14 @@ export default async function AdminQuestionsPage({
                     name="gradeId"
                     value={selectedGradeRecord.id}
                   />
-                  <button className="scope-menu-item" type="submit">
-                    <span className="nav-row">
-                      <Plus size={14} />
-                      Новая версия
-                    </span>
-                  </button>
+                  <ScopeMenuItem>
+                    <button className="scope-menu-item" type="submit">
+                      <span className="nav-row">
+                        <Plus size={14} />
+                        Новая версия
+                      </span>
+                    </button>
+                  </ScopeMenuItem>
                 </form>
               </ScopeMenu>
 
@@ -628,9 +630,11 @@ export default async function AdminQuestionsPage({
                       name="versionId"
                       value={selectedVersionRecord.id}
                     />
-                    <button className="scope-menu-item" type="submit">
-                      Активировать
-                    </button>
+                    <ScopeMenuItem>
+                      <button className="scope-menu-item" type="submit">
+                        Активировать
+                      </button>
+                    </ScopeMenuItem>
                   </form>
                 ) : null}
                 <form action={duplicateQuestionVersionAction}>
@@ -639,9 +643,11 @@ export default async function AdminQuestionsPage({
                     name="versionId"
                     value={selectedVersionRecord.id}
                   />
-                  <button className="scope-menu-item" type="submit">
-                    Дублировать
-                  </button>
+                  <ScopeMenuItem>
+                    <button className="scope-menu-item" type="submit">
+                      Дублировать
+                    </button>
+                  </ScopeMenuItem>
                 </form>
                 {!selectedVersionRecord.isActive ? (
                   <>
@@ -652,12 +658,14 @@ export default async function AdminQuestionsPage({
                         name="versionId"
                         value={selectedVersionRecord.id}
                       />
-                      <button
-                        className="scope-menu-item destructive"
-                        type="submit"
-                      >
-                        Удалить версию
-                      </button>
+                      <ScopeMenuItem>
+                        <button
+                          className="scope-menu-item destructive"
+                          type="submit"
+                        >
+                          Удалить версию
+                        </button>
+                      </ScopeMenuItem>
                     </form>
                   </>
                 ) : null}
@@ -739,11 +747,13 @@ export default async function AdminQuestionsPage({
           </div>
 
           {activeSection.items.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 muted">
-                {t("empty")}
-              </CardContent>
-            </Card>
+            <div className="empty-state">
+              <span className="empty-state-icon" aria-hidden="true">
+                <Inbox size={22} />
+              </span>
+              <p className="empty-state-title">{t("empty")}</p>
+              <p className="empty-state-hint">{t("emptyHint")}</p>
+            </div>
           ) : (
             <SortableQuestionList
               key={activeSection.items.map((question) => question.id).join("|")}

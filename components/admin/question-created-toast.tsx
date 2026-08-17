@@ -1,44 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
-/** `count` switches the copy to the bulk wording used after AI generation. */
+/**
+ * Rendered only when the ?created / ?added flag is present. `count` switches the
+ * copy to the bulk wording used after AI generation. The flag is stripped once
+ * the toast is queued so a reload does not announce the same batch again.
+ */
 export function QuestionCreatedToast({ count }: { count?: number } = {}) {
   const t = useTranslations("AdminQuestions");
-  const [visible, setVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasFired = useRef(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setVisible(false);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("created");
-      params.delete("added");
-      router.replace(
-        params.toString() ? `${pathname}?${params.toString()}` : pathname,
-        { scroll: false },
-      );
-    }, 2400);
+    // Removing the flags re-renders this component; the guard keeps that from
+    // queueing a second toast.
+    if (hasFired.current) return;
+    hasFired.current = true;
 
-    return () => window.clearTimeout(timer);
-  }, [pathname, router, searchParams]);
+    toast.success(count ? t("toast.addedTitle", { count }) : t("toast.title"), {
+      description: count
+        ? t("toast.addedDescription")
+        : t("toast.description"),
+    });
 
-  if (!visible) {
-    return null;
-  }
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("created");
+    params.delete("added");
+    router.replace(
+      params.toString() ? `${pathname}?${params.toString()}` : pathname,
+      { scroll: false },
+    );
+  }, [count, pathname, router, searchParams, t]);
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50 rounded-[16px] border border-[var(--border)] bg-[var(--card)] px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-      <strong className="block">
-        {count ? t("toast.addedTitle", { count }) : t("toast.title")}
-      </strong>
-      <span className="body-2 muted">
-        {count ? t("toast.addedDescription") : t("toast.description")}
-      </span>
-    </div>
-  );
+  return null;
 }

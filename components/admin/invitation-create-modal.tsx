@@ -1,11 +1,17 @@
 "use client";
 
-import { useId, useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { InvitationForm } from "@/components/admin/invitation-form";
 import { Button } from "@/components/ui/button";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type InvitationCreateModalProps = {
   tracks?: {
@@ -18,44 +24,41 @@ type InvitationCreateModalProps = {
 
 export function InvitationCreateModal({ tracks = [] }: InvitationCreateModalProps) {
   const t = useTranslations("AdminInterns");
-  const [isOpen, setIsOpen] = useState(false);
-  const titleId = useId();
 
   return (
-    <>
-      <Button type="button" onClick={() => setIsOpen(true)}>
-        <UserPlus size={18} />
-        {t("createIntern")}
-      </Button>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button type="button">
+          <UserPlus size={18} />
+          {t("createIntern")}
+        </Button>
+      </DialogTrigger>
 
-      <NativeDialog
-        labelledBy={titleId}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
-          <div className="invitation-modal surface">
-            <div className="modal-header">
-              <div>
-                <h2 className="head-3 m-0" id={titleId}>
-                  {t("createInternTitle")}
-                </h2>
-                <p className="body-2 muted m-0">
-                  {t("createInternDescription")}
-                </p>
-              </div>
+      <DialogContent variant="bare">
+        <div className="invitation-modal surface">
+          <div className="modal-header">
+            <div>
+              <DialogTitle className="head-3 m-0">
+                {t("createInternTitle")}
+              </DialogTitle>
+              <DialogDescription className="body-2 muted m-0">
+                {t("createInternDescription")}
+              </DialogDescription>
+            </div>
+            <DialogClose asChild>
               <Button
                 aria-label={t("closeModal")}
                 type="button"
                 variant="ghost"
-                onClick={() => setIsOpen(false)}
               >
                 <X size={18} />
               </Button>
-            </div>
-
-            <InvitationForm embedded tracks={tracks} />
+            </DialogClose>
           </div>
-      </NativeDialog>
-    </>
+
+          <InvitationForm embedded tracks={tracks} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

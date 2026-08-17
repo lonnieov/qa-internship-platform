@@ -14,7 +14,13 @@ import {
 } from "@/lib/question-classification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type TrackManageModalProps = {
   track: TrackSummary & { questionCount: number };
@@ -37,30 +43,28 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
         <MoreHorizontal size={18} />
       </button>
 
-      <NativeDialog
-        labelledBy={`track-modal-title-${track.id}`}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+        <DialogContent variant="bare">
           <div className="track-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id={`track-modal-title-${track.id}`}>
+                <DialogTitle className="head-3 m-0">
                   {t("tracks.manageTitle")}
-                </h2>
-                <p className="track-modal-meta body-2 muted m-0">
+                </DialogTitle>
+                <DialogDescription className="track-modal-meta body-2 muted m-0">
                   <span className={meta.dotClassName} />{" "}
                   {t("tracks.questionsCount", { count: track.questionCount })}
-                </p>
+                </DialogDescription>
               </div>
-              <Button
-                aria-label={t("closeModal")}
-                type="button"
-                variant="ghost"
-                onClick={() => setIsOpen(false)}
-              >
-                <X size={18} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  aria-label={t("closeModal")}
+                  type="button"
+                  variant="ghost"
+                >
+                  <X size={18} />
+                </Button>
+              </DialogClose>
             </div>
 
             <div className="track-modal-body">
@@ -160,7 +164,8 @@ export function TrackManageModal({ track }: TrackManageModalProps) {
               </div>
             </div>
           </div>
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

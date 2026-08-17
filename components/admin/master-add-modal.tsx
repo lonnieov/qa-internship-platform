@@ -1,11 +1,18 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { assignTrackMasterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { NativeDialog } from "@/components/ui/native-dialog";
 
 type MasterAddModalProps = {
   trackId: string;
@@ -15,7 +22,6 @@ type MasterAddModalProps = {
 export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const titleId = useId();
   const close = () => setIsOpen(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -28,42 +34,40 @@ export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
   };
 
   return (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        style={{ height: 32, padding: "0 12px", fontSize: 12 }}
-        onClick={() => setIsOpen(true)}
-      >
-        <Plus size={14} />
-        Добавить
-      </Button>
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          style={{ height: 32, padding: "0 12px", fontSize: 12 }}
+        >
+          <Plus size={14} />
+          Добавить
+        </Button>
+      </DialogTrigger>
 
-      <NativeDialog
-        labelledBy={titleId}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
+      <DialogContent variant="bare">
           <div className="admin-modal surface">
             <div className="wave-modal-header">
               <div>
-                <h2 className="head-3 m-0" id={titleId}>
+                <DialogTitle className="head-3 m-0">
                   Добавить мастера
-                </h2>
-                <p className="body-2 muted m-0">
+                </DialogTitle>
+                <DialogDescription className="body-2 muted m-0">
                   В трек {trackName}
-                </p>
+                </DialogDescription>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Закрыть"
-                onClick={close}
-              >
-                <X size={16} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Закрыть"
+                >
+                  <X size={16} />
+                </Button>
+              </DialogClose>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -104,20 +108,18 @@ export function MasterAddModal({ trackId, trackName }: MasterAddModalProps) {
                 </p>
               </div>
               <div className="wave-modal-footer" style={{ borderTop: "1px solid var(--surface-border)", justifyContent: "flex-end" }}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={close}
-                >
-                  Отмена
-                </Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Отмена
+                  </Button>
+                </DialogClose>
                 <Button type="submit" disabled={isPending}>
                   {isPending ? "Сохранение…" : "Привязать"}
                 </Button>
               </div>
             </form>
           </div>
-      </NativeDialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

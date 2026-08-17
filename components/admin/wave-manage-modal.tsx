@@ -8,8 +8,13 @@ import {
   updateWaveAction,
 } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { NativeDialog } from "@/components/ui/native-dialog";
 
 type Wave = {
   id: string;
@@ -87,27 +92,25 @@ export function WaveManageModal(props: WaveManageModalProps) {
         </Button>
       )}
 
-      <NativeDialog
-        labelledBy={titleId}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+        <DialogContent aria-describedby={undefined} variant="bare">
           <div className="wave-modal surface">
             <div className="wave-modal-header">
               <div>
-                <h2 className="head-3 m-0" id={titleId}>
+                <DialogTitle className="head-3 m-0">
                   {isEdit ? `Поток · ${props.wave.name}` : "Новый поток"}
-                </h2>
+                </DialogTitle>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Закрыть"
-                onClick={close}
-              >
-                <X size={16} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Закрыть"
+                >
+                  <X size={16} />
+                </Button>
+              </DialogClose>
             </div>
 
             <div className="wave-modal-body">
@@ -224,7 +227,8 @@ export function WaveManageModal(props: WaveManageModalProps) {
               )}
             </div>
           </div>
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

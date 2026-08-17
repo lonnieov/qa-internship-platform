@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Sparkles, X } from "lucide-react";
@@ -10,7 +10,14 @@ import {
   type AiQuestionSuggestion,
 } from "@/components/admin/ai-question-generator";
 import { Button } from "@/components/ui/button";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 /**
  * Standalone entry point for AI generation. It used to be a collapsible panel
@@ -36,7 +43,6 @@ export function QuestionGenerateModal({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
-  const titleId = useId();
 
   async function handleAddAll(suggestions: AiQuestionSuggestion[]) {
     const result = await createAiQuestionsAction(suggestions, {
@@ -59,45 +65,41 @@ export function QuestionGenerateModal({
   }
 
   return (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        onClick={() => setIsOpen(true)}
-      >
-        <Sparkles size={14} />
-        {t("ai.generateAction")}
-      </Button>
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm" variant="secondary">
+          <Sparkles size={14} />
+          {t("ai.generateAction")}
+        </Button>
+      </DialogTrigger>
 
-      <NativeDialog labelledBy={titleId} onOpenChange={setIsOpen} open={isOpen}>
+      <DialogContent variant="bare">
         <div className="wave-modal question-generate-modal surface">
           <div className="wave-modal-header">
             <div>
-              <h2 className="head-3 m-0" id={titleId}>
-                {t("ai.title")}
-              </h2>
-              <p className="body-2 muted m-0">
+              <DialogTitle className="head-3 m-0">{t("ai.title")}</DialogTitle>
+              <DialogDescription className="body-2 muted m-0">
                 {t("ai.target")}: <strong>{gradeName}</strong> ·{" "}
                 <strong>{versionName}</strong>
-              </p>
+              </DialogDescription>
             </div>
-            <Button
-              aria-label={t("closeModal")}
-              onClick={() => setIsOpen(false)}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <X size={16} />
-            </Button>
+            <DialogClose asChild>
+              <Button
+                aria-label={t("closeModal")}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <X size={16} />
+              </Button>
+            </DialogClose>
           </div>
 
           <div className="wave-modal-body">
             <AiQuestionGenerator onAddAll={handleAddAll} />
           </div>
         </div>
-      </NativeDialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

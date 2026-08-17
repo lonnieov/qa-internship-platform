@@ -1,38 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
+/**
+ * Rendered only when the ?deleted flag is present. It hands the message to the
+ * toaster and then strips the flag, so a reload or a back-navigation does not
+ * announce the same deletion again.
+ */
 export function InternDeletedToast() {
   const t = useTranslations("AdminInterns");
-  const [visible, setVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasFired = useRef(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setVisible(false);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("deleted");
-      router.replace(
-        params.toString() ? `${pathname}?${params.toString()}` : pathname,
-        { scroll: false },
-      );
-    }, 2400);
+    // Removing the flag re-renders this component; the guard keeps that from
+    // queueing a second toast.
+    if (hasFired.current) return;
+    hasFired.current = true;
 
-    return () => window.clearTimeout(timer);
-  }, [pathname, router, searchParams]);
+    toast.success(t("toast.title"), { description: t("toast.description") });
 
-  if (!visible) {
-    return null;
-  }
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("deleted");
+    router.replace(
+      params.toString() ? `${pathname}?${params.toString()}` : pathname,
+      { scroll: false },
+    );
+  }, [pathname, router, searchParams, t]);
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50 rounded-[16px] border border-[var(--border)] bg-[var(--card)] px-4 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-      <strong className="block">{t("toast.title")}</strong>
-      <span className="body-2 muted">{t("toast.description")}</span>
-    </div>
-  );
+  return null;
 }

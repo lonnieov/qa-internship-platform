@@ -180,15 +180,7 @@ export function AiQuestionGenerator({
           </Button>
         </div>
         {loading ? (
-          <div className="ai-thinking body-2">
-            <Loader2 size={16} className="ai-thinking-icon" />
-            <span>{t("ai.generating")}</span>
-            <span className="ai-thinking-dots">
-              <span className="ai-thinking-dot" />
-              <span className="ai-thinking-dot" />
-              <span className="ai-thinking-dot" />
-            </span>
-          </div>
+          <p className="ai-thinking body-2 muted m-0">{t("ai.generating")}</p>
         ) : null}
         {message ? <p className="body-2 muted m-0">{message}</p> : null}
 
