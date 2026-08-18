@@ -192,7 +192,6 @@ export function AdminShell({
             <ServiceLogo />
             <span className="admin-sidebar-brand-text">
               <strong>{t("brand")}</strong>
-              <small>{t("tagline")}</small>
             </span>
           </Link>
           <button
