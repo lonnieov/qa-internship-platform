@@ -15,7 +15,13 @@ import { RetakeInvitationForm } from "@/components/admin/retake-invitation-form"
 import { Badge } from "@/components/ui/badge";
 import { InternName } from "@/components/ui/intern-name";
 import { Button } from "@/components/ui/button";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type BadgeVariant = "default" | "success" | "warning" | "danger";
 type SortKey =
@@ -443,21 +449,21 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
         </div>
       </div>
 
-      <NativeDialog
-        labelledBy="candidate-details-title"
+      <Dialog
         onOpenChange={setIsDetailsOpen}
         open={isDetailsOpen && Boolean(selected)}
       >
+        <DialogContent variant="bare">
         {selected ? (
           <div className="candidate-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id="candidate-details-title">
+                <DialogTitle className="head-3 m-0">
                   <InternName name={selected.name} />
-                </h2>
-                <p className="body-2 muted m-0">
+                </DialogTitle>
+                <DialogDescription className="body-2 muted m-0">
                   {t("tokensAttemptsActions")}
-                </p>
+                </DialogDescription>
                 <p className="body-2 muted m-0">
                   {t("internWave")}:{" "}
                   <strong>{selected.waveLabel}</strong>
@@ -467,14 +473,15 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
                   <strong>{selected.latestCompletedTrackLabel}</strong>
                 </p>
               </div>
-              <Button
-                aria-label={t("closeModal")}
-                type="button"
-                variant="ghost"
-                onClick={() => setIsDetailsOpen(false)}
-              >
-                <X size={18} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  aria-label={t("closeModal")}
+                  type="button"
+                  variant="ghost"
+                >
+                  <X size={18} />
+                </Button>
+              </DialogClose>
             </div>
 
             <div className="candidate-modal-body">
@@ -673,7 +680,8 @@ export function InternCandidateTable({ rows }: { rows: CandidateRow[] }) {
             </div>
           </div>
         ) : null}
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

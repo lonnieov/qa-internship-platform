@@ -1,7 +1,13 @@
 "use client";
 
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type ScopeMenuProps = {
   /** Visible trigger text. Omitted for icon-only menus. */
@@ -16,11 +22,15 @@ type ScopeMenuProps = {
   disabled?: boolean;
 };
 
+const ScopeMenuCloseContext = createContext<(() => void) | null>(null);
+
 /**
- * Small popover used by the question bank scope bar. Every item either
- * navigates or submits a form, so any click inside closes the menu — but only
- * on the next frame: closing synchronously would unmount the <form> before the
- * browser hands the submit off to the server action, silently dropping it.
+ * Small popover used by the question bank scope bar. Radix supplies the
+ * dismiss, focus and keyboard behaviour; what stays hand-written is when the
+ * menu closes. Every item either navigates or submits a form, and closing on
+ * the same tick would unmount the <form> before the browser hands the submit
+ * off to the server action, silently dropping it — so the close is deferred to
+ * the next frame.
  */
 export function ScopeMenu({
   label,
@@ -31,64 +41,51 @@ export function ScopeMenu({
   disabled = false,
 }: ScopeMenuProps) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const popupId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      triggerRef.current?.focus();
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
+  const closeNextFrame = () =>
+    window.requestAnimationFrame(() => setOpen(false));
 
   return (
-    <div className="scope-menu" ref={containerRef}>
-      <button
-        aria-controls={open ? popupId : undefined}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label={ariaLabel}
-        className={`scope-menu-trigger ${label ? "" : "icon-only"}`}
-        disabled={disabled}
-        onClick={() => setOpen((value) => !value)}
-        ref={triggerRef}
-        type="button"
-      >
-        {icon}
-        {label ? <span className="scope-menu-trigger-label">{label}</span> : null}
-        {label ? <ChevronDown size={14} /> : null}
-      </button>
-
-      {open ? (
-        <div
-          className={`scope-menu-popup align-${align}`}
-          id={popupId}
-          onClick={() => {
-            window.requestAnimationFrame(() => setOpen(false));
-          }}
-          role="menu"
+    <ScopeMenuCloseContext.Provider value={closeNextFrame}>
+      <DropdownMenu onOpenChange={setOpen} open={open}>
+        <DropdownMenuTrigger
+          aria-label={ariaLabel}
+          className={`scope-menu-trigger ${label ? "" : "icon-only"}`}
+          disabled={disabled}
         >
+          {icon}
+          {label ? (
+            <span className="scope-menu-trigger-label">{label}</span>
+          ) : null}
+          {label ? <ChevronDown size={14} /> : null}
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align={align} className="scope-menu-popup">
           {children}
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ScopeMenuCloseContext.Provider>
+  );
+}
+
+/**
+ * Wraps a single link or submit button so Radix treats it as a menu item —
+ * giving it arrow-key navigation and the right role — without swallowing the
+ * click that navigates or submits.
+ */
+export function ScopeMenuItem({ children }: { children: ReactNode }) {
+  const closeNextFrame = useContext(ScopeMenuCloseContext);
+
+  return (
+    <DropdownMenuItem
+      asChild
+      // preventDefault stops Radix from closing the menu synchronously; the
+      // deferred close above runs once the click has done its work.
+      onSelect={(event) => {
+        event.preventDefault();
+        closeNextFrame?.();
+      }}
+    >
+      {children}
+    </DropdownMenuItem>
   );
 }

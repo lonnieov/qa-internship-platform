@@ -32,9 +32,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getOpenQuizConfig } from "@/lib/open-quiz";
 import { getQuestionTrackMeta } from "@/lib/question-classification";
 import { ClickSuperAppClickAvtoPreset } from "@/components/intern/manual-qa-presets/click-super-app-click-avto";
@@ -172,6 +184,15 @@ type SqlDiagramCard = {
   width: number;
   height: number;
 };
+
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+const BUG_SEVERITIES = [
+  "blocker",
+  "critical",
+  "major",
+  "minor",
+  "trivial",
+] as const;
 
 const DEVTOOLS_NOISE_REQUEST_COUNT = 8;
 const devtoolsNoisePathSegments = [
@@ -1998,22 +2019,28 @@ export function TestRunner({
                                 Severity
                               </LabelLike>
                               <Select
-                                id={currentFieldId(
-                                  `bug-${report.id}-severity`,
-                                )}
-                                onChange={(event) =>
+                                onValueChange={(value) =>
                                   updateManualQaReport(report.id, {
-                                    severity: event.target
-                                      .value as ManualQaBugReport["severity"],
+                                    severity:
+                                      value as ManualQaBugReport["severity"],
                                   })
                                 }
                                 value={report.severity}
                               >
-                                <option value="blocker">blocker</option>
-                                <option value="critical">critical</option>
-                                <option value="major">major</option>
-                                <option value="minor">minor</option>
-                                <option value="trivial">trivial</option>
+                                <SelectTrigger
+                                  id={currentFieldId(
+                                    `bug-${report.id}-severity`,
+                                  )}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {BUG_SEVERITIES.map((severity) => (
+                                    <SelectItem key={severity} value={severity}>
+                                      {severity}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
                               </Select>
                             </div>
                             <div className="form-grid">
@@ -2025,23 +2052,30 @@ export function TestRunner({
                                 Category
                               </LabelLike>
                               <Select
-                                id={currentFieldId(
-                                  `bug-${report.id}-category`,
-                                )}
-                                onChange={(event) =>
-                                  updateManualQaReport(report.id, {
-                                    category: event.target.value,
-                                  })
+                                onValueChange={(category) =>
+                                  updateManualQaReport(report.id, { category })
                                 }
                                 value={report.category}
                               >
-                                {currentManualQaConfig.bugCategories.map(
-                                  (category) => (
-                                    <option key={category} value={category}>
-                                      {category}
-                                    </option>
-                                  ),
-                                )}
+                                <SelectTrigger
+                                  id={currentFieldId(
+                                    `bug-${report.id}-category`,
+                                  )}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {currentManualQaConfig.bugCategories.map(
+                                    (category) => (
+                                      <SelectItem
+                                        key={category}
+                                        value={category}
+                                      >
+                                        {category}
+                                      </SelectItem>
+                                    ),
+                                  )}
+                                </SelectContent>
                               </Select>
                             </div>
                           </div>
@@ -2326,17 +2360,19 @@ export function TestRunner({
                       Method
                     </LabelLike>
                     <Select
-                      id={currentFieldId("api-method")}
                       value={currentApiDraft.method}
-                      onChange={(event) =>
-                        updateApiDraft({ method: event.target.value })
-                      }
+                      onValueChange={(method) => updateApiDraft({ method })}
                     >
-                      <option value="GET">GET</option>
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="PATCH">PATCH</option>
-                      <option value="DELETE">DELETE</option>
+                      <SelectTrigger id={currentFieldId("api-method")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HTTP_METHODS.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="form-grid">
@@ -2626,32 +2662,27 @@ export function TestRunner({
         </div>
       </section>
 
-      <NativeDialog
-        labelledBy="finish-test-title"
-        onOpenChange={setIsSubmitDialogOpen}
-        open={isSubmitDialogOpen}
-      >
+      <Dialog onOpenChange={setIsSubmitDialogOpen} open={isSubmitDialogOpen}>
+        <DialogContent variant="bare">
           <div className="confirm-dialog">
             <div className="stack">
               <div className="nav-row">
                 <span className="confirm-dialog-icon">
                   <AlertTriangle size={20} />
                 </span>
-                <h2 className="head-3 m-0" id="finish-test-title">
+                <DialogTitle className="head-3 m-0">
                   {t("finishDialogTitle")}
-                </h2>
+                </DialogTitle>
               </div>
-              <p className="body-1 muted m-0">
+              <DialogDescription className="body-1 muted m-0">
                 {t("finishDialogBody")}
-              </p>
+              </DialogDescription>
               <div className="confirm-dialog-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsSubmitDialogOpen(false)}
-                >
-                  {t("cancel")}
-                </Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    {t("cancel")}
+                  </Button>
+                </DialogClose>
                 <Button
                   type="button"
                   onClick={() => submit(false)}
@@ -2662,13 +2693,11 @@ export function TestRunner({
               </div>
             </div>
           </div>
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
 
-      <NativeDialog
-        labelledBy="question-comment-title"
-        onOpenChange={setIsCommentDialogOpen}
-        open={isCommentDialogOpen}
-      >
+      <Dialog onOpenChange={setIsCommentDialogOpen} open={isCommentDialogOpen}>
+        <DialogContent variant="bare">
           <div className="confirm-dialog question-comment-dialog">
             <div className="stack">
               <div
@@ -2679,9 +2708,9 @@ export function TestRunner({
                   <span className="confirm-dialog-icon">
                     <MessageSquare size={20} />
                   </span>
-                  <h2 className="head-3 m-0" id="question-comment-title">
+                  <DialogTitle className="head-3 m-0">
                     {t("commentTitle")}
-                  </h2>
+                  </DialogTitle>
                 </div>
                 <SaveStatusBadge
                   idleLabel={t("commentDraft")}
@@ -2690,9 +2719,12 @@ export function TestRunner({
                   status={currentCommentSaveStatus}
                 />
               </div>
-              <p className="body-2 muted m-0" id="question-comment-help">
+              <DialogDescription
+                className="body-2 muted m-0"
+                id="question-comment-help"
+              >
                 {t("commentHelp")}
-              </p>
+              </DialogDescription>
               <LabelLike htmlFor={currentFieldId("question-comment")}>
                 {t("commentTitle")}
               </LabelLike>
@@ -2706,13 +2738,11 @@ export function TestRunner({
                 value={currentQuestionComment}
               />
               <div className="confirm-dialog-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCommentDialogOpen(false)}
-                >
-                  {t("cancel")}
-                </Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    {t("cancel")}
+                  </Button>
+                </DialogClose>
                 <Button
                   type="button"
                   onClick={saveQuestionComment}
@@ -2723,7 +2753,8 @@ export function TestRunner({
               </div>
             </div>
           </div>
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

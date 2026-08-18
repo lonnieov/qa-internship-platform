@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   getQuestionTrackMeta,
@@ -34,6 +40,8 @@ import {
   getSqlSandboxConfig,
   sampleSqlSandboxConfig,
 } from "@/lib/sql-sandbox-config";
+
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 type QuestionType =
   | "QUIZ"
@@ -627,15 +635,19 @@ export function QuestionForm({
             <div className="form-grid">
               <Label htmlFor="apiMethod">{t("api.expectedMethod")}</Label>
               <Select
-                id="apiMethod"
                 name="apiMethod"
                 defaultValue={readString(config, "method", "GET")}
               >
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="PATCH">PATCH</option>
-                <option value="DELETE">DELETE</option>
+                <SelectTrigger id="apiMethod">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {HTTP_METHODS.map((method) => (
+                    <SelectItem key={method} value={method}>
+                      {method}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
             <div className="form-grid">
@@ -757,16 +769,20 @@ export function QuestionForm({
           <div className="form-grid">
             <Label htmlFor="manualQaPreset">{t("manual.preset")}</Label>
             <Select
-              id="manualQaPreset"
               name="manualQaPreset"
-              onChange={(event) => setDraftManualQaPresetId(event.target.value)}
+              onValueChange={setDraftManualQaPresetId}
               value={draftManualQaPresetId}
             >
-              {manualQaPresetOptions.map((preset) => (
-                <option key={preset.value} value={preset.value}>
-                  {preset.label}
-                </option>
-              ))}
+              <SelectTrigger id="manualQaPreset">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {manualQaPresetOptions.map((preset) => (
+                  <SelectItem key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 
@@ -867,16 +883,20 @@ export function QuestionForm({
           <div className="form-grid">
             <Label htmlFor="autotestPreset">{t("autotest.preset")}</Label>
             <Select
-              id="autotestPreset"
               name="autotestPreset"
-              onChange={(event) => setDraftAutotestPresetId(event.target.value)}
+              onValueChange={setDraftAutotestPresetId}
               value={draftAutotestPresetId}
             >
-              {autotestPresetOptions.map((preset) => (
-                <option key={preset.value} value={preset.value}>
-                  {preset.label}
-                </option>
-              ))}
+              <SelectTrigger id="autotestPreset">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {autotestPresetOptions.map((preset) => (
+                  <SelectItem key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 
@@ -936,15 +956,19 @@ export function QuestionForm({
             <div className="form-grid">
               <Label htmlFor="apiMethod">{t("devtools.networkMethod")}</Label>
               <Select
-                id="apiMethod"
                 name="apiMethod"
                 defaultValue={readString(config, "method", "POST")}
               >
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="PATCH">PATCH</option>
-                <option value="DELETE">DELETE</option>
+                <SelectTrigger id="apiMethod">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {HTTP_METHODS.map((method) => (
+                    <SelectItem key={method} value={method}>
+                      {method}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
             <div className="form-grid">

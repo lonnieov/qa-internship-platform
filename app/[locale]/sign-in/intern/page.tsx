@@ -3,7 +3,6 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { ServiceLogo } from "@/components/service-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TokenLoginForm } from "@/components/intern/token-login-form";
-import { Badge } from "@/components/ui/badge";
 
 export default function InternSignInPage() {
   return (
@@ -13,45 +12,35 @@ export default function InternSignInPage() {
           <ServiceLogo />
           <strong>QA Internship platform</strong>
         </div>
-        <div>
-          <h1>Платформа отбора стажёров</h1>
-          <p>
+        <div className="auth-brand-body">
+          <h2 className="auth-hero-title">Платформа отбора стажёров</h2>
+          <p className="auth-hero-text">
             Технические ассессменты по API, DevTools и базовой QA-теории для
             будущих инженеров команды Click.
           </p>
-          <div className="auth-stats">
-            <div>
-              <strong>Гибкие форматы</strong>
-              <span>
-                Конструируйте тесты из любых категорий: от теории до
-                практических кейсов
-              </span>
-            </div>
-            <div>
-              <strong>Настраиваемое время</strong>
-              <span>
-                Задавайте любое время на прохождение всего теста или отдельных
-                вопросов.
-              </span>
-            </div>
-          </div>
+          <ul className="auth-feature-list">
+            <li>Гибкие форматы: от теории до практических кейсов</li>
+            <li>Настраиваемое время на тест и отдельные вопросы</li>
+            <li>Автоматическая проверка и отчёты по результатам</li>
+          </ul>
         </div>
+        <small className="auth-brand-foot">
+          © 2026 · Внутренняя QA-платформа
+        </small>
       </section>
 
       <section className="auth-form-panel">
-        <div className="auth-form-card">
-          <div className="auth-form-top">
-            <Badge>Стажёр</Badge>
-            <div className="nav-row">
-              <LanguageSwitcher />
-              <ThemeToggle variant="icon" />
-            </div>
+        <div className="auth-form-topbar">
+          <div className="auth-form-controls">
+            <LanguageSwitcher />
+            <ThemeToggle variant="icon" />
           </div>
-          <div className="stack">
-            <h2 className="head-1">Вход в систему</h2>
-            <p className="body-1 muted m-0">
-              Введите токен, который выдал администратор.
-            </p>
+        </div>
+
+        <div className="auth-form-card">
+          <div className="auth-form-heading">
+            <h1>Вход в систему</h1>
+            <p>Введите токен, который выдал администратор.</p>
           </div>
           <AuthRoleTabs activeRole="intern" />
           <TokenLoginForm />

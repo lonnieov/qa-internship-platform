@@ -11,7 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const initialState: AdminAuthState = {
   ok: false,
@@ -59,27 +65,27 @@ export function AdminManageModal({ admin, currentAdminIsSeed }: AdminManageModal
         <MoreHorizontal size={18} />
       </button>
 
-      <NativeDialog
-        labelledBy={`admin-modal-title-${admin.id}`}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
+      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+        <DialogContent variant="bare">
           <div className="admin-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id={`admin-modal-title-${admin.id}`}>
+                <DialogTitle className="head-3 m-0">
                   {t("admins.manageTitle")}
-                </h2>
-                <p className="body-2 muted m-0">{admin.email}</p>
+                </DialogTitle>
+                <DialogDescription className="body-2 muted m-0">
+                  {admin.email}
+                </DialogDescription>
               </div>
-              <Button
-                aria-label={t("closeModal")}
-                type="button"
-                variant="ghost"
-                onClick={() => setIsOpen(false)}
-              >
-                <X size={18} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  aria-label={t("closeModal")}
+                  type="button"
+                  variant="ghost"
+                >
+                  <X size={18} />
+                </Button>
+              </DialogClose>
             </div>
 
             <div className="track-modal-body">
@@ -191,7 +197,8 @@ export function AdminManageModal({ admin, currentAdminIsSeed }: AdminManageModal
               )}
             </div>
           </div>
-      </NativeDialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

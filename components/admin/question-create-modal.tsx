@@ -1,11 +1,17 @@
 "use client";
 
-import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
 import { QuestionForm } from "@/components/admin/question-form";
 import { Button } from "@/components/ui/button";
-import { NativeDialog } from "@/components/ui/native-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { type TrackSummary } from "@/lib/question-classification";
 
 type QuestionType =
@@ -42,37 +48,36 @@ export function QuestionCreateModal({
   tracks: TrackSummary[];
 }) {
   const t = useTranslations("AdminQuestions");
-  const [isOpen, setIsOpen] = useState(false);
-  const titleId = useId();
 
   return (
-    <>
-      <Button type="button" size="sm" onClick={() => setIsOpen(true)}>
-        <Plus size={16} />
-        {t("add")}
-      </Button>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm">
+          <Plus size={16} />
+          {t("add")}
+        </Button>
+      </DialogTrigger>
 
-      <NativeDialog
-        labelledBy={titleId}
-        onOpenChange={setIsOpen}
-        open={isOpen}
-      >
+      <DialogContent variant="bare">
           <div className="question-modal surface">
             <div className="modal-header">
               <div>
-                <h2 className="head-3 m-0" id={titleId}>
+                <DialogTitle className="head-3 m-0">
                   {t("newQuestion")}
-                </h2>
-                <p className="body-2 muted m-0">{typeLabel(t, initialType)}</p>
+                </DialogTitle>
+                <DialogDescription className="body-2 muted m-0">
+                  {typeLabel(t, initialType)}
+                </DialogDescription>
               </div>
-              <Button
-                aria-label={t("closeModal")}
-                type="button"
-                variant="ghost"
-                onClick={() => setIsOpen(false)}
-              >
-                <X size={18} />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  aria-label={t("closeModal")}
+                  type="button"
+                  variant="ghost"
+                >
+                  <X size={18} />
+                </Button>
+              </DialogClose>
             </div>
 
             <QuestionForm
@@ -86,7 +91,7 @@ export function QuestionCreateModal({
               tracks={tracks}
             />
           </div>
-      </NativeDialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
