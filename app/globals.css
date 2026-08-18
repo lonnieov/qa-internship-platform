@@ -69,7 +69,7 @@
   --ring: #0077ff;
   --surface-bg: #ffffff;
   --surface-border: #e5e5e5;
-  --surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --surface-shadow: none;
   --topbar-bg: #ffffff;
   --page-gradient: none;
   --coin-blue-12: rgba(0, 119, 255, 0.1);
@@ -121,7 +121,7 @@
   --ring: #3d8bff;
   --surface-bg: #0f0f0f;
   --surface-border: #262626;
-  --surface-shadow: 0 18px 46px rgba(0, 0, 0, 0.5);
+  --surface-shadow: none;
   --topbar-bg: #0a0a0a;
   --page-gradient: none;
   --coin-blue-12: rgba(61, 139, 255, 0.16);
