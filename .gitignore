@@ -13,3 +13,5 @@ src/generated/prisma
 # clerk configuration (can include secrets)
 /.clerk/
 .vscode/
+# Single source of truth is package-lock.json (CI uses npm ci)
+yarn.lock
