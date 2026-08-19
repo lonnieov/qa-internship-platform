@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { hashRouteToPath, toHashRoute } from "@/lib/hash-routing";
 
 let isShowingHashRoute = false;
+// The real path we last mirrored into the hash ourselves. Used to tell an
+// echo of our own mirror apart from a genuine incoming hash navigation.
+let mirroredFromPath: string | null = null;
 
 function currentPathWithSearch() {
   return `${window.location.pathname}${window.location.search}`;
@@ -29,6 +32,7 @@ function showHashRoute() {
     next !== current &&
     `${window.location.pathname}${window.location.hash}` !== next
   ) {
+    mirroredFromPath = current;
     isShowingHashRoute = true;
     window.history.replaceState(window.history.state, "", next);
     isShowingHashRoute = false;
@@ -45,6 +49,13 @@ function syncHashRoute() {
 
   if (pathWithoutFragment(target) === currentPathWithSearch()) {
     showHashRoute();
+    return;
+  }
+
+  // The hash route is just an echo of what we mirrored — we are already on
+  // that page, so do not hard-navigate (that would reload forever under
+  // routers that re-invoke history.replaceState after mount).
+  if (target === mirroredFromPath) {
     return;
   }
 

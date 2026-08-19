@@ -45,18 +45,18 @@
    * the intentional Click super-app replicas in the QA presets keep their own
    * literal blues and are untouched by these tokens.
    */
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f4f6f9;
+  --foreground: #14171c;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #14171c;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
+  --primary: #0077ff;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f5;
   --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
+  --muted: #eef1f5;
+  --muted-foreground: #6b7280;
   --accent: #16a34a;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
@@ -64,22 +64,22 @@
   --warning: #d97706;
   --gold: #e0a500;
   --business: #aa43c4;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #171717;
+  --border: #e4e7ec;
+  --input: #e0e4ea;
+  --ring: #0077ff;
   --surface-bg: #ffffff;
-  --surface-border: #e5e5e5;
-  --surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --surface-border: #e4e7ec;
+  --surface-shadow: none;
   --topbar-bg: #ffffff;
   --page-gradient: none;
-  --coin-blue-12: rgba(23, 23, 23, 0.07);
-  --coin-blue-08: rgba(23, 23, 23, 0.05);
+  --coin-blue-12: rgba(0, 119, 255, 0.1);
+  --coin-blue-08: rgba(0, 119, 255, 0.07);
   --coin-green-12: rgba(22, 163, 74, 0.12);
   --coin-red-12: rgba(220, 38, 38, 0.11);
   --coin-orange-12: rgba(217, 119, 6, 0.13);
   --coin-purple-12: rgba(170, 67, 196, 0.12);
   --coin-app-bg: #f4f6fa;
-  --coin-code-bg: #fafafa;
+  --coin-code-bg: #f7f9fb;
   --radius-garden: 8px;
   --radius-island: 16px;
   --radius-continent: 32px;
@@ -103,8 +103,8 @@
   --card-foreground: #fafafa;
   --popover: #0f0f0f;
   --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
+  --primary: #3d8bff;
+  --primary-foreground: #08131f;
   --secondary: #262626;
   --secondary-foreground: #fafafa;
   --muted: #262626;
@@ -118,14 +118,14 @@
   --business: #aa43c4;
   --border: #2a2a2a;
   --input: #333333;
-  --ring: #d4d4d4;
+  --ring: #3d8bff;
   --surface-bg: #0f0f0f;
   --surface-border: #262626;
-  --surface-shadow: 0 18px 46px rgba(0, 0, 0, 0.5);
+  --surface-shadow: none;
   --topbar-bg: #0a0a0a;
   --page-gradient: none;
-  --coin-blue-12: rgba(250, 250, 250, 0.1);
-  --coin-blue-08: rgba(250, 250, 250, 0.07);
+  --coin-blue-12: rgba(61, 139, 255, 0.16);
+  --coin-blue-08: rgba(61, 139, 255, 0.12);
   --coin-green-12: rgba(34, 197, 94, 0.15);
   --coin-red-12: rgba(239, 68, 68, 0.15);
   --coin-orange-12: rgba(245, 158, 11, 0.15);
@@ -173,9 +173,6 @@ button {
 :is(
   a:any-link,
   button,
-  input,
-  textarea,
-  select,
   summary,
   [tabindex]:not([tabindex="-1"])
 ):focus-visible {

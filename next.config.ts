@@ -77,6 +77,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   serverExternalPackages: [
     "@prisma/client",
     "@prisma/adapter-pg",
